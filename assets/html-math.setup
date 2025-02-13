@@ -1,0 +1,74 @@
+<style>
+  body {
+    font-family: "Lato", "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.6;
+    margin: auto;
+    max-width: 800px;
+    padding: 20px;
+  }
+
+  h1, h2, h3, h4 {
+    color: #333;
+    font-weight: bold;
+  }
+
+  h1 {
+    font-size: 24pt;
+    text-align: center;
+    margin-bottom: 5px;
+  }
+
+  h2 {
+    font-size: 20pt;
+    margin-top: 10px;
+    margin-bottom: 5px;
+  }
+
+  h3 {
+    font-size: 16pt;
+    margin-top: 8px;
+    margin-bottom: 3px;
+  }
+
+  h4 {
+    font-size: 14pt;
+    margin-top: 6px;
+    margin-bottom: 2px;
+  }
+
+  p {
+    text-align: justify;
+    text-indent: 0px;
+  }
+
+  ul, ol {
+    margin-left: 20px;
+    padding-left: 10px;
+  }
+
+  /* Link styles */
+  a {
+    color: #0645AD;
+    text-decoration: none;
+  }
+
+  a:hover {
+    text-decoration: underline;
+  }
+
+  /* MathJax support */
+</style>
+
+<!-- Load MathJax for Math Rendering -->
+<script type="text/javascript" async
+  src="https://polyfill.io/v3/polyfill.min.js?features=es6">
+</script>
+<script type="text/javascript" async
+  src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/3.2.2/es5/tex-mml-chtml.js">
+</script>
+<script>
+  window.onload = function() {
+    MathJax.typesetPromise();
+  };
+</script>
