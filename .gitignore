@@ -10,6 +10,5 @@
 # Undo-tree save-files
 *.~undo-tree
 codeium/codeium_language_server
-/.cache
 /tree-sitter
 /elpa
