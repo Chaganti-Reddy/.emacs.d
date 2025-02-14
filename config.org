@@ -261,7 +261,7 @@ Emacs always saves everything in $EMACSDIR itself which is very annoying to push
 
 (setq dap-breakpoints-file (dir-concat user-cache-directory "dap-breakpoints"))
 
-(setq projectile-known-projects-file (dir-concat user-cache-directory "projectile-bookmarks.eld"))
+(setq projectile-known-projects-file (dir-concat user-emacs-directory "assets/projectile-bookmarks.eld"))
 
 (setq eshell-directory-name (dir-concat user-cache-directory "eshell"))
 (setq eshell-history-file-name (dir-concat user-cache-directory "eshell-history"))
