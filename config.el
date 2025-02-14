@@ -85,7 +85,7 @@
   ;;----------------------------------------------------------------------------
   ;; Appearance Tweaks
   ;;----------------------------------------------------------------------------
-  (add-to-list 'default-frame-alist '(alpha-background . 95)) ;; Set frame transparency
+  (add-to-list 'default-frame-alist '(alpha-background . 100)) ;; Set frame transparency
   (global-prettify-symbols-mode 1)      ;; Display certain keywords as symbols
 
   ;;----------------------------------------------------------------------------
@@ -2427,8 +2427,8 @@ otherwise, call `format-all-buffer'."
     "h r r" '((lambda () (interactive)
 		(load-file "~/.emacs.d/init.el")
 		(ignore (elpaca-process-queues))
-		(karna/org-colors-doom-one)) ;; Reapply colors after reloading
-	    :wk "Reload emacs config"r)
+		;; (karna/org-colors-doom-one) ;; Reapply colors after reloading
+	    :wk "Reload emacs config"r))
     "h t" '(load-theme :wk "Load theme")
     "h v" '(describe-variable :wk "Describe variable")
     "h w" '(where-is :wk "Prints keybinding for command if set")
