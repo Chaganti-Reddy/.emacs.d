@@ -46,7 +46,7 @@
 
   :hook
   ;; Enable whitespace-mode for programming buffers
-  (prog-mode . whitespace-mode)
+  ;; (prog-mode . whitespace-mode)
   ;; Clean up whitespace before saving any buffer
   (before-save . whitespace-cleanup)
   ;; For comint buffers, disable query on exit for the associated process
@@ -85,7 +85,7 @@
   ;;----------------------------------------------------------------------------
   ;; Appearance Tweaks
   ;;----------------------------------------------------------------------------
-  (add-to-list 'default-frame-alist '(alpha-background . 100)) ;; Set frame transparency
+  (add-to-list 'default-frame-alist '(alpha-background . 95)) ;; Set frame transparency
   (global-prettify-symbols-mode 1)      ;; Display certain keywords as symbols
 
   ;;----------------------------------------------------------------------------
@@ -317,6 +317,30 @@
     which-key-allow-imprecise-window-fit nil
     which-key-separator " → " ))
 
+;;; EF THEMES
+
+(use-package ef-themes
+	:ensure t
+	:config
+	(ef-themes-select 'ef-cyprus)
+  (load-theme 'ef-cyprus)
+      )
+
+;;; MODUS THEMES
+
+(use-package modus-themes
+  :ensure t
+  :config
+  ;; (load-theme 'modus-operandi)
+  ;; (load-theme 'modus-vivendi)
+  (set-face-attribute 'default nil
+    :font "Iosevka Comfy Motion"
+    :height 130
+    :weight 'bold))
+
+(set-face-attribute 'default nil :font "Iosevka Comfy Motion-13.5")
+(set-face-attribute 'bold nil :font "Iosevka Comfy Motion-13.5" :weight 'bold)
+
 ;;; DOOM THEMES
 
 (add-to-list 'custom-theme-load-path "~/.config/emacs/themes/")
@@ -324,7 +348,7 @@
   :config
   (setq doom-themes-enable-bold t    ; Enable bold text
 	doom-themes-enable-italic t) ; Enable italic text
-  (load-theme 'doom-challenger-deep t) ; Load default theme
+  ;(load-theme 'doom-challenger-deep t) ; Load default theme
   (doom-themes-neotree-config) ; Enable neotree theme
   (doom-themes-org-config)
   (set-face-attribute 'default nil
@@ -336,7 +360,7 @@
 ;;   :ensure nil
 ;;   :hook (after-init . display-battery-mode))
 
-(add-to-list 'default-frame-alist '(font . "Iosevka Comfy Motion-13"))
+;; (add-to-list 'default-frame-alist '(font . "Iosevka Comfy Motion-13.5"))
 
 ;;; FONTS
 
@@ -555,6 +579,9 @@
   :hook (emacs-startup . global-jinx-mode)
   :bind (("M-$" . jinx-correct)
 	 ("C-M-$" . jinx-languages)))
+
+(use-package expand-region
+  :bind ("C-=" . er/expand-region))
 
 ;;; CALC
 
@@ -846,7 +873,7 @@
   (corfu-auto-delay 0.02)          ;; No delay before suggestions appear
   (corfu-quit-no-match t)
   (corfu-quit-at-boundary 'separator)
-  (corfu-echo-documentation t)
+  (corfu-echo-documentation nil)
   (corfu-preview-current 'insert)
   (corfu-preselect-first nil)
   (corfu-popupinfo-mode nil)      ;; Enable documentation popups
@@ -1171,6 +1198,12 @@
 (with-eval-after-load 'treemacs
   (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
 
+(defun my/disable-doom-modeline-in-treemacs ()
+  "Disable Doom modeline in Treemacs buffer."
+  (doom-modeline-mode -1))
+
+(add-hook 'treemacs-mode-hook #'my/disable-doom-modeline-in-treemacs)
+
 ;;; DIRED OPEN
 
 (use-package dired-open
@@ -1319,30 +1352,33 @@ otherwise, call `format-all-buffer'."
 	 (eglot-managed-mode . my/eglot-setup))
   :config
   (dolist (server `((c-ts-mode        . ("clangd"))
+	(python-ts-mode   . ("pyright-langserver" "--stdio"))
 		    (c++-ts-mode      . ("clangd"))
 		    (go-ts-mode       . ("gopls"))))
     (add-to-list 'eglot-server-programs server)))
 
 ;; Custom eglot setup for buffer-local settings and keybindings.
+
 (defun my/eglot-setup ()
   "Custom configuration for eglot-managed buffers."
-  (electric-indent-local-mode nil)
+  (electric-indent-local-mode t) 
   (cond
    ((derived-mode-p 'python-ts-mode)
     (setq-local indent-tabs-mode nil
-		python-indent-offset 4
-		python-indent-guess-indent-offset nil)
+                python-indent-offset 4
+                python-indent-guess-indent-offset nil)
     (local-set-key (kbd "<f6>") #'ian/format-code))
    ((derived-mode-p 'c-ts-mode 'c++-ts-mode)
     (setq-local c-default-style "linux"
-		c-basic-offset 4)
+                c-basic-offset 4)
     (local-set-key (kbd "<f6>") #'ian/format-code))
    ((derived-mode-p 'go-ts-mode)
     (setq-local tab-width 4
-		indent-tabs-mode t)  ;; Go conventionally uses tabs.
+                indent-tabs-mode t)  ;; Go conventionally uses tabs.
     (local-set-key (kbd "<f6>") #'ian/format-code))
    ((derived-mode-p 'yaml-mode)
     nil)))
+
 
 ;; Additional auto-mode association for C++ using tree-sitter.
 (add-to-list 'auto-mode-alist
@@ -1356,6 +1392,17 @@ otherwise, call `format-all-buffer'."
 	      ("C-c d" . eldoc-box-help-at-point))) ;; Manually trigger it
 
 (add-hook 'eldoc-box-buffer-setup-hook #'eldoc-box-prettify-ts-errors 0 t)
+
+;;; HIGHLIGHT INDENTATION GUIDES
+
+(use-package highlight-indent-guides
+  :ensure t
+  :defer t
+  :hook (prog-mode . highlight-indent-guides-mode)
+  :config
+  (setq highlight-indent-guides-method 'character)
+  (setq highlight-indent-guides-character ?\|)
+  (setq highlight-indent-guides-responsive 'top))
 
 ;;; CONDA
 
@@ -1606,13 +1653,6 @@ otherwise, call `format-all-buffer'."
    "Major mode for editing GitHub Flavored Markdown files" t)
 (add-to-list 'auto-mode-alist '("README\\.md\\'" . gfm-mode))
 
-;;; IMPATIENT MODE
-
-(use-package impatient-mode
-  :ensure t
-  :defer t
-  :hook (web-mode . impatient-mode))
-
 ;;; MARKDOWN PREVIEW MODE
 
 (use-package markdown-preview-mode
@@ -1718,13 +1758,13 @@ otherwise, call `format-all-buffer'."
 
 ;;; CENTER ORG MODE
 
-;(defun efs/org-mode-visual-fill ()
-;  (setq visual-fill-column-width 180
-;        visual-fill-column-center-text t)
-;  (visual-fill-column-mode 1))
-;
-;(use-package visual-fill-column
-;  :hook (org-mode . efs/org-mode-visual-fill))
+(defun efs/org-mode-visual-fill ()
+  (setq visual-fill-column-width 180
+	visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
+(use-package visual-fill-column
+  :hook (org-mode . efs/org-mode-visual-fill))
 
 ;;; ORG AUTO TANGLE
 
