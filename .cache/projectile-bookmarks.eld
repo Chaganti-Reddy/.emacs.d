@@ -1,0 +1,1 @@
+("~/.emacs.d/" "/mnt/Karna/Git/Project-K/")
