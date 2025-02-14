@@ -115,7 +115,7 @@
 (setq save-place-file (dir-concat user-cache-directory "places")) ;; Saving the place history in custom directory.
 (setq transient-history-file (dir-concat user-cache-directory "transient-history.el")) ;; Saving transient-history file in ~/.cache/emacs/
 
-;;(setq bookmark-default-file (dir-concat user-cache-directory "bookmarks")) ;; Saving bookmarks in custom directory which is helped to display in emacs dashboard.
+(setq bookmark-default-file (dir-concat user-emacs-directory ".cache/bookmarks")) ;; Saving bookmarks in custom directory which is helped to display in emacs dashboard.
 
 (setq auto-save-list-file-prefix (dir-concat user-cache-directory "auto-save-list/.saves-"))
 
@@ -127,7 +127,7 @@
 
 (setq dap-breakpoints-file (dir-concat user-cache-directory "dap-breakpoints"))
 
-(setq projectile-known-projects-file (dir-concat user-emacs-directory "assets/projectile-bookmarks.eld"))
+(setq projectile-known-projects-file (dir-concat user-emacs-directory ".cache/projectile-bookmarks.eld"))
 
 (setq eshell-directory-name (dir-concat user-cache-directory "eshell"))
 (setq eshell-history-file-name (dir-concat user-cache-directory "eshell-history"))
@@ -136,7 +136,7 @@
 (setq undo-fu-session-directory
 	(dir-concat user-cache-directory "undo-fu-session/"))
 
-(setq persp-state-default-file (dir-concat user-cache-directory "sessions"))
+(setq persp-state-default-file (dir-concat user-emacs-directory ".cache/sessions"))
 
 ;;; BROWSER SETTINGS
 
@@ -1361,20 +1361,20 @@ otherwise, call `format-all-buffer'."
 
 (defun my/eglot-setup ()
   "Custom configuration for eglot-managed buffers."
-  (electric-indent-local-mode t) 
+  (electric-indent-local-mode t)
   (cond
    ((derived-mode-p 'python-ts-mode)
     (setq-local indent-tabs-mode nil
-                python-indent-offset 4
-                python-indent-guess-indent-offset nil)
+		python-indent-offset 4
+		python-indent-guess-indent-offset nil)
     (local-set-key (kbd "<f6>") #'ian/format-code))
    ((derived-mode-p 'c-ts-mode 'c++-ts-mode)
     (setq-local c-default-style "linux"
-                c-basic-offset 4)
+		c-basic-offset 4)
     (local-set-key (kbd "<f6>") #'ian/format-code))
    ((derived-mode-p 'go-ts-mode)
     (setq-local tab-width 4
-                indent-tabs-mode t)  ;; Go conventionally uses tabs.
+		indent-tabs-mode t)  ;; Go conventionally uses tabs.
     (local-set-key (kbd "<f6>") #'ian/format-code))
    ((derived-mode-p 'yaml-mode)
     nil)))
@@ -1711,7 +1711,7 @@ otherwise, call `format-all-buffer'."
   :ensure t
   :defer t)
 
-(setq org-id-locations-file (concat user-emacs-directory "assets/.org-id-locations"))
+(setq org-id-locations-file (concat user-emacs-directory ".cache/.org-id-locations"))
 
 ;; ORG CUSTOM HEADER FACES
 ;; (custom-set-faces
@@ -1831,19 +1831,19 @@ otherwise, call `format-all-buffer'."
 
 (setq org-todo-keywords
       '((sequence "IDEA(i)"      ; Generate research ideas
-                  "LIT(l)"       ; Conduct literature review
-                  "CODE(c)"      ; Develop code/algorithms
-                  "TEST(t)"      ; Test implementations or experiments
-                  "WRITE(w)"     ; Document findings or draft manuscripts
-                  "REVIEW(r)"    ; Revise based on feedback
-                  "|" 
-                  "SUBMITTED(s)" ; Work submitted for review/publication
-                  "PUBLISHED(p)" ; Work published (or defended)
-                  "ABANDONED(x)") ; Project discontinued
-        (sequence "TODO(t)"       ; Basic task: not yet started
-                  "NEXT(n)"       ; Basic task: immediate next action
-                  "|" 
-                  "DONE(d!)"))) ; Basic task: completed
+		  "LIT(l)"       ; Conduct literature review
+		  "CODE(c)"      ; Develop code/algorithms
+		  "TEST(t)"      ; Test implementations or experiments
+		  "WRITE(w)"     ; Document findings or draft manuscripts
+		  "REVIEW(r)"    ; Revise based on feedback
+		  "|"
+		  "SUBMITTED(s)" ; Work submitted for review/publication
+		  "PUBLISHED(p)" ; Work published (or defended)
+		  "ABANDONED(x)") ; Project discontinued
+	(sequence "TODO(t)"       ; Basic task: not yet started
+		  "NEXT(n)"       ; Basic task: immediate next action
+		  "|"
+		  "DONE(d!)"))) ; Basic task: completed
 
 ;;; ORG REFILE SETTINGS
 
@@ -1864,25 +1864,25 @@ otherwise, call `format-all-buffer'."
 
 (setq org-tag-alist
       '((:startgroup)
-        ("@errand"   . ?E)
-        ("@home"     . ?H)
-        ("@lab"      . ?L)
-        ("@office"   . ?O)
-        (:endgroup)
-        ("agenda"    . ?a)
-        ("planning"  . ?p)
-        ("note"      . ?n)
-        ("idea"      . ?i)
-        ("lit"       . ?l)   ; literature review
-        ("code"      . ?c)
-        ("test"      . ?t)
-        ("write"     . ?w)
-        ("review"    . ?r)
-        ("submitted" . ?s)
-        ("published" . ?P)   ; uppercase P differentiates from planning
-        ("abandoned" . ?x)
-        ("meeting"   . ?m)
-        ("reading"   . ?R)))
+	("@errand"   . ?E)
+	("@home"     . ?H)
+	("@lab"      . ?L)
+	("@office"   . ?O)
+	(:endgroup)
+	("agenda"    . ?a)
+	("planning"  . ?p)
+	("note"      . ?n)
+	("idea"      . ?i)
+	("lit"       . ?l)   ; literature review
+	("code"      . ?c)
+	("test"      . ?t)
+	("write"     . ?w)
+	("review"    . ?r)
+	("submitted" . ?s)
+	("published" . ?P)   ; uppercase P differentiates from planning
+	("abandoned" . ?x)
+	("meeting"   . ?m)
+	("reading"   . ?R)))
 
 ;;; AGENDA BASICS
 
@@ -1898,65 +1898,65 @@ otherwise, call `format-all-buffer'."
 (setq org-fancy-priorities-list '("🟥" "🟧" "🟨")
       org-priority-faces
       '((?A :foreground "#ff6c6b" :weight bold)  ; High priority (🟥)
-        (?B :foreground "#98be65" :weight bold)  ; Medium priority (🟧)
-        (?C :foreground "#c678dd" :weight bold)) ; Low priority (🟨)
+	(?B :foreground "#98be65" :weight bold)  ; Medium priority (🟧)
+	(?C :foreground "#c678dd" :weight bold)) ; Low priority (🟨)
       org-agenda-block-separator 8411)
 
 ;; Org Agenda Custom Commands
 (setq org-agenda-custom-commands
       '(
-        ;; Dashboard: Agenda view + Next Tasks + Active Projects
-        ("d" "Dashboard"
-         ((agenda "" ((org-deadline-warning-days 7)))
-          (todo "NEXT" ((org-agenda-overriding-header "Next Tasks")))
-          (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))))
+	;; Dashboard: Agenda view + Next Tasks + Active Projects
+	("d" "Dashboard"
+	 ((agenda "" ((org-deadline-warning-days 7)))
+	  (todo "NEXT" ((org-agenda-overriding-header "Next Tasks")))
+	  (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))))
 
-        ;; Next Tasks: Focused view on tasks marked as NEXT
-        ("n" "Next Tasks"
-         ((todo "NEXT" ((org-agenda-overriding-header "Next Tasks")))))
+	;; Next Tasks: Focused view on tasks marked as NEXT
+	("n" "Next Tasks"
+	 ((todo "NEXT" ((org-agenda-overriding-header "Next Tasks")))))
 
-        ;; Work & Location-Based Tasks: Filter tasks by location tags
-        ("w" "Work & Location Tasks"
-         ((tags-todo "+@lab")
-          (tags-todo "+@office")
-          (tags-todo "+@errand")
-          (tags-todo "+@home")))
+	;; Work & Location-Based Tasks: Filter tasks by location tags
+	("w" "Work & Location Tasks"
+	 ((tags-todo "+@lab")
+	  (tags-todo "+@office")
+	  (tags-todo "+@errand")
+	  (tags-todo "+@home")))
 
-        ;; Low-Effort Tasks: Show NEXT tasks with low estimated effort
-        ("e" "Low-Effort Tasks"
-         ((tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
-                     ((org-agenda-overriding-header "Low Effort Tasks")
-                      (org-agenda-max-todos 20)
-                      (org-agenda-files org-agenda-files)))))
+	;; Low-Effort Tasks: Show NEXT tasks with low estimated effort
+	("e" "Low-Effort Tasks"
+	 ((tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
+		     ((org-agenda-overriding-header "Low Effort Tasks")
+		      (org-agenda-max-todos 20)
+		      (org-agenda-files org-agenda-files)))))
 
-        ;; Unified Research Workflow
-        ("r" "Unified Research Workflow"
-         ((todo "IDEA"      ((org-agenda-overriding-header "Research Ideas")))
-          (todo "LIT"       ((org-agenda-overriding-header "Literature Review")))
-          (todo "CODE"      ((org-agenda-overriding-header "Development / Coding")))
-          (todo "TEST"      ((org-agenda-overriding-header "Testing / Experiments")))
-          (todo "WRITE"     ((org-agenda-overriding-header "Writing / Documentation")))
-          (todo "REVIEW"    ((org-agenda-overriding-header "Revision / Feedback")))
-          (todo "SUBMITTED" ((org-agenda-overriding-header "Submitted Work")))
-          (todo "PUBLISHED" ((org-agenda-overriding-header "Published Work")))
-          (todo "ABANDONED" ((org-agenda-overriding-header "Discontinued Projects")))))
+	;; Unified Research Workflow
+	("r" "Unified Research Workflow"
+	 ((todo "IDEA"      ((org-agenda-overriding-header "Research Ideas")))
+	  (todo "LIT"       ((org-agenda-overriding-header "Literature Review")))
+	  (todo "CODE"      ((org-agenda-overriding-header "Development / Coding")))
+	  (todo "TEST"      ((org-agenda-overriding-header "Testing / Experiments")))
+	  (todo "WRITE"     ((org-agenda-overriding-header "Writing / Documentation")))
+	  (todo "REVIEW"    ((org-agenda-overriding-header "Revision / Feedback")))
+	  (todo "SUBMITTED" ((org-agenda-overriding-header "Submitted Work")))
+	  (todo "PUBLISHED" ((org-agenda-overriding-header "Published Work")))
+	  (todo "ABANDONED" ((org-agenda-overriding-header "Discontinued Projects")))))
 
-        ;; Priority-Based View: Unfinished tasks by custom priority tags
-        ("v" "Priority View"
-         ((tags "PRIORITY=\"A\""
-                ((org-agenda-skip-function
-                  '(org-agenda-skip-entry-if 'todo 'done))
-                 (org-agenda-overriding-header "High-Priority Tasks")))
-          (tags "PRIORITY=\"B\""
-                ((org-agenda-skip-function
-                  '(org-agenda-skip-entry-if 'todo 'done))
-                 (org-agenda-overriding-header "Medium-Priority Tasks")))
-          (tags "PRIORITY=\"C\""
-                ((org-agenda-skip-function
-                  '(org-agenda-skip-entry-if 'todo 'done))
-                 (org-agenda-overriding-header "Low-Priority Tasks")))
-          (agenda "")
-          (alltodo "")))))
+	;; Priority-Based View: Unfinished tasks by custom priority tags
+	("v" "Priority View"
+	 ((tags "PRIORITY=\"A\""
+		((org-agenda-skip-function
+		  '(org-agenda-skip-entry-if 'todo 'done))
+		 (org-agenda-overriding-header "High-Priority Tasks")))
+	  (tags "PRIORITY=\"B\""
+		((org-agenda-skip-function
+		  '(org-agenda-skip-entry-if 'todo 'done))
+		 (org-agenda-overriding-header "Medium-Priority Tasks")))
+	  (tags "PRIORITY=\"C\""
+		((org-agenda-skip-function
+		  '(org-agenda-skip-entry-if 'todo 'done))
+		 (org-agenda-overriding-header "Low-Priority Tasks")))
+	  (agenda "")
+	  (alltodo "")))))
 
 ;;; ORG ROAM SETUP
 
