@@ -336,10 +336,10 @@
   (set-face-attribute 'default nil
     :font "Iosevka Comfy Motion"
     :height 130
-    :weight 'bold))
+    :weight 'semi-bold))
 
 (set-face-attribute 'default nil :font "Iosevka Comfy Motion-13.5")
-(set-face-attribute 'bold nil :font "Iosevka Comfy Motion-13.5" :weight 'bold)
+(set-face-attribute 'bold nil :font "Iosevka Comfy Motion-13.5" :weight 'semi-bold)
 
 ;;; DOOM THEMES
 
@@ -754,7 +754,7 @@
  :bind (("C-x C-d" . consult-dir)
  :map vertico-map
  ("C-x C-d" . consult-dir)
- ("C-x C-j" . consult.dir-jump-file)))
+ ("C-x C-j" . consult-dir-jump-file)))
 
 ;; The `wgrep' packages lets us edit the results of a grep search
 ;; while inside a `grep-mode' buffer.  All we need is to toggle the
@@ -1628,6 +1628,18 @@ otherwise, call `format-all-buffer'."
 (use-package markdown-mode
   :ensure t
   :mode ("README\\.md\\'" . gfm-mode))
+
+(eval-after-load "org"
+  '(require 'ox-md nil t))
+
+
+(defun my/org-md-todo-to-checkbox (text backend info)
+  "Convert Org TODO items to Markdown checkboxes when exporting."
+  (when (eq backend 'md)
+    (replace-regexp-in-string "\\`TODO " "[ ] " text)))
+
+(add-to-list 'org-export-filter-plain-text-functions #'my/org-md-todo-to-checkbox)
+
 ;
 ;(use-package markdown-ts-mode
 ;  :mode ("\\.md\\'" . markdown-ts-mode)
@@ -1700,14 +1712,14 @@ otherwise, call `format-all-buffer'."
   :defer t)
 
 ;; ORG CUSTOM HEADER FACES
-(custom-set-faces
-'(org-level-1 ((t (:inherit outline-1 :height 1.6))))
-'(org-level-2 ((t (:inherit outline-2 :height 1.5))))
-'(org-level-3 ((t (:inherit outline-3 :height 1.4))))
-'(org-level-4 ((t (:inherit outline-4 :height 1.3))))
-'(org-level-5 ((t (:inherit outline-5 :height 1.2))))
-'(org-level-6 ((t (:inherit outline-5 :height 1.1))))
-'(org-level-7 ((t (:inherit outline-5 :height 1.05)))))
+;; (custom-set-faces
+;; '(org-level-1 ((t (:inherit outline-1 :height 1.6))))
+;; '(org-level-2 ((t (:inherit outline-2 :height 1.5))))
+;; '(org-level-3 ((t (:inherit outline-3 :height 1.4))))
+;; '(org-level-4 ((t (:inherit outline-4 :height 1.3))))
+;; '(org-level-5 ((t (:inherit outline-5 :height 1.2))))
+;; '(org-level-6 ((t (:inherit outline-5 :height 1.1))))
+;; '(org-level-7 ((t (:inherit outline-5 :height 1.05)))))
 
 ;; ORG FONTS
 (defun karna/org-colors-doom-one ()
@@ -1812,35 +1824,63 @@ otherwise, call `format-all-buffer'."
 	  ("arch-wiki" . "https://wiki.archlinux.org/index.php/")
 	  ("ddg" . "https://duckduckgo.com/?q=")
 	  ("wiki" . "https://en.wikipedia.org/wiki/"))
-      org-table-convert-region-max-lines 20000
-      org-todo-keywords
-      '((sequence "TODO(t)" "NEXT(n)" "|" "DONE(d!)")
-	(sequence "BACKLOG(b)" "PLAN(p)" "READY(r)" "ACTIVE(a)" "REVIEW(v)" "WAIT(w@/!)" "HOLD(h)" "|" "COMPLETED(c)" "CANC(k@)")))
+      org-table-convert-region-max-lines 20000)
+
+
+(setq org-todo-keywords
+      '((sequence "IDEA(i)"      ; Generate research ideas
+                  "LIT(l)"       ; Conduct literature review
+                  "CODE(c)"      ; Develop code/algorithms
+                  "TEST(t)"      ; Test implementations or experiments
+                  "WRITE(w)"     ; Document findings or draft manuscripts
+                  "REVIEW(r)"    ; Revise based on feedback
+                  "|" 
+                  "SUBMITTED(s)" ; Work submitted for review/publication
+                  "PUBLISHED(p)" ; Work published (or defended)
+                  "ABANDONED(x)") ; Project discontinued
+        (sequence "TODO(t)"       ; Basic task: not yet started
+                  "NEXT(n)"       ; Basic task: immediate next action
+                  "|" 
+                  "DONE(d!)"))) ; Basic task: completed
 
 ;;; ORG REFILE SETTINGS
+
+(setq org-bookmark-names-plist nil) ;; Stop bookmarking on org captures and refiling
 
 (setq org-refile-targets
       '(("Archive.org" :maxlevel . 1)
 	("Tasks.org" :maxlevel . 1)))
 
+(setq org-hide-drawers '("PROPERTIES"))
+
 ;; Save Org buffers after refiling!
-(advice-add 'org-refile :after 'org-save-all-org-buffers)
+;; (advice-add 'org-refile :after 'org-save-all-org-buffers)
+
+(advice-add 'org-refile :after (lambda (&rest _args) (org-save-all-org-buffers)))
 
 ;;; ORG TAG CONFIGURATION
 
 (setq org-tag-alist
       '((:startgroup)
-	; Put mutually exclusive tags here
-	(:endgroup)
-	("@errand" . ?E)
-	("@home" . ?H)
-	("@work" . ?W)
-	("agenda" . ?a)
-	("planning" . ?p)
-	("publish" . ?P)
-	("batch" . ?b)
-	("note" . ?n)
-	("idea" . ?i)))
+        ("@errand"   . ?E)
+        ("@home"     . ?H)
+        ("@lab"      . ?L)
+        ("@office"   . ?O)
+        (:endgroup)
+        ("agenda"    . ?a)
+        ("planning"  . ?p)
+        ("note"      . ?n)
+        ("idea"      . ?i)
+        ("lit"       . ?l)   ; literature review
+        ("code"      . ?c)
+        ("test"      . ?t)
+        ("write"     . ?w)
+        ("review"    . ?r)
+        ("submitted" . ?s)
+        ("published" . ?P)   ; uppercase P differentiates from planning
+        ("abandoned" . ?x)
+        ("meeting"   . ?m)
+        ("reading"   . ?R)))
 
 ;;; AGENDA BASICS
 
@@ -1856,79 +1896,65 @@ otherwise, call `format-all-buffer'."
 (setq org-fancy-priorities-list '("🟥" "🟧" "🟨")
       org-priority-faces
       '((?A :foreground "#ff6c6b" :weight bold)  ; High priority (🟥)
-	(?B :foreground "#98be65" :weight bold)  ; Medium priority (🟧)
-	(?C :foreground "#c678dd" :weight bold)) ; Low priority (🟨)
+        (?B :foreground "#98be65" :weight bold)  ; Medium priority (🟧)
+        (?C :foreground "#c678dd" :weight bold)) ; Low priority (🟨)
       org-agenda-block-separator 8411)
 
 ;; Org Agenda Custom Commands
 (setq org-agenda-custom-commands
       '(
-	;; Original Dashboard view
-	("d" "Dashboard"
-	 ((agenda "" ((org-deadline-warning-days 7)))
-	  (todo "NEXT"
-		((org-agenda-overriding-header "Next Tasks")))
-	  (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))))
+        ;; Dashboard: Agenda view + Next Tasks + Active Projects
+        ("d" "Dashboard"
+         ((agenda "" ((org-deadline-warning-days 7)))
+          (todo "NEXT" ((org-agenda-overriding-header "Next Tasks")))
+          (tags-todo "agenda/ACTIVE" ((org-agenda-overriding-header "Active Projects")))))
 
-	;; Next Tasks view
-	("n" "Next Tasks"
-	 ((todo "NEXT"
-		((org-agenda-overriding-header "Next Tasks")))))
+        ;; Next Tasks: Focused view on tasks marked as NEXT
+        ("n" "Next Tasks"
+         ((todo "NEXT" ((org-agenda-overriding-header "Next Tasks")))))
 
-	;; Work Tasks view
-	("W" "Work Tasks" tags-todo "+work-email")
+        ;; Work & Location-Based Tasks: Filter tasks by location tags
+        ("w" "Work & Location Tasks"
+         ((tags-todo "+@lab")
+          (tags-todo "+@office")
+          (tags-todo "+@errand")
+          (tags-todo "+@home")))
 
-	;; Low-effort next actions view
-	("e" tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
-	 ((org-agenda-overriding-header "Low Effort Tasks")
-	  (org-agenda-max-todos 20)
-	  (org-agenda-files org-agenda-files)))
+        ;; Low-Effort Tasks: Show NEXT tasks with low estimated effort
+        ("e" "Low-Effort Tasks"
+         ((tags-todo "+TODO=\"NEXT\"+Effort<15&+Effort>0"
+                     ((org-agenda-overriding-header "Low Effort Tasks")
+                      (org-agenda-max-todos 20)
+                      (org-agenda-files org-agenda-files)))))
 
-	;; Workflow Status view
-	("w" "Workflow Status"
-	 ((todo "WAIT"
-		((org-agenda-overriding-header "Waiting on External")
-		 (org-agenda-files org-agenda-files)))
-	  (todo "REVIEW"
-		((org-agenda-overriding-header "In Review")
-		 (org-agenda-files org-agenda-files)))
-	  (todo "PLAN"
-		((org-agenda-overriding-header "In Planning")
-		 (org-agenda-todo-list-sublevels nil)
-		 (org-agenda-files org-agenda-files)))
-	  (todo "BACKLOG"
-		((org-agenda-overriding-header "Project Backlog")
-		 (org-agenda-todo-list-sublevels nil)
-		 (org-agenda-files org-agenda-files)))
-	  (todo "READY"
-		((org-agenda-overriding-header "Ready for Work")
-		 (org-agenda-files org-agenda-files)))
-	  (todo "ACTIVE"
-		((org-agenda-overriding-header "Active Projects")
-		 (org-agenda-files org-agenda-files)))
-	  (todo "COMPLETED"
-		((org-agenda-overriding-header "Completed Projects")
-		 (org-agenda-files org-agenda-files)))
-	  (todo "CANC"
-		((org-agenda-overriding-header "Cancelled Projects")
-		 (org-agenda-files org-agenda-files)))))
+        ;; Unified Research Workflow
+        ("r" "Unified Research Workflow"
+         ((todo "IDEA"      ((org-agenda-overriding-header "Research Ideas")))
+          (todo "LIT"       ((org-agenda-overriding-header "Literature Review")))
+          (todo "CODE"      ((org-agenda-overriding-header "Development / Coding")))
+          (todo "TEST"      ((org-agenda-overriding-header "Testing / Experiments")))
+          (todo "WRITE"     ((org-agenda-overriding-header "Writing / Documentation")))
+          (todo "REVIEW"    ((org-agenda-overriding-header "Revision / Feedback")))
+          (todo "SUBMITTED" ((org-agenda-overriding-header "Submitted Work")))
+          (todo "PUBLISHED" ((org-agenda-overriding-header "Published Work")))
+          (todo "ABANDONED" ((org-agenda-overriding-header "Discontinued Projects")))))
 
-	;; "Better agenda view" based on task priority
-	("v" "A better agenda view"
-	 ((tags "PRIORITY=\"A\""
-		((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
-		 (org-agenda-overriding-header "High-priority unfinished tasks:")))
-	  (tags "PRIORITY=\"B\""
-		((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
-		 (org-agenda-overriding-header "Medium-priority unfinished tasks:")))
-	  (tags "PRIORITY=\"C\""
-		((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
-		 (org-agenda-overriding-header "Low-priority unfinished tasks:")))
-	  (tags "customtag"
-		((org-agenda-skip-function '(org-agenda-skip-entry-if 'todo 'done))
-		 (org-agenda-overriding-header "Tasks marked with customtag:")))
-	  (agenda "")
-	  (alltodo "")))))
+        ;; Priority-Based View: Unfinished tasks by custom priority tags
+        ("v" "Priority View"
+         ((tags "PRIORITY=\"A\""
+                ((org-agenda-skip-function
+                  '(org-agenda-skip-entry-if 'todo 'done))
+                 (org-agenda-overriding-header "High-Priority Tasks")))
+          (tags "PRIORITY=\"B\""
+                ((org-agenda-skip-function
+                  '(org-agenda-skip-entry-if 'todo 'done))
+                 (org-agenda-overriding-header "Medium-Priority Tasks")))
+          (tags "PRIORITY=\"C\""
+                ((org-agenda-skip-function
+                  '(org-agenda-skip-entry-if 'todo 'done))
+                 (org-agenda-overriding-header "Low-Priority Tasks")))
+          (agenda "")
+          (alltodo "")))))
 
 ;;; ORG ROAM SETUP
 
@@ -2312,7 +2338,7 @@ otherwise, call `format-all-buffer'."
     ;; File-related commands
     "c d" '(:prefix "d"             :wk "Consult Directory")
     "c d f" '(consult-dir           :wk "Find Directory")
-    "c d j" '(consult.dir-jump-file :wk "Jump to a directory")
+    "c d j" '(consult-dir-jump-file :wk "Jump to a directory")
     "c f" '(consult-file           :wk "Find File")
     "c r" '(consult-recent-file    :wk "Recent Files")
 
@@ -2365,13 +2391,13 @@ otherwise, call `format-all-buffer'."
 	    :wk "Open user-emacs-directory in dired")
     "f d" '(find-grep-dired :wk "Search for string in files in DIR")
     "f m" '(ian/format-code :wk "Format Buffer")
-    "f g" '(counsel-grep-or-swiper :wk "Search for string current file")
+    "f g" '(consult-ripgrep :wk "Search for string current file")
     "f i" '((lambda () (interactive)
 	      (find-file "~/dotfiles/install.sh"))
 	    :wk "Open dotfiles install.sh")
-    "f j" '(counsel-file-jump :wk "Jump to a file below current directory")
-    "f l" '(counsel-locate :wk "Locate a file")
-    "f r" '(counsel-recentf :wk "Find recent files")
+    "f j" '(consult-dir-jump-file :wk "Jump to a file below current directory")
+    "f l" '(consult-locate :wk "Locate a file")
+    "f r" '(consult-recent-file :wk "Find recent files")
     "f u" '(sudo-edit-find-file :wk "Sudo find file")
     "f U" '(sudo-edit :wk "Sudo edit file"))
 
@@ -2426,9 +2452,9 @@ otherwise, call `format-all-buffer'."
     "h r" '(:ignore t :wk "Reload")
     "h r r" '((lambda () (interactive)
 		(load-file "~/.emacs.d/init.el")
-		(ignore (elpaca-process-queues))
-		;; (karna/org-colors-doom-one) ;; Reapply colors after reloading
-	    :wk "Reload emacs config"r))
+		(ignore (elpaca-process-queues)))
+		 ;; (karna/org-colors-doom-one) ;; Reapply colors after reloading
+	    :wk "Reload emacs config"r)
     "h t" '(load-theme :wk "Load theme")
     "h v" '(describe-variable :wk "Describe variable")
     "h w" '(where-is :wk "Prints keybinding for command if set")
