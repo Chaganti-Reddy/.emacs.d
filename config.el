@@ -127,7 +127,7 @@
 
 (setq dap-breakpoints-file (dir-concat user-cache-directory "dap-breakpoints"))
 
-(setq projectile-known-projects-file (dir-concat user-cache-directory "projectile-bookmarks.eld"))
+(setq projectile-known-projects-file (dir-concat user-emacs-directory "assets/projectile-bookmarks.eld"))
 
 (setq eshell-directory-name (dir-concat user-cache-directory "eshell"))
 (setq eshell-history-file-name (dir-concat user-cache-directory "eshell-history"))
@@ -1710,6 +1710,8 @@ otherwise, call `format-all-buffer'."
 (use-package org-modern
   :ensure t
   :defer t)
+
+(setq org-id-locations-file (concat user-emacs-directory "assets/.org-id-locations"))
 
 ;; ORG CUSTOM HEADER FACES
 ;; (custom-set-faces
