@@ -174,7 +174,7 @@ Some commands should execute at startup since they will add some functionality t
 
   :hook
   ;; Enable whitespace-mode for programming buffers
-  (prog-mode . whitespace-mode)
+  ;; (prog-mode . whitespace-mode)
   ;; Clean up whitespace before saving any buffer
   (before-save . whitespace-cleanup)
   ;; For comint buffers, disable query on exit for the associated process
@@ -213,7 +213,7 @@ Some commands should execute at startup since they will add some functionality t
   ;;----------------------------------------------------------------------------
   ;; Appearance Tweaks
   ;;----------------------------------------------------------------------------
-  (add-to-list 'default-frame-alist '(alpha-background . 100)) ;; Set frame transparency
+  (add-to-list 'default-frame-alist '(alpha-background . 95)) ;; Set frame transparency
   (global-prettify-symbols-mode 1)      ;; Display certain keywords as symbols
 
   ;;----------------------------------------------------------------------------
@@ -527,14 +527,15 @@ Which Key is a minor mode for Emacs that displays the key bindings following you
 *** PROT THEMES
 This is designed by Prot.
 
-#+BEGIN_SRC emacs-lisp :tangle no
+#+BEGIN_SRC emacs-lisp
 ;;; EF THEMES
 
 (use-package ef-themes
 	:ensure t
 	:config
-	(ef-themes-select 'ef-winter)
-  (load-theme 'ef-winter))
+	(ef-themes-select 'ef-cyprus)
+  (load-theme 'ef-cyprus)
+      )
 
 ;;; MODUS THEMES
 
@@ -548,7 +549,8 @@ This is designed by Prot.
     :height 130
     :weight 'bold))
 
-(add-to-list 'default-frame-alist '(font . "Iosevka Comfy Motion-13"))
+(set-face-attribute 'default nil :font "Iosevka Comfy Motion-13.5")
+(set-face-attribute 'bold nil :font "Iosevka Comfy Motion-13.5" :weight 'bold)
 
 
 #+END_SRC
@@ -570,7 +572,7 @@ This is designed by Prot.
 		my:rice:font (font-spec
 			      :family "Iosevka Comfy Motion"
 			      :weight 'bold
-			      :size 13.0))
+			      :size 13.5))
 	  (show-paren-mode +1)
 	  (global-hl-line-mode)
 	  (set-frame-font my:rice:font nil t)
@@ -597,7 +599,7 @@ This is designed by Prot.
   :config
   (setq doom-themes-enable-bold t    ; Enable bold text
 	doom-themes-enable-italic t) ; Enable italic text
-  (load-theme 'doom-challenger-deep t) ; Load default theme
+  ;(load-theme 'doom-challenger-deep t) ; Load default theme
   (doom-themes-neotree-config) ; Enable neotree theme
   (doom-themes-org-config)
   (set-face-attribute 'default nil
@@ -609,7 +611,7 @@ This is designed by Prot.
 ;;   :ensure nil
 ;;   :hook (after-init . display-battery-mode))
 
-(add-to-list 'default-frame-alist '(font . "Iosevka Comfy Motion-13"))
+;; (add-to-list 'default-frame-alist '(font . "Iosevka Comfy Motion-13.5"))
 
 
 #+END_SRC
@@ -921,6 +923,9 @@ I am so lazy to document so adding some of the extras here
   :hook (emacs-startup . global-jinx-mode)
   :bind (("M-$" . jinx-correct)
 	 ("C-M-$" . jinx-languages)))
+
+(use-package expand-region
+  :bind ("C-=" . er/expand-region))
 
 
 #+END_SRC
@@ -1399,7 +1404,7 @@ This is a list of buffer completion systems I use.
   (corfu-auto-delay 0.02)          ;; No delay before suggestions appear
   (corfu-quit-no-match t)
   (corfu-quit-at-boundary 'separator)
-  (corfu-echo-documentation t)
+  (corfu-echo-documentation nil)
   (corfu-preview-current 'insert)
   (corfu-preselect-first nil)
   (corfu-popupinfo-mode nil)      ;; Enable documentation popups
@@ -1908,6 +1913,12 @@ Treemacs is a cool alternative to Neotree
 (with-eval-after-load 'treemacs
   (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
 
+(defun my/disable-doom-modeline-in-treemacs ()
+  "Disable Doom modeline in Treemacs buffer."
+  (doom-modeline-mode -1))
+
+(add-hook 'treemacs-mode-hook #'my/disable-doom-modeline-in-treemacs)
+
 
 #+END_SRC
 
@@ -2119,30 +2130,33 @@ otherwise, call `format-all-buffer'."
 	 (eglot-managed-mode . my/eglot-setup))
   :config
   (dolist (server `((c-ts-mode        . ("clangd"))
+	(python-ts-mode   . ("pyright-langserver" "--stdio"))
 		    (c++-ts-mode      . ("clangd"))
 		    (go-ts-mode       . ("gopls"))))
     (add-to-list 'eglot-server-programs server)))
 
 ;; Custom eglot setup for buffer-local settings and keybindings.
+
 (defun my/eglot-setup ()
   "Custom configuration for eglot-managed buffers."
-  (electric-indent-local-mode nil)
+  (electric-indent-local-mode t) 
   (cond
    ((derived-mode-p 'python-ts-mode)
     (setq-local indent-tabs-mode nil
-		python-indent-offset 4
-		python-indent-guess-indent-offset nil)
+                python-indent-offset 4
+                python-indent-guess-indent-offset nil)
     (local-set-key (kbd "<f6>") #'ian/format-code))
    ((derived-mode-p 'c-ts-mode 'c++-ts-mode)
     (setq-local c-default-style "linux"
-		c-basic-offset 4)
+                c-basic-offset 4)
     (local-set-key (kbd "<f6>") #'ian/format-code))
    ((derived-mode-p 'go-ts-mode)
     (setq-local tab-width 4
-		indent-tabs-mode t)  ;; Go conventionally uses tabs.
+                indent-tabs-mode t)  ;; Go conventionally uses tabs.
     (local-set-key (kbd "<f6>") #'ian/format-code))
    ((derived-mode-p 'yaml-mode)
     nil)))
+
 
 ;; Additional auto-mode association for C++ using tree-sitter.
 (add-to-list 'auto-mode-alist
@@ -2156,6 +2170,23 @@ otherwise, call `format-all-buffer'."
 	      ("C-c d" . eldoc-box-help-at-point))) ;; Manually trigger it
 
 (add-hook 'eldoc-box-buffer-setup-hook #'eldoc-box-prettify-ts-errors 0 t)
+
+
+#+END_SRC
+
+** HIGHLIGHT INDENTATION GUIDES  
+
+#+BEGIN_SRC emacs-lisp
+;;; HIGHLIGHT INDENTATION GUIDES
+
+(use-package highlight-indent-guides
+  :ensure t
+  :defer t
+  :hook (prog-mode . highlight-indent-guides-mode)
+  :config
+  (setq highlight-indent-guides-method 'character)
+  (setq highlight-indent-guides-character ?\|)
+  (setq highlight-indent-guides-responsive 'top))
 
 
 #+END_SRC
@@ -2561,12 +2592,11 @@ Markdown Preview in both Markdown buffers and Org preview in md formats using br
 
 ** IMPATIENT MODE
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 ;;; IMPATIENT MODE
 
 (use-package impatient-mode
   :ensure t
-  :defer t
   :hook (web-mode . impatient-mode))
 
 
@@ -2823,13 +2853,13 @@ Centering Org Mode to get ZEN mode feel.
 #+BEGIN_SRC emacs-lisp
 ;;; CENTER ORG MODE
 
-;(defun efs/org-mode-visual-fill ()
-;  (setq visual-fill-column-width 180
-;        visual-fill-column-center-text t)
-;  (visual-fill-column-mode 1))
-;
-;(use-package visual-fill-column
-;  :hook (org-mode . efs/org-mode-visual-fill))
+(defun efs/org-mode-visual-fill ()
+  (setq visual-fill-column-width 180
+	visual-fill-column-center-text t)
+  (visual-fill-column-mode 1))
+
+(use-package visual-fill-column
+  :hook (org-mode . efs/org-mode-visual-fill))
 
 
 #+END_SRC
@@ -3522,7 +3552,7 @@ Neotree is a file tree viewer.  When you open neotree, it jumps to the current f
 ** CENTAUR TABS
 [[https://github.com/ema2159/centaur-tabs][Centaur Tabs]] is an Emacs package that enhances the tab bar functionality, providing a more visually appealing and user-friendly way to manage multiple open buffers (files) within the editor.
 
-   #+BEGIN_SRC emacs-lisp :tangle no
+#+BEGIN_SRC emacs-lisp :tangle no
 ;;; CENTAUR TABS - TAB BAR
 
 (use-package centaur-tabs
