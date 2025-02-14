@@ -699,7 +699,9 @@
 	      (ibuffer-do-sort-by-alphabetic))))
 
 ;; Automatically save perspective states to file when Emacs exits.
-(add-hook 'kill-emacs-hook #'persp-state-save)
+;; (add-hook 'kill-emacs-hook #'persp-state-save)
+
+(global-set-key (kbd "C-S-s") #'persp-state-save)
 
 ;;; VERTICO
 
@@ -1197,12 +1199,6 @@
 ;; Mouse single-click expands nodes in Treemacs
 (with-eval-after-load 'treemacs
   (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
-
-(defun my/disable-doom-modeline-in-treemacs ()
-  "Disable Doom modeline in Treemacs buffer."
-  (doom-modeline-mode -1))
-
-(add-hook 'treemacs-mode-hook #'my/disable-doom-modeline-in-treemacs)
 
 ;;; DIRED OPEN
 
