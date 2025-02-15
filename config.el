@@ -901,26 +901,12 @@
   :config
   (corfu-history-mode))
 
-;; Enable completion annotations (useful for LSP)
-(use-package kind-icon
+(use-package nerd-icons-corfu
   :ensure t
   :after corfu
-  :custom
-  (kind-icon-use-icons t)
-  (kind-icon-default-face 'corfu-default) ;; Use corfu face for padding
-  (kind-icon-blend-background nil)  ; Use midpoint color between foreground and background colors ("blended")?
-  (svg-lib-icons-dir (concat user-cache-directory "svg-lib/cache/"))
-  (kind-icon-blend-frac 0.08)
   :config
-  (add-to-list 'corfu-margin-formatters #'kind-icon-margin-formatter)
-   ;; Add hook to reset cache so the icon colors match my theme
-  ;; NOTE 2022-02-05: This is a hook which resets the cache whenever I switch
-  ;; the theme using my custom defined command for switching themes. If I don't
-  ;; do this, then the backgound color will remain the same, meaning it will not
-  ;; match the background color corresponding to the current theme. Important
-  ;; since I have a light theme and dark theme I switch between. This has no
-  ;; function unless you use something similar
-  (add-hook 'kb/themes-hooks #'(lambda () (interactive) (kind-icon-reset-cache))))
+  ;; Add the Nerd Icons Corfu formatter to Corfu's margin formatters.
+  (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
 
 ;;; CAPE
 
@@ -1628,7 +1614,6 @@ otherwise, call `format-all-buffer'."
 (eval-after-load "org"
   '(require 'ox-md nil t))
 
-
 (defun my/org-md-todo-to-checkbox (text backend info)
   "Convert Org TODO items to Markdown checkboxes when exporting."
   (when (eq backend 'md)
@@ -1636,6 +1621,7 @@ otherwise, call `format-all-buffer'."
 
 (add-to-list 'org-export-filter-plain-text-functions #'my/org-md-todo-to-checkbox)
 
+(require 'ox-md)  ;; Load the Markdown export backend
 ;
 ;(use-package markdown-ts-mode
 ;  :mode ("\\.md\\'" . markdown-ts-mode)
@@ -1660,6 +1646,25 @@ otherwise, call `format-all-buffer'."
 (autoload 'gfm-mode "markdown-mode"
    "Major mode for editing GitHub Flavored Markdown files" t)
 (add-to-list 'auto-mode-alist '("README\\.md\\'" . gfm-mode))
+
+;;; OX-HUGO
+
+(use-package ox-hugo
+  :ensure ( :host github
+	      :repo "kaushalmodi/ox-hugo"
+	      :branch "main")
+  :after ox)
+
+;; Function to insert the current date
+(defun insert-current-date ()
+  "Insert the current date in the format YYYY-MM-DD at the point."
+  (interactive)
+  (insert (format-time-string "%Y-%m-%d")))
+
+;; Bind the function to C-c d in Org mode
+(add-hook 'org-mode-hook
+	  (lambda ()
+	    (local-set-key (kbd "C-c d") 'insert-current-date)))
 
 ;;; MARKDOWN PREVIEW MODE
 
@@ -1710,14 +1715,14 @@ otherwise, call `format-all-buffer'."
 (setq org-id-locations-file (concat user-emacs-directory ".cache/.org-id-locations"))
 
 ;; ORG CUSTOM HEADER FACES
-;; (custom-set-faces
-;; '(org-level-1 ((t (:inherit outline-1 :height 1.6))))
-;; '(org-level-2 ((t (:inherit outline-2 :height 1.5))))
-;; '(org-level-3 ((t (:inherit outline-3 :height 1.4))))
-;; '(org-level-4 ((t (:inherit outline-4 :height 1.3))))
-;; '(org-level-5 ((t (:inherit outline-5 :height 1.2))))
-;; '(org-level-6 ((t (:inherit outline-5 :height 1.1))))
-;; '(org-level-7 ((t (:inherit outline-5 :height 1.05)))))
+(custom-set-faces
+'(org-level-1 ((t (:inherit outline-1 :height 1.3))))
+'(org-level-2 ((t (:inherit outline-2 :height 1.25))))
+'(org-level-3 ((t (:inherit outline-3 :height 1.2))))
+'(org-level-4 ((t (:inherit outline-4 :height 1.15))))
+'(org-level-5 ((t (:inherit outline-5 :height 1.1))))
+'(org-level-6 ((t (:inherit outline-5 :height 1.05))))
+'(org-level-7 ((t (:inherit outline-5 :height 1.00)))))
 
 ;; ORG FONTS
 (defun karna/org-colors-doom-one ()
@@ -1805,6 +1810,14 @@ otherwise, call `format-all-buffer'."
   (setq ob-mermaid-cli-path "/usr/bin/mmdc") ;; Adjust this path to your mermaid-cli
   (org-babel-do-load-languages 'org-babel-load-languages
 			       '((mermaid . t))))
+
+;;; ORG EVAL
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((python . t)))
+
+(setq org-confirm-babel-evaluate nil)
 
 ;;; ORG MODE CORE SETTINGS
 
