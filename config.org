@@ -3,7 +3,7 @@
 #+auto_tangle: t
 #+DESCRIPTION: My personal Emacs config.
 #+STARTUP: showeverything
-#+OPTIONS: toc:2
+#+OPTIONS: toc:3
 
 * TABLE OF CONTENTS :toc:
 - [[#package-manager][PACKAGE MANAGER]]
@@ -88,6 +88,7 @@
   - [[#archives-3][ARCHIVES]]
 - [[#org-mode][ORG MODE]]
   - [[#settings][SETTINGS]]
+  - [[#org-remarks][ORG REMARKS]]
   - [[#highlight-todo][HIGHLIGHT TODO]]
   - [[#org-tempo][Org-Tempo]]
   - [[#center-org-mode][CENTER ORG MODE]]
@@ -2558,8 +2559,6 @@ Markdown Preview in both Markdown buffers and Org preview in md formats using br
 
 (add-to-list 'org-export-filter-plain-text-functions #'my/org-md-todo-to-checkbox)
 
-(require 'ox-md)  ;; Load the Markdown export backend
-;
 ;(use-package markdown-ts-mode
 ;  :mode ("\\.md\\'" . markdown-ts-mode)
 ;  :defer 't
@@ -2779,9 +2778,21 @@ Some UI Settings
 ;;; ORG UI SETTINGS
 
 ;; ORG MODERN PACKAGE
+;;;; Better Looking Bullets
 (use-package org-modern
   :ensure t
-  :defer t)
+  :hook ((org-mode                 . org-modern-mode)
+	 (org-agenda-finalize-hook . org-modern-agenda))
+  :custom ((org-modern-todo t)
+	   (org-modern-table nil)
+	   (org-modern-variable-pitch nil)
+	   (org-modern-block-fringe nil))
+  :commands (org-modern-mode org-modern-agenda)
+  :init (global-org-modern-mode))
+
+(use-package org-transclusion
+  :after org
+  :bind ("C-c M-t" . org-transclusion-add))
 
 (setq org-id-locations-file (concat user-emacs-directory ".cache/.org-id-locations"))
 
@@ -2820,6 +2831,33 @@ Some UI Settings
 ;(add-hook 'org-mode-hook 'org-indent-mode)
 (use-package org-bullets :ensure t :defer t)
 (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+
+
+#+END_SRC
+
+** ORG REMARKS
+Lets you highlight text in org mode.
+
+#+BEGIN_SRC emacs-lisp
+;;; ORG REMARKS
+
+(use-package org-remark
+  :ensure t
+  :bind (("C-c n m" . org-remark-mark)
+	 ("C-c n l" . org-remark-mark-line)
+	 :map org-remark-mode-map
+	 ("C-c n o" . org-remark-open)
+	 ("C-c n ]" . org-remark-view-next)
+	 ("C-c n [" . org-remark-view-prev)
+	 ("C-c n r" . org-remark-remove)
+	 ("C-c n d" . org-remark-delete))
+  :config
+  (org-remark-global-tracking-mode +1)  ;; Moved inside :config to ensure `org-remark` is loaded
+  ;; Optional modes
+  (with-eval-after-load 'nov
+    (org-remark-nov-mode +1))
+  (with-eval-after-load 'info
+    (org-remark-info-mode +1)))
 
 
 #+END_SRC
@@ -2938,11 +2976,18 @@ Evaluate Mermaid code in org mode
 #+BEGIN_SRC emacs-lisp
 ;;; ORG EVAL
 
+(setq org-confirm-babel-evaluate nil
+      org-babel-clojure-backend 'cider
+      org-babel-lisp-eval-fn #'sly-eval
+      org-edit-src-content-indentation 0)
+
 (org-babel-do-load-languages
  'org-babel-load-languages
- '((python . t)))
+ '((sqlite . t) (haskell . t) (emacs-lisp . t) (shell . t) (python . t)
+   (C . t) (lua . t) (dot . t) (java . t)
+   (lisp . t) (clojure . t) (scheme . t)
+   (forth . t) (R . t)))
 
-(setq org-confirm-babel-evaluate nil)
 
 
 #+END_SRC
@@ -2988,6 +3033,13 @@ This section sets up basic Org mode options such as the Org directory, default n
 		  "NEXT(n)"       ; Basic task: immediate next action
 		  "|"
 		  "DONE(d!)"))) ; Basic task: completed
+
+(setq org-export-backends '(md org ascii html icalendar latex odt rss)
+      org-export-with-toc nil)
+
+;; Load export backends
+(require 'ox-md)
+(require 'ox-org)
 
 
 #+END_SRC
