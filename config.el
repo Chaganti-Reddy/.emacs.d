@@ -1710,11 +1710,11 @@ otherwise, call `format-all-buffer'."
 (use-package org-modern
   :ensure t
   :hook ((org-mode                 . org-modern-mode)
-         (org-agenda-finalize-hook . org-modern-agenda))
+	 (org-agenda-finalize-hook . org-modern-agenda))
   :custom ((org-modern-todo t)
-           (org-modern-table nil)
-           (org-modern-variable-pitch nil)
-           (org-modern-block-fringe nil))
+	   (org-modern-table nil)
+	   (org-modern-variable-pitch nil)
+	   (org-modern-block-fringe nil))
   :commands (org-modern-mode org-modern-agenda)
   :init (global-org-modern-mode))
 
@@ -1765,13 +1765,13 @@ otherwise, call `format-all-buffer'."
 (use-package org-remark
   :ensure t
   :bind (("C-c n m" . org-remark-mark)
-         ("C-c n l" . org-remark-mark-line)
-         :map org-remark-mode-map
-         ("C-c n o" . org-remark-open)
-         ("C-c n ]" . org-remark-view-next)
-         ("C-c n [" . org-remark-view-prev)
-         ("C-c n r" . org-remark-remove)
-         ("C-c n d" . org-remark-delete))
+	 ("C-c n l" . org-remark-mark-line)
+	 :map org-remark-mode-map
+	 ("C-c n o" . org-remark-open)
+	 ("C-c n ]" . org-remark-view-next)
+	 ("C-c n [" . org-remark-view-prev)
+	 ("C-c n r" . org-remark-remove)
+	 ("C-c n d" . org-remark-delete))
   :config
   (org-remark-global-tracking-mode +1)  ;; Moved inside :config to ensure `org-remark` is loaded
   ;; Optional modes
