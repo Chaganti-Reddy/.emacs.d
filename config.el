@@ -429,7 +429,7 @@
   (setq dashboard-items '((vocabulary)
 			  (recents . 5)
 			  (agenda . 5)
-			  (bookmarks . 5)
+			  (bookmarks . 10)
 			  (projects . 5)))
   (setq dashboard-startupify-list '(dashboard-insert-banner
 				    dashboard-insert-newline
