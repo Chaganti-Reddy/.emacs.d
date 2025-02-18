@@ -112,7 +112,7 @@
     (propertize "Startup time: " 'face 'bold)
     (format "%.2fs " init-time)
     (propertize (format "(+ %.2fs system time)"
-                        (- total-time init-time)) 'face 'shadow))))
+			(- total-time init-time)) 'face 'shadow))))
 
 ;;; CUSTOM DIRECTORIES FOR CACHE FILES
 
@@ -336,7 +336,7 @@
 	(ef-themes-select 'ef-cyprus)
   (load-theme 'ef-cyprus t))
 
-;;; NANO THEMES 
+;;; NANO THEMES
 
 ;(use-package nano-theme
 ;  :ensure (nano-theme :host github :repo "rougier/nano-theme")
