@@ -2,10 +2,113 @@
 #+AUTHOR: Karna
 #+auto_tangle: t
 #+DESCRIPTION: My personal Emacs config.
-;; #+STARTUP: showeverything
+#+STARTUP: showeverything
 #+OPTIONS: toc:3
 
 * TABLE OF CONTENTS :toc:
+- [[#package-manager][PACKAGE MANAGER]]
+- [[#startup-changes][STARTUP CHANGES]]
+  - [[#major-hooks][MAJOR HOOKS]]
+  - [[#ui-tweaks][UI TWEAKS]]
+  - [[#directory-settings][DIRECTORY SETTINGS]]
+  - [[#browser-settings][BROWSER SETTINGS]]
+  - [[#recentf][RECENTF]]
+  - [[#async][ASYNC]]
+  - [[#backup-settings][BACKUP SETTINGS]]
+  - [[#garbage-collection][GARBAGE COLLECTION]]
+  - [[#native-compile][NATIVE COMPILE]]
+  - [[#byte-compilation][BYTE COMPILATION]]
+- [[#load-evil-mode][LOAD EVIL MODE]]
+  - [[#which-key][WHICH KEY]]
+- [[#ui-appearance][UI APPEARANCE]]
+  - [[#themes][THEMES]]
+  - [[#fonts][FONTS]]
+  - [[#all-the-icons][ALL THE ICONS]]
+- [[#dashboard][DASHBOARD]]
+  - [[#modeline][MODELINE]]
+  - [[#diminish][DIMINISH]]
+  - [[#rainbow-mode][RAINBOW MODE]]
+  - [[#rainbow-delimiters][RAINBOW DELIMITERS]]
+  - [[#drag-stuff][DRAG-STUFF]]
+  - [[#ediff][EDIFF]]
+- [[#git-programs][GIT PROGRAMS]]
+  - [[#git-time-machine][Git Time Machine]]
+  - [[#magit][Magit]]
+- [[#some-extra-stuff][SOME EXTRA STUFF]]
+  - [[#calc][CALC]]
+- [[#startup-packages][STARTUP PACKAGES]]
+  - [[#beacon-mode][BEACON MODE]]
+  - [[#projectile][PROJECTILE]]
+  - [[#perspective][PERSPECTIVE]]
+- [[#minibuffer-vertico-consult-orderless-marginalia--embark][MINIBUFFER (VERTICO, CONSULT, ORDERLESS MARGINALIA & EMBARK)]]
+  - [[#vertico-minimal-and-fast-vertical-completion-ui][Vertico (Minimal and Fast Vertical Completion UI)]]
+  - [[#marginalia-rich-annotations-for-minibuffer-completions][Marginalia (Rich Annotations for Minibuffer Completions)]]
+  - [[#consult-better-searching-and-buffer-navigation][Consult (Better Searching and Buffer Navigation)]]
+  - [[#orderless-smart-matching-for-completions][Orderless (Smart Matching for Completions)]]
+  - [[#embark-perform-actions-on-completion-candidates][Embark (Perform Actions on Completion Candidates)]]
+  - [[#archives][ARCHIVES]]
+- [[#buffer-completion-system-corfu--cape--tabnine][BUFFER COMPLETION SYSTEM (CORFU / CAPE & TABNINE)]]
+  - [[#corfu][CORFU]]
+  - [[#cape][CAPE]]
+  - [[#tabnine-ai-completion][TABNINE AI Completion]]
+  - [[#archives-1][ARCHIVES]]
+- [[#productivity-stuff][PRODUCTIVITY STUFF]]
+  - [[#gptel][GPTEL]]
+  - [[#ellama][ELLAMA]]
+  - [[#undo-fu][UNDO FU]]
+  - [[#wakatime][WAKATIME]]
+- [[#file-manager-and-buffers-setup][FILE MANAGER AND BUFFERS SETUP]]
+  - [[#treemacs][TREEMACS]]
+  - [[#dired][DIRED]]
+  - [[#peep-dired][PEEP DIRED]]
+  - [[#sudo-edit][SUDO EDIT]]
+- [[#programming-modes][PROGRAMMING MODES]]
+  - [[#breadcrumb][BREADCRUMB]]
+  - [[#jarchive][JARCHIVE]]
+  - [[#flycheck][FLYCHECK]]
+  - [[#treesitter-sources][TREESITTER SOURCES]]
+  - [[#format-all][FORMAT ALL]]
+  - [[#eglot][EGLOT]]
+  - [[#highlight-indentation-guides][HIGHLIGHT INDENTATION GUIDES]]
+  - [[#python-setup][PYTHON SETUP]]
+- [[#latex-setup][LATEX SETUP]]
+  - [[#pdf-tools][PDF TOOLS]]
+  - [[#epub-reader][EPUB READER]]
+  - [[#latex-previw-setup--settings][LATEX PREVIW SETUP & SETTINGS]]
+  - [[#reftex][REFTEX]]
+  - [[#preview-zathura][PREVIEW (ZATHURA)]]
+  - [[#citar][CITAR]]
+  - [[#auctex][AUCTEX]]
+  - [[#archives-2][ARCHIVES]]
+- [[#markdown][MARKDOWN]]
+  - [[#markdown-setup][MARKDOWN SETUP]]
+  - [[#ox-hugo][OX-HUGO]]
+  - [[#markdown-preview-mode][MARKDOWN PREVIEW MODE]]
+  - [[#archives-3][ARCHIVES]]
+  - [[#impatient-mode][IMPATIENT MODE]]
+- [[#org-mode][ORG MODE]]
+  - [[#settings][SETTINGS]]
+  - [[#org-remarks][ORG REMARKS]]
+  - [[#highlight-todo][HIGHLIGHT TODO]]
+  - [[#org-tempo][Org-Tempo]]
+  - [[#center-org-mode][CENTER ORG MODE]]
+  - [[#org-auto-tangle][ORG AUTO TANGLE]]
+  - [[#org-mermaid][ORG MERMAID]]
+  - [[#org-eval][ORG EVAL]]
+  - [[#org-definitions][ORG DEFINITIONS]]
+  - [[#agenda][AGENDA]]
+  - [[#org-roam--journal-configuration][ORG ROAM & JOURNAL CONFIGURATION]]
+  - [[#org-latex-preview-and-citation-configuration][Org LaTeX Preview and Citation Configuration]]
+- [[#shells-and-terminals][SHELLS AND TERMINALS]]
+  - [[#eshell][ESHELL]]
+  - [[#vterm][VTERM]]
+  - [[#vterm-toggle][VTERM TOGGLE]]
+- [[#yasnippet][YASNIPPET]]
+- [[#calendar][CALENDAR]]
+- [[#archives-4][ARCHIVES]]
+  - [[#neotree][NEOTREE]]
+  - [[#centaur-tabs][CENTAUR TABS]]
+- [[#general-keybindings][GENERAL KEYBINDINGS]]
 
 * PACKAGE MANAGER
   I use elpaca as my package manager.
@@ -141,7 +244,7 @@ Some commands should execute at startup since they will add some functionality t
     (propertize "Startup time: " 'face 'bold)
     (format "%.2fs " init-time)
     (propertize (format "(+ %.2fs system time)"
-                        (- total-time init-time)) 'face 'shadow))))
+			(- total-time init-time)) 'face 'shadow))))
 
 
 #+END_SRC
@@ -446,7 +549,7 @@ Which Key is a minor mode for Emacs that displays the key bindings following you
 	(ef-themes-select 'ef-cyprus)
   (load-theme 'ef-cyprus t))
 
-;;; NANO THEMES 
+;;; NANO THEMES
 
 ;(use-package nano-theme
 ;  :ensure (nano-theme :host github :repo "rougier/nano-theme")
@@ -622,7 +725,7 @@ All The Icons is an emcas package that provides a collection of icons for use in
 ** MODELINE
 The modeline is the bottom status bar that appears in Emacs windows.  While you can create your own custom modeline, why go to the trouble when Doom Emacs already has a nice modeline package available.  For more information on what is available to configure in the Doom modeline, check out: [[https://github.com/seagle0128/doom-modeline][Doom Modeline]]
 
-#+BEGIN_SRC emacs-lisp 
+#+BEGIN_SRC emacs-lisp
 ;;; DOOM MODELINE
 
 (use-package doom-modeline
@@ -3926,4 +4029,6 @@ List of all the keybinds that are used in my Emacs Config.
 (add-hook 'LaTeX-mode-hook
 	  (lambda ()
 	    (local-set-key (kbd "C-s") #'TeX-command-run-all)))
+
+
 #+END_SRC
