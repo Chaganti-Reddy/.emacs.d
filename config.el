@@ -69,6 +69,8 @@
   (size-indication-mode t)            ;; Show file size in mode line
   (fringe-mode -1)                    ;; Remove UI fringes
   (tool-bar-mode -1)                  ;; Disable the tool bar
+  (global-hl-line-mode 1)
+  (setq init-start-time (current-time))
 
   ;;----------------------------------------------------------------------------
   ;; Auto-Reverting & Encoding
@@ -102,6 +104,15 @@
   ;; Whitespace & Escape Key Behavior
   ;;----------------------------------------------------------------------------
   (global-set-key [escape] 'keyboard-escape-quit))
+
+;; --- Speed benchmarking -----------------------------------------------------
+(let ((init-time (float-time (time-subtract (current-time) init-start-time)))
+      (total-time (string-to-number (emacs-init-time "%f"))))
+  (message (concat
+    (propertize "Startup time: " 'face 'bold)
+    (format "%.2fs " init-time)
+    (propertize (format "(+ %.2fs system time)"
+                        (- total-time init-time)) 'face 'shadow))))
 
 ;;; CUSTOM DIRECTORIES FOR CACHE FILES
 
@@ -323,65 +334,55 @@
 	:ensure t
 	:config
 	(ef-themes-select 'ef-cyprus)
-  (load-theme 'ef-cyprus)
-      )
+  (load-theme 'ef-cyprus t))
 
-;;; MODUS THEMES
+;;; NANO THEMES 
 
-(use-package modus-themes
-  :ensure t
-  :config
-  ;; (load-theme 'modus-operandi)
-  ;; (load-theme 'modus-vivendi)
-  (set-face-attribute 'default nil
-    :font "Iosevka Comfy Motion"
-    :height 130
-    :weight 'semi-bold))
-
-(set-face-attribute 'default nil :font "Iosevka Comfy Motion-13.5")
-(set-face-attribute 'bold nil :font "Iosevka Comfy Motion-13.5" :weight 'semi-bold)
-
-;;; DOOM THEMES
-
-(add-to-list 'custom-theme-load-path "~/.config/emacs/themes/")
-(use-package doom-themes
-  :config
-  (setq doom-themes-enable-bold t    ; Enable bold text
-	doom-themes-enable-italic t) ; Enable italic text
-  ;(load-theme 'doom-challenger-deep t) ; Load default theme
-  (doom-themes-neotree-config) ; Enable neotree theme
-  (doom-themes-org-config)
-  (set-face-attribute 'default nil
-    :font "Iosevka Comfy Motion"
-    :height 130
-    :weight 'bold))  ; Improve org-mode fontification
-
-;; (use-package battery
-;;   :ensure nil
-;;   :hook (after-init . display-battery-mode))
-
-;; (add-to-list 'default-frame-alist '(font . "Iosevka Comfy Motion-13.5"))
+;(use-package nano-theme
+;  :ensure (nano-theme :host github :repo "rougier/nano-theme")
+;  :config
+;  (load-theme 'nano t)
+;  (nano-light))
 
 ;;; FONTS
 
+(defvar my/font "Roboto Mono"
+  "Default font to use for Emacs.")
+
+(defvar my/font-size 110
+  "Default font size for fixed-pitch text.")
+
+(defvar my/variable-font-size 120
+  "Default font size for variable-pitch text.")
+
 (set-face-attribute 'default nil
-  :font "Iosevka Comfy Motion"
-  :height 110
+  :font my/font
+  :height my/font-size
   :weight 'bold)
 
 (set-face-attribute 'variable-pitch nil
-  :font "Iosevka Comfy Motion"
-  :height 120
+  :font my/font
+  :height my/variable-font-size
   :weight 'bold)
 
 (set-face-attribute 'fixed-pitch nil
-  :font "Iosevka Comfy Motion"
-  :height 110
+  :font my/font
+  :height my/font-size
   :weight 'bold)
 
+(set-face-attribute 'bold nil :weight 'bold)
+(set-face-attribute 'bold-italic nil :weight 'bold)
 (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
 (set-face-attribute 'font-lock-keyword-face nil :slant 'italic)
+
 (setq-default line-spacing 0)
+
+(set-display-table-slot standard-display-table 'truncation (make-glyph-code ?…))
+(set-display-table-slot standard-display-table 'wrap (make-glyph-code ?–))
+
+(add-to-list 'default-frame-alist `(font . ,(format "%s-%d" my/font (/ my/font-size 8.5))))
+
+;; (add-to-list 'default-frame-alist '(font . "Roboto Mono-13"))
 
 ;;; ALL THE ICONS
 
@@ -481,7 +482,7 @@
   (doom-modeline-lsp nil)
   :hook (after-init . doom-modeline-mode)
   :config
-    (setq doom-modeline-height 30      ;; sets modeline height
+    (setq doom-modeline-height 25      ;; sets modeline height
 	  doom-modeline-bar-width 5    ;; sets right bar width
 	  doom-modeline-persp-name t   ;; adds perspective name to modeline
 	  doom-modeline-persp-icon t))
@@ -574,11 +575,6 @@
   ;; any key that calls Puni commands, it's loaded.
   (puni-global-mode)
   (add-hook 'term-mode-hook #'puni-disable-puni-mode))
-
-(use-package jinx
-  :hook (emacs-startup . global-jinx-mode)
-  :bind (("M-$" . jinx-correct)
-	 ("C-M-$" . jinx-languages)))
 
 (use-package expand-region
   :bind ("C-=" . er/expand-region))
@@ -1066,121 +1062,15 @@
 
 ;;; TREEMACS
 
-(use-package treemacs
+   (use-package treemacs
   :ensure t
   :defer t
-  :init
-  (with-eval-after-load 'winum
-    (define-key winum-keymap (kbd "M-0") #'treemacs-select-window))
-  :config
-  (setq treemacs-collapse-dirs                   (if treemacs-python-executable 3 0)
-	treemacs-deferred-git-apply-delay        0.5
-	treemacs-directory-name-transformer      #'identity
-	treemacs-display-in-side-window          t
-	treemacs-eldoc-display                   'simple
-	treemacs-file-event-delay                2000
-	treemacs-file-extension-regex            treemacs-last-period-regex-value
-	treemacs-file-follow-delay               0.2
-	treemacs-file-name-transformer           #'identity
-	treemacs-follow-after-init               t
-	treemacs-expand-after-init               t
-	treemacs-find-workspace-method           'find-for-file-or-pick-first
-	treemacs-git-command-pipe                ""
-	treemacs-goto-tag-strategy               'refetch-index
-	treemacs-header-scroll-indicators        '(nil . "^^^^^^")
-	treemacs-hide-dot-git-directory          t
-	treemacs-indentation                     2
-	treemacs-indentation-string              " "
-	treemacs-is-never-other-window           nil
-	treemacs-max-git-entries                 5000
-	treemacs-missing-project-action          'ask
-	treemacs-move-files-by-mouse-dragging    t
-	treemacs-move-forward-on-expand          nil
-	treemacs-no-png-images                   nil
-	treemacs-no-delete-other-windows         t
-	treemacs-project-follow-cleanup          nil
-	treemacs-persist-file                    (concat user-cache-directory "treemacs-persist")
-	treemacs-position                        'left
-	treemacs-read-string-input               'from-child-frame
-	treemacs-recenter-distance               0.1
-	treemacs-recenter-after-file-follow      nil
-	treemacs-recenter-after-tag-follow       nil
-	treemacs-recenter-after-project-jump     'always
-	treemacs-recenter-after-project-expand   'on-distance
-	treemacs-litter-directories              '("/node_modules" "/.venv" "/.cask")
-	treemacs-project-follow-into-home        nil
-	treemacs-show-cursor                     nil
-	treemacs-show-hidden-files               t
-	treemacs-silent-filewatch                nil
-	treemacs-silent-refresh                  nil
-	treemacs-sorting                         'alphabetic-asc
-	treemacs-select-when-already-in-treemacs 'move-back
-	treemacs-space-between-root-nodes        t
-	treemacs-tag-follow-cleanup              t
-	treemacs-tag-follow-delay                1.5
-	treemacs-text-scale                      nil
-	treemacs-user-mode-line-format           nil
-	treemacs-user-header-line-format         nil
-	treemacs-wide-toggle-width               70
-	treemacs-width                           30
-	treemacs-width-increment                 1
-	treemacs-width-is-initially-locked       t
-	treemacs-workspace-switch-cleanup        nil)
-
-  ;; Enable Treemacs Modes
-  (treemacs-follow-mode t)
-  (treemacs-filewatch-mode t)
-  (treemacs-fringe-indicator-mode 'always)
-  (when treemacs-python-executable
-    (treemacs-git-commit-diff-mode t))
-
-  ;; Enable Git Mode based on available executables
-  (pcase (cons (not (null (executable-find "git")))
-	       (not (null treemacs-python-executable)))
-    (`(t . t) (treemacs-git-mode 'deferred))
-    (`(t . _) (treemacs-git-mode 'simple)))
-
-  ;; Hide Git Ignored Files
-  (treemacs-hide-gitignored-files-mode nil)
-
   :bind
-  (:map global-map
-	("M-0"       . treemacs-select-window)
-	("C-x t 1"   . treemacs-delete-other-windows)
-	("C-x t t"   . treemacs)
-	("C-x t d"   . treemacs-select-directory)
-	("C-x t B"   . treemacs-bookmark)
-	("C-x t C-t" . treemacs-find-file)
-	("C-x t M-t" . treemacs-find-tag)))
-
-;; Treemacs integrations
-(use-package treemacs-evil
-  :after (treemacs evil)
-  :ensure t
-  :defer t)
-
-(use-package treemacs-icons-dired
-  :after treemacs
-  :hook (dired-mode . treemacs-icons-dired-enable-once)
-  :ensure t
-  :defer t)
-
-(use-package treemacs-projectile
-  :after (treemacs projectile)
-  :ensure t
-  :defer t)
-
-(use-package treemacs-magit
-  :after (treemacs magit)
-  :ensure t
-  :defer t)
-
-(use-package treemacs-persp
-  :after (treemacs persp-mode)
-  :ensure t
-  :defer t
+  (("C-c t" . treemacs))
   :config
-  (treemacs-set-scope-type 'Perspectives))
+  (setq treemacs-width 30))
+
+(setq treemacs-persist-file (concat user-cache-directory "treemacs-persist"))
 
 ;; Mouse single-click expands nodes in Treemacs
 (with-eval-after-load 'treemacs
@@ -1614,20 +1504,6 @@ otherwise, call `format-all-buffer'."
 (eval-after-load "org"
   '(require 'ox-md nil t))
 
-(defun my/org-md-todo-to-checkbox (text backend info)
-  "Convert Org TODO items to Markdown checkboxes when exporting."
-  (when (eq backend 'md)
-    (replace-regexp-in-string "\\`TODO " "[ ] " text)))
-
-(add-to-list 'org-export-filter-plain-text-functions #'my/org-md-todo-to-checkbox)
-
-;(use-package markdown-ts-mode
-;  :mode ("\\.md\\'" . markdown-ts-mode)
-;  :defer 't
-;  :config
-;  (add-to-list 'treesit-language-source-alist '(markdown "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown/src"))
-;  (add-to-list 'treesit-language-source-alist '(markdown-inline "https://github.com/tree-sitter-grammars/tree-sitter-markdown" "split_parser" "tree-sitter-markdown-inline/src")))
-
 ;; --------------------------------
 ;; OX-GFM FOR GITHUB-FLAVORED MARKDOWN EXPORT
 ;; --------------------------------
@@ -1885,7 +1761,7 @@ otherwise, call `format-all-buffer'."
 		  "SUBMITTED(s)" ; Work submitted for review/publication
 		  "PUBLISHED(p)" ; Work published (or defended)
 		  "ABANDONED(x)") ; Project discontinued
-	(sequence "TODO(t)"       ; Basic task: not yet started
+	(sequence "TODO(T)"       ; Basic task: not yet started
 		  "NEXT(n)"       ; Basic task: immediate next action
 		  "|"
 		  "DONE(d!)"))) ; Basic task: completed
@@ -1909,8 +1785,6 @@ otherwise, call `format-all-buffer'."
 
 ;; Save Org buffers after refiling!
 ;; (advice-add 'org-refile :after 'org-save-all-org-buffers)
-
-(advice-add 'org-refile :after (lambda (&rest _args) (org-save-all-org-buffers)))
 
 ;;; ORG TAG CONFIGURATION
 
