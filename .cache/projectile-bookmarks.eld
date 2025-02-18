@@ -1,1 +1,0 @@
-("/mnt/Karna/Git/Project-K/" "~/.emacs.d/" "/mnt/Karna/Git/CJPR-Report/" "/mnt/Karna/Git/portfolio/")
