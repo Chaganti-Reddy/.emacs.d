@@ -176,11 +176,11 @@
       recentf-auto-cleanup 180)
 
 ;; Exclude specific files from recentf tracking
-(setq recentf-exclude '("~/.cache/emacs/recentf"
-			"~/.cache/emacs/*.md"
-			"~/.cache/emacs/bookmarks"
-			"/mnt/Karna/Git/Project-K/Org/Tasks.org"
-			"~/.cache/emacs/treemacs-persist"))
+(setq recentf-exclude
+      '("~/.cache/emacs/"   ;; Exclude everything inside ~/.cache/emacs/
+        "/mnt/Karna/Git/Project-K/Org/Tasks.org"
+        "_region_\\.tex$"    ;; Exclude any _region_.tex file
+        "^/tmp/"))           ;; Exclude everything inside /tmp/
 
 ;; Enable recentf mode
 (recentf-mode 1)
@@ -1411,7 +1411,10 @@ otherwise, call `format-all-buffer'."
   :defer t
   :mode ("\\.tex\\'" . LaTeX-mode)
   :hook
-  ((LaTeX-mode . LaTeX-math-mode))  ; Enable math-mode shortcuts in LaTeX buffers.
+  ((LaTeX-mode . LaTeX-math-mode)
+   (LaTeX-mode . TeX-fold-mode)
+   (LaTeX-mode-hook . magic-latex-buffer)
+   (TeX-mode . TeX-fold-mode))  ; Enable math-mode shortcuts in LaTeX buffers.
   :config
   ;; Basic AUCTeX settings.
   (setq TeX-auto-save t
@@ -1436,7 +1439,11 @@ otherwise, call `format-all-buffer'."
 	TeX-electric-math '("$" . "$"))
   ;; LaTeX preview settings.
   (setq preview-auto-cache-preamble t
+  ;; preview-default-option-list '("floats" "graphics")
+  preview-default-option-list '("displaymath" "graphics" "textmath" "footnotes" "sections" "showlabels" "psfixbb" "floats")
 	TeX-show-compilation nil))
+
+(add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
 
 ;;; REFTEX
 
@@ -1462,16 +1469,16 @@ otherwise, call `format-all-buffer'."
 
 (with-eval-after-load 'tex
   (add-to-list 'TeX-view-program-list
-	       '("Zathura"
-		 ("zathura "
-		  (mode-io-correlate
-		   " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" ")
-		  " %o")
-		 "zathura"))
+               `("Zathura"
+                 (,(concat (expand-file-name "~/.local/bin/zathura") " "
+                           (when (boundp 'mode-io-correlate)
+                             " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" ")
+                           " %o"))
+                 "zathura"))
   (setq TeX-view-program-selection '((output-pdf "Zathura"))
-	TeX-source-correlate-start-server t)
-  (setq TeX-source-correlate-mode t)
-  (setq TeX-source-correlate-method 'synctex))
+        TeX-source-correlate-start-server t
+        TeX-source-correlate-mode t
+        TeX-source-correlate-method 'synctex))
 
 ;;; CITAR
 
@@ -1508,6 +1515,23 @@ otherwise, call `format-all-buffer'."
   :ensure t
   :defer t
   :hook (LaTeX-mode . turn-on-cdlatex))
+
+;;; EVIL TEX 
+
+(use-package evil-tex
+  :ensure t
+  :hook (LaTeX-mode . evil-tex-mode))
+
+;;; XENOPS
+
+(use-package xenops
+  :ensure t
+  :defer t
+  :hook ((LaTeX-mode . xenops-mode)
+          (LaTeX-mode . xenops-xen-mode))
+  :config
+  (setq xenops-render-on-save t))
+(setq xenops-cache-directory (dir-concat user-cache-directory "xenops-cache"))
 
 ;;; ============================================================
 ;;; MARKDOWN SETUP
@@ -1997,7 +2021,9 @@ otherwise, call `format-all-buffer'."
 
 ;;; LATEX FRAGMENT SCALE
 
-(setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
+(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.5))
+
+(setq preview-scale-function 0.8)
 
 ;;; CITATION
 
