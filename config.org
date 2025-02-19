@@ -546,15 +546,15 @@ Which Key is a minor mode for Emacs that displays the key bindings following you
 (use-package ef-themes
   :ensure t
   :config
-  (defvar my/current-ef-theme 'ef-winter
+  (defvar my/current-ef-theme 'ef-cyprus
     "Stores the current theme to toggle between `ef-cyprus` and `ef-winter`.")
 
   (defun my/toggle-ef-theme ()
     "Toggle between `ef-cyprus` and `ef-winter` themes."
     (interactive)
     (setq my/current-ef-theme (if (eq my/current-ef-theme 'ef-cyprus)
-                                  'ef-winter
-                                'ef-cyprus))
+				  'ef-winter
+				'ef-cyprus))
     (ef-themes-select my/current-ef-theme)
     (message "Switched to %s" my/current-ef-theme))
 
@@ -594,21 +594,21 @@ Which Key is a minor mode for Emacs that displays the key bindings following you
 #+BEGIN_SRC emacs-lisp
 ;;; FONTS
 
-(add-to-list 'default-frame-alist '(font . "Roboto Mono-12:bold"))
+(add-to-list 'default-frame-alist '(font . "Roboto Mono Nerd Font-13:bold"))
 
 (set-face-attribute 'default nil
-		    :font "Roboto Mono"
-		    :height 110
-		    :weight 'bold)
-
-(set-face-attribute 'fixed-pitch nil
-		    :font "Roboto Mono"
+		    :font "Roboto Mono Nerd Font"
 		    :height 120
 		    :weight 'bold)
 
+(set-face-attribute 'fixed-pitch nil
+		    :font "Roboto Mono Nerd Font"
+		    :height 130
+		    :weight 'bold)
+
 (set-face-attribute 'variable-pitch nil
-		    :font "Roboto Mono"
-		    :height 110
+		    :font "Roboto Mono Nerd Font"
+		    :height 120
 		    :weight 'bold)
 
 ;; Italics for comments & keywords
@@ -619,7 +619,6 @@ Which Key is a minor mode for Emacs that displays the key bindings following you
 
 (set-display-table-slot standard-display-table 'truncation (make-glyph-code ?…))
 (set-display-table-slot standard-display-table 'wrap (make-glyph-code ?–))
-
 
 
 #+END_SRC
@@ -1116,7 +1115,7 @@ The `consult' package provides lots of commands that are enhanced variants of ba
   :bind (;; A recursive grep
 	 ("M-s M-g" . consult-grep)
 	 ;; Search for files names recursively
-	 ("M-s M-f" . consult-find)
+	 ("M-s M-f" . consult-fd)
 	 ;; Search through the outline (headings) of the file
 	 ("M-s M-o" . consult-outline)
 	 ;; Search the current buffer
@@ -2038,7 +2037,23 @@ otherwise, call `format-all-buffer'."
   :config
   (setq highlight-indent-guides-method 'character)
   (setq highlight-indent-guides-character ?\|)
-  (setq highlight-indent-guides-responsive 'top))
+  (setq highlight-indent-guides-responsive 'top)
+  (setq highlight-indent-guides-auto-enabled nil) ;; Disable auto coloring
+
+  ;; Adjust colors based on theme background
+  (defun my/highlight-indent-guides-set-colors ()
+    (if (eq (frame-parameter nil 'background-mode) 'dark)
+	(progn
+	  (set-face-foreground 'highlight-indent-guides-character-face "gray40")
+	  (set-face-foreground 'highlight-indent-guides-top-character-face "white")
+	  (set-face-foreground 'highlight-indent-guides-stack-character-face "gray60"))
+      (progn
+	(set-face-foreground 'highlight-indent-guides-character-face "gray40")
+	(set-face-foreground 'highlight-indent-guides-top-character-face "black")
+	(set-face-foreground 'highlight-indent-guides-stack-character-face "gray60"))))
+
+  (add-hook 'after-load-theme-hook #'my/highlight-indent-guides-set-colors)
+  (my/highlight-indent-guides-set-colors)) ;; Apply colors immediately
 
 
 #+END_SRC
@@ -3778,7 +3793,7 @@ List of all the keybinds that are used in my Emacs Config.
     "c d" '(:prefix "d"             :wk "Consult Directory")
     "c d f" '(consult-dir           :wk "Find Directory")
     "c d j" '(consult-dir-jump-file :wk "Jump to a directory")
-    "c f" '(consult-file           :wk "Find File")
+    "c f" '(consult-fd           :wk "Find File")
     "c r" '(consult-recent-file    :wk "Recent Files")
 
     ;; Search commands
@@ -3795,15 +3810,22 @@ List of all the keybinds that are used in my Emacs Config.
     "c k" '(consult-bookmark       :wk "Bookmarks")
     "c y" '(karna/year-calendar    :wk "Show year calendar"))
 
-  (karna/leader-keys
+    (karna/leader-keys
     "d" '(:ignore t :wk "Dired")
     "d d" '(dired :wk "Open dired")
     "d f" '(wdired-finish-edit :wk "Writable dired finish edit")
     "d j" '(dired-jump :wk "Dired jump to current")
     "d n" '(treemacs-find-file :wk "Open file in Treemacs")
-    ;;"d n" '(neotree-dir :wk "Open directory in neotree")
+    ;; "d n" '(neotree-dir :wk "Open directory in neotree")
     "d p" '(peep-dired :wk "Peep-dired")
-    "d w" '(wdired-change-to-wdired-mode :wk "Writable dired"))
+    "d w" '(wdired-change-to-wdired-mode :wk "Writable dired")
+
+    ;; New prefix for favorite directories
+    "d o" '(:ignore t :wk "Favorite Directories")
+    "d o p" `((lambda () (interactive) (dired "/mnt/Karna/Git/portfolio/")) :wk "Open Portfolio")
+    "d o P" `((lambda () (interactive) (dired "/mnt/Karna/Git/Project-K/")) :wk "Open Project-K")
+    "d o h" `((lambda () (interactive) (dired "~")) :wk "Open Home")
+    )
 
   (karna/leader-keys
     "e" '(:ignore t :wk "Ediff/Eshell/Eval/EWW")
@@ -3894,7 +3916,7 @@ List of all the keybinds that are used in my Emacs Config.
 		(ignore (elpaca-process-queues)))
 		 ;; (karna/org-colors-doom-one) ;; Reapply colors after reloading
 	    :wk "Reload emacs config"r)
-    "h t" '(load-theme :wk "Load theme")
+    "h t" '(consult-theme :wk "Load theme")
     "h v" '(describe-variable :wk "Describe variable")
     "h w" '(where-is :wk "Prints keybinding for command if set")
     "h x" '(describe-command :wk "Display full documentation for command"))
