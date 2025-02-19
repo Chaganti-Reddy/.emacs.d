@@ -202,7 +202,7 @@ Some commands should execute at startup since they will add some functionality t
   (size-indication-mode t)            ;; Show file size in mode line
   (fringe-mode -1)                    ;; Remove UI fringes
   (tool-bar-mode -1)                  ;; Disable the tool bar
-  (global-hl-line-mode 1)
+  (global-hl-line-mode -1)
   (setq init-start-time (current-time))
 
   ;;----------------------------------------------------------------------------
@@ -2239,8 +2239,7 @@ I am using NOV to read EPUB files.
   :hook
   ((LaTeX-mode . LaTeX-math-mode)
    (LaTeX-mode . TeX-fold-mode)
-   (LaTeX-mode-hook . magic-latex-buffer)
-   (TeX-mode . TeX-fold-mode))  ; Enable math-mode shortcuts in LaTeX buffers.
+   (LaTeX-mode-hook . magic-latex-buffer))
   :config
   ;; Basic AUCTeX settings.
   (setq TeX-auto-save t
@@ -2378,7 +2377,6 @@ I am using NOV to read EPUB files.
   :hook (LaTeX-mode . evil-tex-mode))
 
 
-
 #+END_SRC
 
 ** ARCHIVES
@@ -2386,24 +2384,36 @@ I am using NOV to read EPUB files.
 *** Xenops
 - TANGLE it if you want to use `xenops` (Alternative to Preview-Latex) for real-time LaTeX rendering.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 ;;; XENOPS
 
 (use-package xenops
   :ensure t
   :defer t
   :hook ((LaTeX-mode . xenops-mode)
-	  (LaTeX-mode . xenops-xen-mode))
+	 (org-mode . xenops-mode)
+	 (LaTeX-mode . xenops-xen-mode))
   :config
-  (setq xenops-render-on-save t))
-(setq xenops-cache-directory (dir-concat user-cache-directory "xenops-cache"))
+  (setq xenops-render-on-save t)
+  (setq xenops-cache-directory (expand-file-name "xenops-cache" user-cache-directory))
+
+  ;; Customize LaTeX preview appearance
+  (setq xenops-math-image-scale-factor 0.7) ;; Increase image size if needed
+  ;; (setq xenops-math-image-current-scale-factor 1) ;; Increase image size if needed
+  (setq xenops-math-latex-process 'dvisvgm) ;; Use dvisvgm for better rendering
+  (setq xenops-math-latex-packages
+	'("amsmath" "amssymb" "bm")) ;; Add 'bm' package for bold math
+
+  ;; Ensure bold math symbols
+  (setq xenops-math-latex-macros
+	'("\\renewcommand{\\mathbf}[1]{\\bm{#1}}")))
 
 
 #+END_SRC
 
 *** ADDITIONAL SETUP
 
-#+BEGIN_SRC emacs-lisp :tangle no
+    #+BEGIN_SRC emacs-lisp  
 ;;; ============================================================
 ;;; Additional Preview Hooks (Optional)
 ;;; ============================================================
@@ -2425,7 +2435,7 @@ This function is intended to be called on file open."
 
 (with-eval-after-load 'preview
   ;; Add the preview functions to LaTeX-mode if the preview package is loaded.
-  (add-hook 'LaTeX-mode-hook #'my-initial-preview t)
+  ;; (add-hook 'LaTeX-mode-hook #'my-initial-preview t)
   (add-hook 'LaTeX-mode-hook #'my-preview-at-save-mode))
 
 ;;; PDF TOOLS FOR LATEX PREVIEW (ALTERNATIVE)
@@ -3233,7 +3243,6 @@ This section configures LaTeX preview settings in Org mode, including the LaTeX 
 
 (setq org-latex-compiler "xelatex")
 (setq org-latex-listings t)
-(setq org-latex-preview-process-default 'dvisvgm)
 (setq org-preview-latex-image-directory "~/.cache/emacs/lxtimg/")
 (setq org-latex-preview-lxtpng-directory "~/.cache/emacs/lxtimg/")
 
@@ -3262,38 +3271,67 @@ This section configures LaTeX preview settings in Org mode, including the LaTeX 
 
 #+END_SRC
 
-*** AUTO IGNORE COMMANDS
-- Prevents certain navigation commands (e.g., next-line, previous-line) from triggering previews.
+*** ORG LATEX PREVIEW 
 
 #+BEGIN_SRC emacs-lisp
-;;; AUTO IGNORE COMMANDS
+;;; ORG LATEX PREVIEW
 
+;; Increase LaTeX preview size
+(setq org-format-latex-options
+      (plist-put org-format-latex-options :scale 2.0)) ;; Adjust as needed
+
+;; Use dvisvgm for SVG-based previews (default)
+(setq org-latex-create-formula-image-program 'dvisvgm) ;; Use dvisvgm for better compatibility
+(setq org-preview-latex-default-process 'dvisvgm) ;; Default to dvisvgm
+
+(setq org-startup-with-latex-preview t)
+
+
+;; Prevent navigation commands from triggering LaTeX previews
 (setq org-latex-preview-auto-ignored-commands
       '(next-line previous-line mwheel-scroll
-	scroll-up-command scroll-down-command))
+        scroll-up-command scroll-down-command))
 
-
-#+END_SRC
-
-*** UI SETTINGS
-- Enables consistent equation numbering.
-- Enables live previews for LaTeX fragments.
-- Sets a more immediate debounce delay for live previews.
-
-#+BEGIN_SRC emacs-lisp
-;;; UI SETTINGS
-
+;; Enable consistent equation numbering
 (setq org-latex-preview-numbered t)
+
+;; Enable live previews for real-time LaTeX updates
 (setq org-latex-preview-live t)
+
+;; Reduce delay for faster live previews
 (setq org-latex-preview-live-debounce 0.25)
 
+
+;; Stolen fsrom the package ov
+(defun ov-at (&optional point)
+  "Get an overlay at POINT.
+POINT defaults to the current `point'."
+  (or point (setq point (point)))
+  (car (overlays-at point)))
+;; https://www.reddit.com/r/emacs/comments/169keg7/comment/jzierha/?utm_source=share&utm_medium=web2x&context=3
+(defun org-justify-fragment-overlay (beg end image &optional imagetype)
+  "Only equations at the beginning and also end of a line are justified."
+  (if
+   (and (= beg (line-beginning-position)) (= end (line-end-position)))
+   (let* ((ov (ov-at))
+  (disp (overlay-get ov 'display)))
+     (overlay-put ov 'line-prefix `(space :align-to (- center (0.5 . ,disp)))))))
+(advice-add 'org--make-preview-overlay :after 'org-justify-fragment-overlay)
+
+ 
+;; Automatically refresh LaTeX previews on save or edits
+(add-hook 'org-mode-hook
+          (lambda ()
+            (add-hook 'after-save-hook 'org-latex-preview nil 'local)
+            (add-hook 'after-change-functions
+                      (lambda (&rest _) (org-latex-preview)) nil 'local)))
 
 #+END_SRC
 
 *** ORG FRAGTOP
 - Automatically toggles LaTeX fragment previews when editing Org files.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 ;;; ORG FRAGTOP
 
 (use-package org-fragtog
@@ -3304,13 +3342,11 @@ This section configures LaTeX preview settings in Org mode, including the LaTeX 
 
 #+END_SRC
 
-*** ORG LATEX FRAGMENT SCALE
+*** LATEX FRAGMENT SCALE
 - Sets the scale factor for rendered LaTeX fragments.
 
 #+BEGIN_SRC emacs-lisp
 ;;; LATEX FRAGMENT SCALE
-
-(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.5))
 
 (setq preview-scale-function 0.8)
 
