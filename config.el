@@ -331,47 +331,51 @@
 ;;; EF THEMES
 
 (use-package ef-themes
-	:ensure t
-	:config
-	(ef-themes-select 'ef-cyprus)
-  (load-theme 'ef-cyprus t))
+  :ensure t
+  :config
+  (defvar my/current-ef-theme 'ef-cyprus
+    "Stores the current theme to toggle between `ef-cyprus` and `ef-winter`.")
+
+  (defun my/toggle-ef-theme ()
+    "Toggle between `ef-cyprus` and `ef-winter` themes."
+    (interactive)
+    (setq my/current-ef-theme (if (eq my/current-ef-theme 'ef-cyprus)
+                                  'ef-winter
+                                'ef-cyprus))
+    (ef-themes-select my/current-ef-theme)
+    (message "Switched to %s" my/current-ef-theme))
+
+  ;; Load default theme
+  (ef-themes-select my/current-ef-theme))
 
 ;;; NANO THEMES
 
-;(use-package nano-theme
-;  :ensure (nano-theme :host github :repo "rougier/nano-theme")
-;  :config
-;  (load-theme 'nano t)
-;  (nano-light))
+;; (use-package nano-theme
+;;   :ensure (nano-theme :host github :repo "rougier/nano-theme")
+;;   :config
+;;   (load-theme 'nano t)
+;;   (nano-light))
 
 ;;; FONTS
 
-(defvar my/font "Roboto Mono"
-  "Default font to use for Emacs.")
-
-(defvar my/font-size 110
-  "Default font size for fixed-pitch text.")
-
-(defvar my/variable-font-size 120
-  "Default font size for variable-pitch text.")
+(add-to-list 'default-frame-alist '(font . "Roboto Mono-12:bold"))
 
 (set-face-attribute 'default nil
-  :font my/font
-  :height my/font-size
-  :weight 'bold)
-
-(set-face-attribute 'variable-pitch nil
-  :font my/font
-  :height my/variable-font-size
-  :weight 'bold)
+		    :font "Roboto Mono"
+		    :height 110
+		    :weight 'bold)
 
 (set-face-attribute 'fixed-pitch nil
-  :font my/font
-  :height my/font-size
-  :weight 'bold)
+		    :font "Roboto Mono"
+		    :height 120
+		    :weight 'bold)
 
-(set-face-attribute 'bold nil :weight 'bold)
-(set-face-attribute 'bold-italic nil :weight 'bold)
+(set-face-attribute 'variable-pitch nil
+		    :font "Roboto Mono"
+		    :height 110
+		    :weight 'bold)
+
+;; Italics for comments & keywords
 (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
 (set-face-attribute 'font-lock-keyword-face nil :slant 'italic)
 
@@ -379,10 +383,6 @@
 
 (set-display-table-slot standard-display-table 'truncation (make-glyph-code ?…))
 (set-display-table-slot standard-display-table 'wrap (make-glyph-code ?–))
-
-(add-to-list 'default-frame-alist `(font . ,(format "%s-%d" my/font (/ my/font-size 8.5))))
-
-;; (add-to-list 'default-frame-alist '(font . "Roboto Mono-13"))
 
 ;;; ALL THE ICONS
 
@@ -2473,6 +2473,7 @@ otherwise, call `format-all-buffer'."
     "t e" '(eshell-toggle :wk "Toggle eshell")
     "t f" '(flycheck-mode :wk "Toggle flycheck")
     "t l" '(display-line-numbers-mode :wk "Toggle line numbers")
+    "t h" '(my/toggle-ef-theme :wk "Toggle ef-themes")
     "t n" '(treemacs :wk "Toggle Treemacs")
     ;;"t n" '(neotree-toggle :wk "Toggle neotree file viewer")
     "t o" '(org-mode :wk "Toggle org mode")
