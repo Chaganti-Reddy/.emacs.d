@@ -69,7 +69,7 @@
   (size-indication-mode t)            ;; Show file size in mode line
   (fringe-mode -1)                    ;; Remove UI fringes
   (tool-bar-mode -1)                  ;; Disable the tool bar
-  (global-hl-line-mode 1)
+  (global-hl-line-mode -1)
   (setq init-start-time (current-time))
 
   ;;----------------------------------------------------------------------------
@@ -1413,8 +1413,7 @@ otherwise, call `format-all-buffer'."
   :hook
   ((LaTeX-mode . LaTeX-math-mode)
    (LaTeX-mode . TeX-fold-mode)
-   (LaTeX-mode-hook . magic-latex-buffer)
-   (TeX-mode . TeX-fold-mode))  ; Enable math-mode shortcuts in LaTeX buffers.
+   (LaTeX-mode-hook . magic-latex-buffer))
   :config
   ;; Basic AUCTeX settings.
   (setq TeX-auto-save t
@@ -1522,16 +1521,34 @@ otherwise, call `format-all-buffer'."
   :ensure t
   :hook (LaTeX-mode . evil-tex-mode))
 
-;;; XENOPS
+;;; ============================================================
+;;; Additional Preview Hooks (Optional)
+;;; ============================================================
+;; These hooks allow LaTeX fragment previews to be generated on file open
+;; and automatically when saving the buffer. (Enable only if desired.)
+(defun my-initial-preview ()
+  "Generate preview for the current document.
+This function is intended to be called on file open."
+  (save-excursion
+    (preview-document)))
 
-(use-package xenops
-  :ensure t
-  :defer t
-  :hook ((LaTeX-mode . xenops-mode)
-	  (LaTeX-mode . xenops-xen-mode))
-  :config
-  (setq xenops-render-on-save t))
-(setq xenops-cache-directory (dir-concat user-cache-directory "xenops-cache"))
+(define-minor-mode my-preview-at-save-mode
+  "Minor mode to preview LaTeX fragments on save."
+  :init-value nil
+  :global nil
+  (if my-preview-at-save-mode
+      (add-hook 'after-save-hook #'my-initial-preview nil t)
+    (remove-hook 'after-save-hook #'my-initial-preview t)))
+
+(with-eval-after-load 'preview
+  ;; Add the preview functions to LaTeX-mode if the preview package is loaded.
+  ;; (add-hook 'LaTeX-mode-hook #'my-initial-preview t)
+  (add-hook 'LaTeX-mode-hook #'my-preview-at-save-mode))
+
+;;; PDF TOOLS FOR LATEX PREVIEW (ALTERNATIVE)
+
+;;(setq TeX-view-program-selection '((output-pdf "PDF Tools"))
+;;       TeX-source-correlate-start-server t)
 
 ;;; ============================================================
 ;;; MARKDOWN SETUP
@@ -1983,9 +2000,8 @@ otherwise, call `format-all-buffer'."
 
 (setq org-latex-compiler "xelatex")
 (setq org-latex-listings t)
-(setq org-latex-preview-process-default 'dvisvgm)
-(setq org-preview-latex-image-directory "~/.cache/emacs/lxtimg")
-(setq org-latex-preview-lxtpng-directory "~/.cache/emacs/lxtimg")
+(setq org-preview-latex-image-directory "~/.cache/emacs/lxtimg/")
+(setq org-latex-preview-lxtpng-directory "~/.cache/emacs/lxtimg/")
 
 ;;; CUSTOM LATEX CLASSES FOR ORG EXPORT
 
@@ -2002,28 +2018,59 @@ otherwise, call `format-all-buffer'."
 		 ("\\paragraph{%s}" . "\\paragraph*{%s}")
 		 ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
 
-;;; AUTO IGNORE COMMANDS
+;;; ORG LATEX PREVIEW
 
+;; Increase LaTeX preview size
+(setq org-format-latex-options
+      (plist-put org-format-latex-options :scale 2.0)) ;; Adjust as needed
+
+;; Use dvisvgm for SVG-based previews (default)
+(setq org-latex-create-formula-image-program 'dvisvgm) ;; Use dvisvgm for better compatibility
+(setq org-preview-latex-default-process 'dvisvgm) ;; Default to dvisvgm
+
+(setq org-startup-with-latex-preview t)
+
+
+;; Prevent navigation commands from triggering LaTeX previews
 (setq org-latex-preview-auto-ignored-commands
       '(next-line previous-line mwheel-scroll
-	scroll-up-command scroll-down-command))
+        scroll-up-command scroll-down-command))
 
-;;; UI SETTINGS
-
+;; Enable consistent equation numbering
 (setq org-latex-preview-numbered t)
+
+;; Enable live previews for real-time LaTeX updates
 (setq org-latex-preview-live t)
+
+;; Reduce delay for faster live previews
 (setq org-latex-preview-live-debounce 0.25)
 
-;;; ORG FRAGTOP
 
-(use-package org-fragtog
-  :ensure t
-  :defer t)
-(add-hook 'org-mode-hook 'org-fragtog-mode)
+;; Stolen fsrom the package ov
+(defun ov-at (&optional point)
+  "Get an overlay at POINT.
+POINT defaults to the current `point'."
+  (or point (setq point (point)))
+  (car (overlays-at point)))
+;; https://www.reddit.com/r/emacs/comments/169keg7/comment/jzierha/?utm_source=share&utm_medium=web2x&context=3
+(defun org-justify-fragment-overlay (beg end image &optional imagetype)
+  "Only equations at the beginning and also end of a line are justified."
+  (if
+   (and (= beg (line-beginning-position)) (= end (line-end-position)))
+   (let* ((ov (ov-at))
+  (disp (overlay-get ov 'display)))
+     (overlay-put ov 'line-prefix `(space :align-to (- center (0.5 . ,disp)))))))
+(advice-add 'org--make-preview-overlay :after 'org-justify-fragment-overlay)
+
+ 
+;; Automatically refresh LaTeX previews on save or edits
+(add-hook 'org-mode-hook
+          (lambda ()
+            (add-hook 'after-save-hook 'org-latex-preview nil 'local)
+            (add-hook 'after-change-functions
+                      (lambda (&rest _) (org-latex-preview)) nil 'local)))
 
 ;;; LATEX FRAGMENT SCALE
-
-(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.5))
 
 (setq preview-scale-function 0.8)
 
