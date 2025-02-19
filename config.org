@@ -329,11 +329,11 @@ Recentf mode is used by emacs to save recent files for faster access and also ca
       recentf-auto-cleanup 180)
 
 ;; Exclude specific files from recentf tracking
-(setq recentf-exclude '("~/.cache/emacs/recentf"
-			"~/.cache/emacs/*.md"
-			"~/.cache/emacs/bookmarks"
-			"/mnt/Karna/Git/Project-K/Org/Tasks.org"
-			"~/.cache/emacs/treemacs-persist"))
+(setq recentf-exclude
+      '("~/.cache/emacs/"   ;; Exclude everything inside ~/.cache/emacs/
+        "/mnt/Karna/Git/Project-K/Org/Tasks.org"
+        "_region_\\.tex$"    ;; Exclude any _region_.tex file
+        "^/tmp/"))           ;; Exclude everything inside /tmp/
 
 ;; Enable recentf mode
 (recentf-mode 1)
@@ -2236,7 +2236,10 @@ I am using NOV to read EPUB files.
   :defer t
   :mode ("\\.tex\\'" . LaTeX-mode)
   :hook
-  ((LaTeX-mode . LaTeX-math-mode))  ; Enable math-mode shortcuts in LaTeX buffers.
+  ((LaTeX-mode . LaTeX-math-mode)
+   (LaTeX-mode . TeX-fold-mode)
+   (LaTeX-mode-hook . magic-latex-buffer)
+   (TeX-mode . TeX-fold-mode))  ; Enable math-mode shortcuts in LaTeX buffers.
   :config
   ;; Basic AUCTeX settings.
   (setq TeX-auto-save t
@@ -2261,7 +2264,12 @@ I am using NOV to read EPUB files.
 	TeX-electric-math '("$" . "$"))
   ;; LaTeX preview settings.
   (setq preview-auto-cache-preamble t
+  ;; preview-default-option-list '("floats" "graphics")
+  preview-default-option-list '("displaymath" "graphics" "textmath" "footnotes" "sections" "showlabels" "psfixbb" "floats")
 	TeX-show-compilation nil))
+
+(add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
+
 
 #+END_SRC
 
@@ -2293,22 +2301,21 @@ I am using NOV to read EPUB files.
 
 ** PREVIEW (ZATHURA)
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp 
 ;;; PREVIEW
 
 (with-eval-after-load 'tex
   (add-to-list 'TeX-view-program-list
-	       '("Zathura"
-		 ("zathura "
-		  (mode-io-correlate
-		   " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" ")
-		  " %o")
-		 "zathura"))
+               `("Zathura"
+                 (,(concat (expand-file-name "~/.local/bin/zathura") " "
+                           (when (boundp 'mode-io-correlate)
+                             " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" ")
+                           " %o"))
+                 "zathura"))
   (setq TeX-view-program-selection '((output-pdf "Zathura"))
-	TeX-source-correlate-start-server t)
-  (setq TeX-source-correlate-mode t)
-  (setq TeX-source-correlate-method 'synctex))
-
+        TeX-source-correlate-start-server t
+        TeX-source-correlate-mode t
+        TeX-source-correlate-method 'synctex))
 
 #+END_SRC
 
@@ -2360,18 +2367,32 @@ I am using NOV to read EPUB files.
 
 #+END_SRC
 
+** EVIL-TEX 
+
+#+BEGIN_SRC emacs-lisp
+;;; EVIL TEX 
+
+(use-package evil-tex
+  :ensure t
+  :hook (LaTeX-mode . evil-tex-mode))
+    
+
+
+#+END_SRC
+
 ** ARCHIVES
 
 *** Xenops
 - TANGLE it if you want to use `xenops` (Alternative to Preview-Latex) for real-time LaTeX rendering.
 
-#+BEGIN_SRC emacs-lisp :tangle no
+#+BEGIN_SRC emacs-lisp 
 ;;; XENOPS
 
 (use-package xenops
   :ensure t
   :defer t
-  :hook (LaTeX-mode . xenops-mode)
+  :hook ((LaTeX-mode . xenops-mode)
+          (LaTeX-mode . xenops-xen-mode))
   :config
   (setq xenops-render-on-save t))
 (setq xenops-cache-directory (dir-concat user-cache-directory "xenops-cache"))
@@ -2381,7 +2402,7 @@ I am using NOV to read EPUB files.
 
 *** ADDITIONAL SETUP
 
-#+BEGIN_SRC emacs-lisp :tangle no
+#+BEGIN_SRC emacs-lisp :tangle no  
 ;;; ============================================================
 ;;; Additional Preview Hooks (Optional)
 ;;; ============================================================
@@ -3286,7 +3307,9 @@ This section configures LaTeX preview settings in Org mode, including the LaTeX 
 #+BEGIN_SRC emacs-lisp
 ;;; LATEX FRAGMENT SCALE
 
-(setq org-format-latex-options (plist-put org-format-latex-options :scale 2.0))
+(setq org-format-latex-options (plist-put org-format-latex-options :scale 1.5))
+
+(setq preview-scale-function 0.8) 
 
 
 #+END_SRC
