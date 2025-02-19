@@ -333,7 +333,7 @@
 (use-package ef-themes
   :ensure t
   :config
-  (defvar my/current-ef-theme 'ef-cyprus
+  (defvar my/current-ef-theme 'ef-winter
     "Stores the current theme to toggle between `ef-cyprus` and `ef-winter`.")
 
   (defun my/toggle-ef-theme ()
