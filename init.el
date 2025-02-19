@@ -59,9 +59,9 @@
 				       "consult" "elisp-mode"
 				       "simple" "expand-region"
 				       "ace-window" "avy" "yasnippet"
-				       "magit" "gcmh" "evil" "evil-collection" "which-key" "dashboard" "jinx" "projectile" "perspective" "corfu" "cape" "gptel" "ellama" "treemacs"
-				       "doom-themes" "modus-themes" "ef-themes"
-				       ;; "ewal" "ewal-doom-themes"
+				       "magit" "gcmh" "evil" "evil-collection" "which-key" "dashboard" "projectile" "perspective" "corfu" "cape" "gptel" "ellama" "treemacs"
+				        "ef-themes"
+				       ;; "ewal" "ewal-doom-themes" "doom-themes" "modus-themes"
 				       "dired" "ibuffer" "pdf-tools"))
 			  (with-demoted-errors "Error: %S" (load-library lib)))
 			(with-temp-buffer (org-mode))
