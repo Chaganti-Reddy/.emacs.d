@@ -79,6 +79,7 @@
   - [[#preview-zathura][PREVIEW (ZATHURA)]]
   - [[#citar][CITAR]]
   - [[#auctex][AUCTEX]]
+  - [[#evil-tex][EVIL-TEX]]
   - [[#archives-2][ARCHIVES]]
 - [[#markdown][MARKDOWN]]
   - [[#markdown-setup][MARKDOWN SETUP]]
@@ -331,9 +332,9 @@ Recentf mode is used by emacs to save recent files for faster access and also ca
 ;; Exclude specific files from recentf tracking
 (setq recentf-exclude
       '("~/.cache/emacs/"   ;; Exclude everything inside ~/.cache/emacs/
-        "/mnt/Karna/Git/Project-K/Org/Tasks.org"
-        "_region_\\.tex$"    ;; Exclude any _region_.tex file
-        "^/tmp/"))           ;; Exclude everything inside /tmp/
+	"/mnt/Karna/Git/Project-K/Org/Tasks.org"
+	"_region_\\.tex$"    ;; Exclude any _region_.tex file
+	"^/tmp/"))           ;; Exclude everything inside /tmp/
 
 ;; Enable recentf mode
 (recentf-mode 1)
@@ -2301,21 +2302,21 @@ I am using NOV to read EPUB files.
 
 ** PREVIEW (ZATHURA)
 
-#+BEGIN_SRC emacs-lisp 
+#+BEGIN_SRC emacs-lisp
 ;;; PREVIEW
 
 (with-eval-after-load 'tex
   (add-to-list 'TeX-view-program-list
-               `("Zathura"
-                 (,(concat (expand-file-name "~/.local/bin/zathura") " "
-                           (when (boundp 'mode-io-correlate)
-                             " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" ")
-                           " %o"))
-                 "zathura"))
+	       `("Zathura"
+		 (,(concat (expand-file-name "~/.local/bin/zathura") " "
+			   (when (boundp 'mode-io-correlate)
+			     " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" ")
+			   " %o"))
+		 "zathura"))
   (setq TeX-view-program-selection '((output-pdf "Zathura"))
-        TeX-source-correlate-start-server t
-        TeX-source-correlate-mode t
-        TeX-source-correlate-method 'synctex))
+	TeX-source-correlate-start-server t
+	TeX-source-correlate-mode t
+	TeX-source-correlate-method 'synctex))
 
 #+END_SRC
 
@@ -2367,15 +2368,15 @@ I am using NOV to read EPUB files.
 
 #+END_SRC
 
-** EVIL-TEX 
+** EVIL-TEX
 
 #+BEGIN_SRC emacs-lisp
-;;; EVIL TEX 
+;;; EVIL TEX
 
 (use-package evil-tex
   :ensure t
   :hook (LaTeX-mode . evil-tex-mode))
-    
+
 
 
 #+END_SRC
@@ -2385,14 +2386,14 @@ I am using NOV to read EPUB files.
 *** Xenops
 - TANGLE it if you want to use `xenops` (Alternative to Preview-Latex) for real-time LaTeX rendering.
 
-#+BEGIN_SRC emacs-lisp 
+#+BEGIN_SRC emacs-lisp
 ;;; XENOPS
 
 (use-package xenops
   :ensure t
   :defer t
   :hook ((LaTeX-mode . xenops-mode)
-          (LaTeX-mode . xenops-xen-mode))
+	  (LaTeX-mode . xenops-xen-mode))
   :config
   (setq xenops-render-on-save t))
 (setq xenops-cache-directory (dir-concat user-cache-directory "xenops-cache"))
@@ -2402,7 +2403,7 @@ I am using NOV to read EPUB files.
 
 *** ADDITIONAL SETUP
 
-#+BEGIN_SRC emacs-lisp :tangle no  
+#+BEGIN_SRC emacs-lisp :tangle no
 ;;; ============================================================
 ;;; Additional Preview Hooks (Optional)
 ;;; ============================================================
@@ -3233,6 +3234,8 @@ This section configures LaTeX preview settings in Org mode, including the LaTeX 
 (setq org-latex-compiler "xelatex")
 (setq org-latex-listings t)
 (setq org-latex-preview-process-default 'dvisvgm)
+(setq org-preview-latex-image-directory "~/.cache/emacs/lxtimg/")
+(setq org-latex-preview-lxtpng-directory "~/.cache/emacs/lxtimg/")
 
 
 #+END_SRC
@@ -3309,7 +3312,7 @@ This section configures LaTeX preview settings in Org mode, including the LaTeX 
 
 (setq org-format-latex-options (plist-put org-format-latex-options :scale 1.5))
 
-(setq preview-scale-function 0.8) 
+(setq preview-scale-function 0.8)
 
 
 #+END_SRC
