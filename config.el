@@ -178,9 +178,9 @@
 ;; Exclude specific files from recentf tracking
 (setq recentf-exclude
       '("~/.cache/emacs/"   ;; Exclude everything inside ~/.cache/emacs/
-        "/mnt/Karna/Git/Project-K/Org/Tasks.org"
-        "_region_\\.tex$"    ;; Exclude any _region_.tex file
-        "^/tmp/"))           ;; Exclude everything inside /tmp/
+	"/mnt/Karna/Git/Project-K/Org/Tasks.org"
+	"_region_\\.tex$"    ;; Exclude any _region_.tex file
+	"^/tmp/"))           ;; Exclude everything inside /tmp/
 
 ;; Enable recentf mode
 (recentf-mode 1)
@@ -1469,16 +1469,16 @@ otherwise, call `format-all-buffer'."
 
 (with-eval-after-load 'tex
   (add-to-list 'TeX-view-program-list
-               `("Zathura"
-                 (,(concat (expand-file-name "~/.local/bin/zathura") " "
-                           (when (boundp 'mode-io-correlate)
-                             " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" ")
-                           " %o"))
-                 "zathura"))
+	       `("Zathura"
+		 (,(concat (expand-file-name "~/.local/bin/zathura") " "
+			   (when (boundp 'mode-io-correlate)
+			     " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" ")
+			   " %o"))
+		 "zathura"))
   (setq TeX-view-program-selection '((output-pdf "Zathura"))
-        TeX-source-correlate-start-server t
-        TeX-source-correlate-mode t
-        TeX-source-correlate-method 'synctex))
+	TeX-source-correlate-start-server t
+	TeX-source-correlate-mode t
+	TeX-source-correlate-method 'synctex))
 
 ;;; CITAR
 
@@ -1516,7 +1516,7 @@ otherwise, call `format-all-buffer'."
   :defer t
   :hook (LaTeX-mode . turn-on-cdlatex))
 
-;;; EVIL TEX 
+;;; EVIL TEX
 
 (use-package evil-tex
   :ensure t
@@ -1528,7 +1528,7 @@ otherwise, call `format-all-buffer'."
   :ensure t
   :defer t
   :hook ((LaTeX-mode . xenops-mode)
-          (LaTeX-mode . xenops-xen-mode))
+	  (LaTeX-mode . xenops-xen-mode))
   :config
   (setq xenops-render-on-save t))
 (setq xenops-cache-directory (dir-concat user-cache-directory "xenops-cache"))
@@ -1984,6 +1984,8 @@ otherwise, call `format-all-buffer'."
 (setq org-latex-compiler "xelatex")
 (setq org-latex-listings t)
 (setq org-latex-preview-process-default 'dvisvgm)
+(setq org-preview-latex-image-directory "~/.cache/emacs/lxtimg")
+(setq org-latex-preview-lxtpng-directory "~/.cache/emacs/lxtimg")
 
 ;;; CUSTOM LATEX CLASSES FOR ORG EXPORT
 
