@@ -242,6 +242,9 @@
 		     (float-time (time-subtract after-init-time before-init-time))
 		     gcs-done)))
 
+;; Increase the amount of data which Emacs reads from the process
+(setq read-process-output-max (* 1024 1024)) ;; 1mb
+
 ;;; NATIVE COMPILE SUPPRESSION
 
 ;; Option 1: Disable deferred native compilation entirely.
@@ -356,14 +359,6 @@
 
   ;; Load default theme
   (ef-themes-select my/current-ef-theme))
-
-;;; NANO THEMES
-
-;; (use-package nano-theme
-;;   :ensure (nano-theme :host github :repo "rougier/nano-theme")
-;;   :config
-;;   (load-theme 'nano t)
-;;   (nano-light))
 
 ;;; FONTS
 
@@ -588,6 +583,10 @@
 (use-package expand-region
   :bind ("C-=" . er/expand-region))
 
+;; Removes whitespace from the ends of lines.
+(use-package ws-butler
+:init (ws-butler-global-mode))
+
 ;;; CALC
 
 (use-package calc
@@ -643,16 +642,6 @@
 		  scroll-up-command scroll-down-command
 		  scroll-other-window scroll-other-window-down))))
 
-;;; BEACON
-
-(use-package beacon
-  :ensure t
-  :defer t
-  :init
-  ;;(setq beacon-size 40)
-  ;;(setq beacon-color "#ff00ff")
-  (beacon-mode 1))
-
 ;;; PROJECTILE
 
 (use-package projectile
@@ -673,11 +662,11 @@
 		'("node_modules" "dist" "build" "vendor" ".venv" "tmp" "cache" "log" "bower_components")))
   (projectile-mode 1))
 
-;(use-package counsel-projectile
-;  :ensure t
-;  :after (projectile counsel)  ;; Ensure Projectile and Counsel are loaded first.
-;  :config
-;  (counsel-projectile-mode 1))
+;; (use-package counsel-projectile
+;;   :ensure t
+;;   :after (projectile counsel)  ;; Ensure Projectile and Counsel are loaded first.
+;;   :config
+;;   (counsel-projectile-mode 1))
 
 (use-package consult-projectile
   :ensure (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
@@ -877,13 +866,16 @@
   (corfu-cycle t)               ;; Enable cycling through candidates
   (corfu-auto t)                ;; Enable auto-completion
   (corfu-auto-prefix 2)         ;; Minimum prefix length for auto-completion
-  (corfu-auto-delay 0.02)          ;; No delay before suggestions appear
+  (corfu-auto-delay 0.1)          ;; No delay before suggestions appear
   (corfu-quit-no-match t)
   (corfu-quit-at-boundary 'separator)
   (corfu-echo-documentation nil)
-  (corfu-preview-current 'insert)
+  (corfu-preview-current nil) ;; 'insert 
   (corfu-preselect-first nil)
   (corfu-popupinfo-mode nil)      ;; Enable documentation popups
+  ;; Enable indentation+completion using the TAB key.
+  ;; `completion-at-point' is often bound to M-TAB.
+  (tab-always-indent 'complete)
   :bind (:map corfu-map
 	 ("S-RET" . nil)
 	 ("RET"   . corfu-insert)
@@ -1002,54 +994,6 @@
   ;; Set up keybinding for sending messages
 (define-key global-map (kbd "C-c RET") 'gptel-send)
 
-;;; ELLAMA
-
-(use-package ellama
-  :init
-  (setopt ellama-keymap-prefix "C-c e")  ;; keymap for all ellama functions
-  (setopt ellama-language "English")     ;; language ellama should translate to
-  (require 'llm-ollama)
-  (setopt ellama-provider
-    (make-llm-ollama
-     ;; this model should be pulled to use it
-     ;; value should be the same as you print in terminal during pull
-     :chat-model "llama3.1"
-     :embedding-model "nomic-embed-text"
-     :default-chat-non-standard-params '(("num_ctx" . 8192))))
-  ;; Predefined llm providers for interactive switching.
-  (setopt ellama-providers
-	'(("zephyr" . (make-llm-ollama
-	   :chat-model "zephyr"
-	   :embedding-model "zephyr"))
-	  ("deepseek-r1:8b" . (make-llm-ollama
-	   :chat-model "deepseek-r1:8b"
-	   :embedding-model "deepseek-r1:8b"))
-	  ("llama3" . (make-llm-ollama
-	   :chat-model "llama3"
-	   :embedding-model "llama3"))
-	  ("mistral" . (make-llm-ollama
-	    :chat-model "mistral"
-	    :embedding-model "mistral"))))
-  (setopt ellama-coding-provider
-	(make-llm-ollama
-	 ;; :chat-model "qwen2.5-coder:3b"
-	 :chat-model "deepseek-coder:6.7b"
-	 :embedding-model "deepseek-coder:6.7b"
-	 ;; :default-chat-non-standard-params '(("num_ctx" . 32768))
-))
-  (setopt ellama-naming-scheme 'ellama-generate-name-by-llm)
-  ;; Translation llm provider
-  (setopt ellama-translation-provider (make-llm-ollama
-	       :chat-model "qwen2.5:3b"
-	       :embedding-model "nomic-embed-text"))
-  ;; customize display buffer behaviour
-  ;; see ~(info "(elisp) Buffer Display Action Functions")~
-  (setopt ellama-chat-display-action-function #'display-buffer-full-frame)
-  (setopt ellama-instant-display-action-function #'display-buffer-at-bottom)
-  :config
-  (setq ellama-sessions-directory "~/.cache/emacs/ellama-sessions/"
-	ellama-sessions-auto-save t))
-
 ;;; UNDO FU
 
 ;; The =undo-fu-session= package saves and restores the undo states of buffers
@@ -1068,22 +1012,6 @@
   :diminish
   :config
   (global-wakatime-mode))
-
-;;; TREEMACS
-
-   (use-package treemacs
-  :ensure t
-  :defer t
-  :bind
-  (("C-c t" . treemacs))
-  :config
-  (setq treemacs-width 30))
-
-(setq treemacs-persist-file (concat user-cache-directory "treemacs-persist"))
-
-;; Mouse single-click expands nodes in Treemacs
-(with-eval-after-load 'treemacs
-  (define-key treemacs-mode-map [mouse-1] #'treemacs-single-click-expand-action))
 
 ;;; DIRED OPEN
 
@@ -1155,11 +1083,18 @@
 	;; Increase the error threshold to avoid disabling checkers on too many errors.
 	flycheck-checker-error-threshold 1000))
 
+(use-package sideline-flymake
+  :hook (flymake-mode . sideline-mode)
+  :custom
+  (sideline-flymake-display-mode 'line) ;; show errors on the current line
+  (sideline-backends-right '(sideline-flymake)))
+
 ;;; TREESITTER SOURCES
 
 (use-package treesit-auto
   :custom
   (treesit-auto-install 'prompt)
+  (c-ts-mode-indent-offset 4)
   :config
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))
@@ -1233,7 +1168,7 @@ otherwise, call `format-all-buffer'."
 	 (eglot-managed-mode . my/eglot-setup))
   :config
   (dolist (server `((c-ts-mode        . ("clangd"))
-	(python-ts-mode   . ("pyright-langserver" "--stdio"))
+	;; (python-ts-mode   . ("pyright-langserver" "--stdio"))
 		    (c++-ts-mode      . ("clangd"))
 		    (go-ts-mode       . ("gopls"))))
     (add-to-list 'eglot-server-programs server)))
@@ -1698,9 +1633,14 @@ This function is intended to be called on file open."
 
 ;;; ORG BULLETS -
 ;; Org-bullets gives us attractive bullets rather than asterisks.
-;(add-hook 'org-mode-hook 'org-indent-mode)
-(use-package org-bullets :ensure t :defer t)
-(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+;; (add-hook 'org-mode-hook 'org-indent-mode)
+;; (use-package org-bullets :ensure t :defer t)
+;; (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+
+;;; ORG SUPERSTAR (ALTERNATIVE TO ORG BULLETS)        
+(use-package org-superstar
+  :after org
+  :hook (org-mode . org-superstar-mode))
 
 ;;; ORG REMARKS
 
@@ -2185,39 +2125,22 @@ POINT defaults to the current `point'."
 
 ;;; YASNIPPET
 
-(use-package yasnippet-snippets :ensure t :defer t :after yasnippet)
-
 (use-package yasnippet
 :ensure t
 :diminish
 :defer t
 :config
 (yas-global-mode 1)
-(yas-reload-all)
-(add-hook 'prog-mode-hook 'yas-minor-mode)
-(add-hook 'text-mode-hook 'yas-minor-mode))
+(setq yas-snippet-dirs '("~/.emacs.d/snippets/"))
+(setq yas-triggers-in-field t)
+(yas-reload-all))
 
-
-;;; yasnippet-capf
-(use-package yasnippet-capf
-  :after cape yasnippet
+(use-package yasnippet-snippets
+  :ensure t
+  :after yasnippet
   :config
-  ;; enable yasnippet-capf everywhere
-  (progn
-    (add-to-list 'completion-at-point-functions #'yasnippet-capf))
-  ;; integrate yasnippet-capf with eglot completion
-  (progn
-    (defun my/eglot-capf-with-yasnippet ()
-      (setq-local completion-at-point-functions
-		  (list
-		   (cape-capf-super
-		    #'eglot-completion-at-point
-		    #'yasnippet-capf))))
-    (with-eval-after-load 'eglot
-      (add-hook 'eglot-managed-mode-hook #'my/eglot-capf-with-yasnippet))))
+  (yasnippet-snippets-initialize))
 
-(setq completion-auto-select-single-candidate nil)
-(setq completion-auto-commit nil)
 
 ;; Bind a key for manual snippet insertion:
 (global-set-key (kbd "C-c y") #'yas-insert-snippet)
