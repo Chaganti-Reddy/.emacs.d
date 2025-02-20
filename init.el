@@ -54,13 +54,13 @@
 			       (string-suffix-p "server" server-name))
 		      (let ((after-init-time (current-time)))
 			(dolist (lib '("org" "ob" "ox" "ol" "org-roam" "org-modern" "toc-org"
-				       "org-capture" "org-agenda" "org-fragtog"
+				       "org-capture" "org-agenda" 
 				       "org-tempo" "ob-mermaid" "ox-latex" "calfw" "calfw-org"
 					"latex" "reftex" "cdlatex"
 				       "consult" "elisp-mode"
 				       "simple" "expand-region"
-				       "ace-window" "avy" "yasnippet"
-				       "magit" "gcmh" "evil" "evil-collection" "which-key" "dashboard" "projectile" "perspective" "corfu" "cape" "gptel" "ellama" "treemacs"
+				       "yasnippet"
+				       "magit" "gcmh" "evil" "evil-collection" "which-key" "dashboard" "projectile" "perspective" "corfu" "cape" "gptel"
 					"ef-themes"
 				       ;; "ewal" "ewal-doom-themes" "doom-themes" "modus-themes"
 				       "dired" "ibuffer" "pdf-tools"))
