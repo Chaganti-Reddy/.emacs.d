@@ -1,0 +1,6 @@
+# key: mk
+# name: Inline Math
+# condition: (and (not (texmathp)) (quote auto))
+# group: math
+# --
+\\( $0 \\)
