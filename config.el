@@ -170,10 +170,10 @@
 (setcdr (assq 'system org-file-apps-gnu) "xdg-open %s")
 
 (advice-add 'org-open-file :around
-            (lambda (orig-fun &rest args)
-              ;; Work around a weird problem with xdg-open.
-              (let ((process-connection-type nil))
-                (apply orig-fun args))))
+	    (lambda (orig-fun &rest args)
+	      ;; Work around a weird problem with xdg-open.
+	      (let ((process-connection-type nil))
+		(apply orig-fun args))))
 
 ;;; RECENTF SETTINGS
 
@@ -868,14 +868,14 @@
   (corfu-auto-prefix 2)         ;; Minimum prefix length for auto-completion
   (corfu-auto-delay 0.1)          ;; No delay before suggestions appear
   (corfu-quit-no-match t)
-  (corfu-quit-at-boundary 'separator)
+  (corfu-quit-at-boundary t)
+  (setq completion-cycle-threshold 3)
   (corfu-echo-documentation nil)
-  (corfu-preview-current nil) ;; 'insert 
+  (corfu-preview-current nil) ;; 'insert
+  (setq corfu-preselect 'prompt)
+  (setq corfu-separator ?\s)
   (corfu-preselect-first nil)
   (corfu-popupinfo-mode nil)      ;; Enable documentation popups
-  ;; Enable indentation+completion using the TAB key.
-  ;; `completion-at-point' is often bound to M-TAB.
-  (tab-always-indent 'complete)
   :bind (:map corfu-map
 	 ("S-RET" . nil)
 	 ("RET"   . corfu-insert)
@@ -910,24 +910,59 @@
 (use-package cape
   :ensure t
   :init
-  (dolist (fn '(cape-file
-		cape-keyword
-		cape-dabbrev
-		cape-elisp-block
-		cape-abbrev
-		cape-dict
-		;; cape-emoji
-		cape-sgml))
-    (add-hook 'completion-at-point-functions fn 'append))
+  ;; (dolist (fn '(cape-file
+	;; 	cape-keyword
+	;;	cape-dabbrev
+  ;;	cape-abbrev
+	;;	cape-dict
+	;;	;; cape-emoji
+	;;	cape-sgml))
+  ;;  (add-hook 'completion-at-point-functions fn 'append))
 
+  ;; General completion functions for all programming modes
+  (add-hook 'prog-mode-hook
+            (lambda ()
+              (add-hook 'completion-at-point-functions #'cape-keyword 'append)
+              (add-hook 'completion-at-point-functions #'cape-dabbrev 'append)
+              (add-hook 'completion-at-point-functions #'cape-file 'append)))
+
+  ;; Elisp-specific completions
   (add-hook 'emacs-lisp-mode-hook
-	    (lambda ()
-	      (add-hook 'completion-at-point-functions #'cape-elisp-symbol 'append)
-	      (add-hook 'completion-at-point-functions #'cape-elisp-block 'append)))
+            (lambda ()
+              (add-hook 'completion-at-point-functions #'cape-elisp-symbol 'append)
+              (add-hook 'completion-at-point-functions #'cape-elisp-block 'append)
+              (add-hook 'completion-at-point-functions #'cape-file 'append)))
 
+  ;; Org mode completions
+  (add-hook 'org-mode-hook
+            (lambda ()
+              (add-hook 'completion-at-point-functions #'cape-dabbrev 'append)
+              (add-hook 'completion-at-point-functions #'cape-keyword 'append)
+              (add-hook 'completion-at-point-functions #'cape-abbrev 'append)
+              (add-hook 'completion-at-point-functions #'cape-file 'append)))
+
+  ;; LaTeX-specific completions
   (add-hook 'latex-mode-hook
-	    (lambda ()
-	      (add-hook 'completion-at-point-functions #'cape-tex 'append))))
+            (lambda ()
+              (add-hook 'completion-at-point-functions #'cape-tex 'append)
+              (add-hook 'completion-at-point-functions #'cape-dabbrev 'append)
+              (add-hook 'completion-at-point-functions #'cape-keyword 'append)
+              (add-hook 'completion-at-point-functions #'cape-file 'append)))
+
+  ;; SGML/HTML/XML modes
+  (add-hook 'sgml-mode-hook
+            (lambda ()
+              (add-hook 'completion-at-point-functions #'cape-sgml 'append)
+              (add-hook 'completion-at-point-functions #'cape-dabbrev 'append)
+              (add-hook 'completion-at-point-functions #'cape-file 'append)))
+
+  ;; Text mode completions
+  (add-hook 'text-mode-hook
+            (lambda ()
+              (add-hook 'completion-at-point-functions #'cape-dabbrev 'append)
+              (add-hook 'completion-at-point-functions #'cape-abbrev 'append)
+              (add-hook 'completion-at-point-functions #'cape-file 'append))))
+
 
 ;;; CAPF AUTOSUGGEST
 
@@ -1313,6 +1348,25 @@ otherwise, call `format-all-buffer'."
 	 (display-buffer-reuse-window display-buffer-at-bottom)
 	 (window-height . 0.3))))
 
+;;; WEB MODE 
+
+(use-package web-mode
+  :ensure t
+  :defer t
+  :config
+  (setq
+   web-mode-markup-indent-offset 2
+   web-mode-css-indent-offset 2
+   web-mode-code-indent-offset 2
+   web-mode-style-padding 2
+   web-mode-script-padding 2
+   web-mode-enable-auto-closing t
+   web-mode-enable-auto-opening t
+   web-mode-enable-auto-pairing t
+   web-mode-enable-auto-indentation t)
+  :mode
+  (".html$" "*.php$"))
+
 ;;; PDF TOOLS
 
 (use-package pdf-tools
@@ -1383,10 +1437,18 @@ otherwise, call `format-all-buffer'."
   ;; LaTeX preview settings.
   (setq preview-auto-cache-preamble t
   ;; preview-default-option-list '("floats" "graphics")
-  preview-default-option-list '("displaymath" "graphics" "textmath" "footnotes" "sections" "showlabels" "psfixbb" "floats")
+  preview-default-option-list '("displaymath" "graphics" "textmath" "footnotes" "sections" "showlabels" "psfixbb" "floats" "tabular")
 	TeX-show-compilation nil))
 
 (add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
+
+(defun clear-latex-build ()
+  "Remove all LaTeX compilation files except .tex and .pdf."
+  (interactive)
+  (when (y-or-n-p "Delete all LaTeX build files except .tex and .pdf? (y/n) ")
+    (call-process "/bin/sh" nil nil nil "-c"
+                  "rm -rf auto *.prv *.aux *.bbl *.blg *.log *.out *.toc *.lof *.lot *.synctex.gz *.fls *.fdb_latexmk _region_.tex")
+    (message "LaTeX build files deleted.")))
 
 ;;; REFTEX
 
@@ -1465,34 +1527,49 @@ otherwise, call `format-all-buffer'."
   :ensure t
   :hook (LaTeX-mode . evil-tex-mode))
 
-;;; ============================================================
-;;; Additional Preview Hooks (Optional)
-;;; ============================================================
-;; These hooks allow LaTeX fragment previews to be generated on file open
-;; and automatically when saving the buffer. (Enable only if desired.)
-(defun my-initial-preview ()
-  "Generate preview for the current document.
-This function is intended to be called on file open."
-  (save-excursion
-    (preview-document)))
+;;; PREVIEW AUTO
+(use-package preview-auto
+  :after latex
+  :hook (LaTeX-mode . preview-auto-mode)
+  :config
+  (setq preview-protect-point t)
+  (setq preview-locating-previews-message nil)
+  (setq preview-leave-open-previews-visible t)
+  :custom
+  (preview-auto-interval 0.1)
 
-(define-minor-mode my-preview-at-save-mode
-  "Minor mode to preview LaTeX fragments on save."
-  :init-value nil
-  :global nil
-  (if my-preview-at-save-mode
-      (add-hook 'after-save-hook #'my-initial-preview nil t)
-    (remove-hook 'after-save-hook #'my-initial-preview t)))
+  ;; Uncomment the following only if you have followed the above
+  ;; instructions concerning, e.g., hyperref:
 
-(with-eval-after-load 'preview
-  ;; Add the preview functions to LaTeX-mode if the preview package is loaded.
-  ;; (add-hook 'LaTeX-mode-hook #'my-initial-preview t)
-  (add-hook 'LaTeX-mode-hook #'my-preview-at-save-mode))
+  (preview-LaTeX-command-replacements '(preview-LaTeX-disable-pdfoutput)))
 
-;;; PDF TOOLS FOR LATEX PREVIEW (ALTERNATIVE)
+(use-package preview-tailor
+  :ensure t
+  :after preview
+  :config
+  (preview-tailor-init)
+  :hook
+  (kill-emacs . preview-tailor-save))
 
-;;(setq TeX-view-program-selection '((output-pdf "PDF Tools"))
-;;       TeX-source-correlate-start-server t)
+;; Preview Latex in markdown buffer as well using a temporary TeX file with preview auto mode.
+
+(defun my-markdown-preview-hook ()
+  "Setup LaTeX preview for Markdown mode with a fresh temporary TeX file."
+  (setq-local preview-tailor-local-multiplier 0.7)
+  
+  ;; Always create a new temporary LaTeX file
+  (setq-local my-preview-master (make-temp-file "preview-master" nil ".tex"))
+  (with-temp-file my-preview-master
+    (insert "\\documentclass{article}\n"
+            "\\usepackage{amsmath, amssymb}\n"
+            "\\begin{document}\n"
+            "% Your LaTeX preview content will be inserted here\n"
+            "\\end{document}\n"))
+  
+  (setq-local TeX-master my-preview-master)
+  (preview-auto-mode))
+
+(add-hook 'markdown-mode-hook 'my-markdown-preview-hook)
 
 ;;; ============================================================
 ;;; MARKDOWN SETUP
@@ -1637,7 +1714,7 @@ This function is intended to be called on file open."
 ;; (use-package org-bullets :ensure t :defer t)
 ;; (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
 
-;;; ORG SUPERSTAR (ALTERNATIVE TO ORG BULLETS)        
+;;; ORG SUPERSTAR (ALTERNATIVE TO ORG BULLETS)
 (use-package org-superstar
   :after org
   :hook (org-mode . org-superstar-mode))
@@ -1958,17 +2035,41 @@ This function is intended to be called on file open."
 ;;; CUSTOM LATEX CLASSES FOR ORG EXPORT
 
 (with-eval-after-load 'ox-latex
-  (add-to-list 'org-latex-classes
-	       '("org-plain-latex"
-		 "\\documentclass{article}
-	       [NO-DEFAULT-PACKAGES]
-	       [PACKAGES]
-	       [EXTRA]"
-		 ("\\section{%s}" . "\\section*{%s}")
-		 ("\\subsection{%s}" . "\\subsection*{%s}")
-		 ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
-		 ("\\paragraph{%s}" . "\\paragraph*{%s}")
-		 ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+  (dolist (class
+           '(("IEEEtran" "\\documentclass[conference]{IEEEtran}"
+              ("\\section{%s}" . "\\section*{%s}")
+              ("\\subsection{%s}" . "\\subsection*{%s}")
+              ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+              ("\\paragraph{%s}" . "\\paragraph*{%s}")
+              ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
+             ("article" "\\documentclass[11pt]{article}"
+              ("\\section{%s}" . "\\section*{%s}")
+              ("\\subsection{%s}" . "\\subsection*{%s}")
+              ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+              ("\\paragraph{%s}" . "\\paragraph*{%s}")
+              ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))
+             ("report" "\\documentclass[11pt]{report}"
+              ("\\part{%s}" . "\\part*{%s}")
+              ("\\chapter{%s}" . "\\chapter*{%s}")
+              ("\\section{%s}" . "\\section*{%s}")
+              ("\\subsection{%s}" . "\\subsection*{%s}")
+              ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
+             ("book" "\\documentclass[11pt]{book}"
+              ("\\part{%s}" . "\\part*{%s}")
+              ("\\chapter{%s}" . "\\chapter*{%s}")
+              ("\\section{%s}" . "\\section*{%s}")
+              ("\\subsection{%s}" . "\\subsection*{%s}")
+              ("\\subsubsection{%s}" . "\\subsubsection*{%s}"))
+             ("org-plain-latex" "\\documentclass{article}
+               [NO-DEFAULT-PACKAGES]
+               [PACKAGES]
+               [EXTRA]"
+              ("\\section{%s}" . "\\section*{%s}")
+              ("\\subsection{%s}" . "\\subsection*{%s}")
+              ("\\subsubsection{%s}" . "\\subsubsection*{%s}")
+              ("\\paragraph{%s}" . "\\paragraph*{%s}")
+              ("\\subparagraph{%s}" . "\\subparagraph*{%s}"))))
+    (add-to-list 'org-latex-classes class)))
 
 ;;; ORG LATEX PREVIEW
 
@@ -1986,7 +2087,7 @@ This function is intended to be called on file open."
 ;; Prevent navigation commands from triggering LaTeX previews
 (setq org-latex-preview-auto-ignored-commands
       '(next-line previous-line mwheel-scroll
-        scroll-up-command scroll-down-command))
+	scroll-up-command scroll-down-command))
 
 ;; Enable consistent equation numbering
 (setq org-latex-preview-numbered t)
@@ -2014,17 +2115,17 @@ POINT defaults to the current `point'."
      (overlay-put ov 'line-prefix `(space :align-to (- center (0.5 . ,disp)))))))
 (advice-add 'org--make-preview-overlay :after 'org-justify-fragment-overlay)
 
- 
+
 ;; Automatically refresh LaTeX previews on save or edits
 (add-hook 'org-mode-hook
-          (lambda ()
-            (add-hook 'after-save-hook 'org-latex-preview nil 'local)
-            (add-hook 'after-change-functions
-                      (lambda (&rest _) (org-latex-preview)) nil 'local)))
+	  (lambda ()
+	    (add-hook 'after-save-hook 'org-latex-preview nil 'local)
+	    (add-hook 'after-change-functions
+		      (lambda (&rest _) (org-latex-preview)) nil 'local)))
 
 ;;; LATEX FRAGMENT SCALE
 
-(setq preview-scale-function 0.8)
+(setq preview-scale-function 1)
 
 ;;; CITATION
 
@@ -2032,9 +2133,11 @@ POINT defaults to the current `point'."
   :ensure t
   :defer t)
 
-(require 'oc-csl)
+
+(with-eval-after-load 'org
+  (require 'oc-csl)
 (require 'oc-biblatex)
-(require 'oc-natbib)
+(require 'oc-natbib))
 ;; (setq org-cite-global-bibliography '("~/Path/To/bibliographyFile"))
 
 ;;; ESHELL
@@ -2126,23 +2229,25 @@ POINT defaults to the current `point'."
 ;;; YASNIPPET
 
 (use-package yasnippet
-:ensure t
-:diminish
-:defer t
-:config
-(yas-global-mode 1)
-(setq yas-snippet-dirs '("~/.emacs.d/snippets/"))
-(setq yas-triggers-in-field t)
-(yas-reload-all))
+  :ensure t
+  :diminish
+  :hook
+  ((prog-mode . yas-minor-mode)
+   (text-mode . yas-minor-mode))
+  :config
+  (setq yas-snippet-dirs '("~/.emacs.d/snippets/")) ;; Ensure your custom snippet directory is included
+  (yas-reload-all))
+
+(add-hook 'latex-mode-hook #'yas-minor-mode)
 
 (use-package yasnippet-snippets
   :ensure t
   :after yasnippet
   :config
+  (yas-reload-all)
   (yasnippet-snippets-initialize))
 
-
-;; Bind a key for manual snippet insertion:
+;; Keybinding to manually insert snippets
 (global-set-key (kbd "C-c y") #'yas-insert-snippet)
 
 ;;; CALENDAR
