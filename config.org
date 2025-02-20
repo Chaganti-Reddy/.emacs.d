@@ -416,6 +416,9 @@ GC is the process of freeing up memory from unused/used up variables. We set the
 		     (float-time (time-subtract after-init-time before-init-time))
 		     gcs-done)))
 
+;; Increase the amount of data which Emacs reads from the process
+(setq read-process-output-max (* 1024 1024)) ;; 1mb
+
 
 #+END_SRC
 
@@ -570,31 +573,6 @@ Which Key is a minor mode for Emacs that displays the key bindings following you
   ;; Load default theme
   (ef-themes-select my/current-ef-theme))
 
-;;; NANO THEMES
-
-;; (use-package nano-theme
-;;   :ensure (nano-theme :host github :repo "rougier/nano-theme")
-;;   :config
-;;   (load-theme 'nano t)
-;;   (nano-light))
-
-
-#+END_SRC
-
-*** DOOM THEME
-
-#+BEGIN_SRC emacs-lisp :tangle no
-;;; DOOM THEMES
-
-(add-to-list 'custom-theme-load-path "~/.config/emacs/themes/")
-(use-package doom-themes
-  :config
-  (setq doom-themes-enable-bold t    ; Enable bold text
-	doom-themes-enable-italic t) ; Enable italic text
-  ;(load-theme 'doom-challenger-deep t) ; Load default theme
-  (doom-themes-neotree-config) ; Enable neotree theme
-  (doom-themes-org-config))  ; Improve org-mode fontification
-
 
 #+END_SRC
 
@@ -734,7 +712,7 @@ All The Icons is an emcas package that provides a collection of icons for use in
 ** MODELINE
 The modeline is the bottom status bar that appears in Emacs windows.  While you can create your own custom modeline, why go to the trouble when Doom Emacs already has a nice modeline package available.  For more information on what is available to configure in the Doom modeline, check out: [[https://github.com/seagle0128/doom-modeline][Doom Modeline]]
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp 
 ;;; DOOM MODELINE
 
 (use-package doom-modeline
@@ -911,6 +889,10 @@ I am so lazy to document so adding some of the extras here
 (use-package expand-region
   :bind ("C-=" . er/expand-region))
 
+;; Removes whitespace from the ends of lines.
+(use-package ws-butler
+:init (ws-butler-global-mode))     
+
 
 #+END_SRC
 
@@ -983,7 +965,7 @@ These are some of my packages that are required on startup
 ** BEACON MODE
 Whenever the window scrolls a light will shine on top of your cursor so you know where it is - [[https://github.com/Malabarba/beacon][BEACON]].
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 ;;; BEACON
 
 (use-package beacon
@@ -1021,11 +1003,11 @@ Whenever the window scrolls a light will shine on top of your cursor so you know
 		'("node_modules" "dist" "build" "vendor" ".venv" "tmp" "cache" "log" "bower_components")))
   (projectile-mode 1))
 
-;(use-package counsel-projectile
-;  :ensure t
-;  :after (projectile counsel)  ;; Ensure Projectile and Counsel are loaded first.
-;  :config
-;  (counsel-projectile-mode 1))
+;; (use-package counsel-projectile
+;;   :ensure t
+;;   :after (projectile counsel)  ;; Ensure Projectile and Counsel are loaded first.
+;;   :config
+;;   (counsel-projectile-mode 1))
 
 (use-package consult-projectile
   :ensure (consult-projectile :type git :host gitlab :repo "OlMon/consult-projectile" :branch "master"))
@@ -1387,13 +1369,16 @@ This is a list of buffer completion systems I use.
   (corfu-cycle t)               ;; Enable cycling through candidates
   (corfu-auto t)                ;; Enable auto-completion
   (corfu-auto-prefix 2)         ;; Minimum prefix length for auto-completion
-  (corfu-auto-delay 0.02)          ;; No delay before suggestions appear
+  (corfu-auto-delay 0.1)          ;; No delay before suggestions appear
   (corfu-quit-no-match t)
   (corfu-quit-at-boundary 'separator)
   (corfu-echo-documentation nil)
-  (corfu-preview-current 'insert)
+  (corfu-preview-current nil) ;; 'insert 
   (corfu-preselect-first nil)
   (corfu-popupinfo-mode nil)      ;; Enable documentation popups
+  ;; Enable indentation+completion using the TAB key.
+  ;; `completion-at-point' is often bound to M-TAB.
+  (tab-always-indent 'complete)
   :bind (:map corfu-map
 	 ("S-RET" . nil)
 	 ("RET"   . corfu-insert)
@@ -1669,7 +1654,7 @@ GPTEL is an excellent package written by karthink and the document is written [[
 ** ELLAMA
 [[https://github.com/s-kostyaev/ellama][Ellama]] is a tool for interacting with large language models from Emacs.  You need to have 'ollama' installed on your computer to use 'ellama' in Emacs.  You need to pull in any LLMs that you want to have available for use.  For example, if you want to be able to use Llama 3.1, then you need to run 'ollama pull llama3.1'.
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 ;;; ELLAMA
 
 (use-package ellama
@@ -1762,7 +1747,7 @@ I use TREEMACS as file manager with the dired setting and also peep dired for be
 ** TREEMACS
 Treemacs is a cool alternative to Neotree
 
-#+BEGIN_SRC emacs-lisp
+#+BEGIN_SRC emacs-lisp :tangle no
 ;;; TREEMACS
 
    (use-package treemacs
@@ -1894,6 +1879,12 @@ Install =luacheck= from your Linux distro's repositories for flycheck to work co
 	;; Increase the error threshold to avoid disabling checkers on too many errors.
 	flycheck-checker-error-threshold 1000))
 
+(use-package sideline-flymake
+  :hook (flymake-mode . sideline-mode)
+  :custom
+  (sideline-flymake-display-mode 'line) ;; show errors on the current line
+  (sideline-backends-right '(sideline-flymake)))
+
 
 #+END_SRC
 
@@ -1905,6 +1896,7 @@ Install =luacheck= from your Linux distro's repositories for flycheck to work co
 (use-package treesit-auto
   :custom
   (treesit-auto-install 'prompt)
+  (c-ts-mode-indent-offset 4)
   :config
   (treesit-auto-add-to-auto-mode-alist 'all)
   (global-treesit-auto-mode))
@@ -1990,7 +1982,7 @@ otherwise, call `format-all-buffer'."
 	 (eglot-managed-mode . my/eglot-setup))
   :config
   (dolist (server `((c-ts-mode        . ("clangd"))
-	(python-ts-mode   . ("pyright-langserver" "--stdio"))
+	;; (python-ts-mode   . ("pyright-langserver" "--stdio"))
 		    (c++-ts-mode      . ("clangd"))
 		    (go-ts-mode       . ("gopls"))))
     (add-to-list 'eglot-server-programs server)))
@@ -2735,10 +2727,14 @@ Some UI Settings
 
 ;;; ORG BULLETS -
 ;; Org-bullets gives us attractive bullets rather than asterisks.
-;(add-hook 'org-mode-hook 'org-indent-mode)
-(use-package org-bullets :ensure t :defer t)
-(add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
+;; (add-hook 'org-mode-hook 'org-indent-mode)
+;; (use-package org-bullets :ensure t :defer t)
+;; (add-hook 'org-mode-hook (lambda () (org-bullets-mode 1)))
 
+;;; ORG SUPERSTAR (ALTERNATIVE TO ORG BULLETS)        
+(use-package org-superstar
+  :after org
+  :hook (org-mode . org-superstar-mode))
 
 #+END_SRC
 
@@ -3504,42 +3500,26 @@ Yasnippet is a snippet manager for Emacs.
 #+BEGIN_SRC emacs-lisp
 ;;; YASNIPPET
 
-(use-package yasnippet-snippets :ensure t :defer t :after yasnippet)
-
 (use-package yasnippet
 :ensure t
 :diminish
 :defer t
 :config
 (yas-global-mode 1)
-(yas-reload-all)
-(add-hook 'prog-mode-hook 'yas-minor-mode)
-(add-hook 'text-mode-hook 'yas-minor-mode))
+(setq yas-snippet-dirs '("~/.emacs.d/snippets/"))
+(setq yas-triggers-in-field t)
+(yas-reload-all))
 
-
-;;; yasnippet-capf
-(use-package yasnippet-capf
-  :after cape yasnippet
+(use-package yasnippet-snippets
+  :ensure t
+  :after yasnippet
   :config
-  ;; enable yasnippet-capf everywhere
-  (progn
-    (add-to-list 'completion-at-point-functions #'yasnippet-capf))
-  ;; integrate yasnippet-capf with eglot completion
-  (progn
-    (defun my/eglot-capf-with-yasnippet ()
-      (setq-local completion-at-point-functions
-		  (list
-		   (cape-capf-super
-		    #'eglot-completion-at-point
-		    #'yasnippet-capf))))
-    (with-eval-after-load 'eglot
-      (add-hook 'eglot-managed-mode-hook #'my/eglot-capf-with-yasnippet))))
+  (yasnippet-snippets-initialize))
 
-(setq completion-auto-select-single-candidate nil)
-(setq completion-auto-commit nil)
 
 ;; Bind a key for manual snippet insertion:
 (global-set-key (kbd "C-c y") #'yas-insert-snippet)
+
 
 #+END_SRC
 
