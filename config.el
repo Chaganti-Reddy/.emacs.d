@@ -166,6 +166,15 @@
 	("\\.x?html?\\'" . "zen-browser %s")
 	("\\.pdf\\'" . "~/.local/bin/zathura %s")))
 
+;; (setcdr (assq 'system org-file-apps-defaults-gnu) "xdg-open %s")
+(setcdr (assq 'system org-file-apps-gnu) "xdg-open %s")
+
+(advice-add 'org-open-file :around
+            (lambda (orig-fun &rest args)
+              ;; Work around a weird problem with xdg-open.
+              (let ((process-connection-type nil))
+                (apply orig-fun args))))
+
 ;;; RECENTF SETTINGS
 
 (require 'recentf)
@@ -1999,9 +2008,12 @@ This function is intended to be called on file open."
 ;;; LATEX COMPILER & BASIC PREVIEW SETTINGS
 
 (setq org-latex-compiler "xelatex")
+(setq org-latex-pdf-process '("xelatex %f"))
 (setq org-latex-listings t)
 (setq org-preview-latex-image-directory "~/.cache/emacs/lxtimg/")
 (setq org-latex-preview-lxtpng-directory "~/.cache/emacs/lxtimg/")
+
+(define-key org-mode-map (kbd "M-p") 'org-latex-export-to-pdf)
 
 ;;; CUSTOM LATEX CLASSES FOR ORG EXPORT
 
