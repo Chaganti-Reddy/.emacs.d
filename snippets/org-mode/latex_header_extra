@@ -1,6 +1,0 @@
-# -*- mode: snippet -*-
-# name: latex_header_extra
-# key: lhe
-# condition: (save-excursion (backward-word) (bolp))
-# --
-#+latex_header_extra: $0
