@@ -19,6 +19,7 @@
   (karna/leader-keys
     "SPC" '(counsel-M-x :wk "Counsel M-x")
     "." '(find-file :wk "Find file")
+    "," '(scratch-buffer :wk "Scratch buffer")
     "=" '(perspective-map :wk "Perspective") ;; Lists all the perspective keybindings
     "/" '(evilnc-comment-or-uncomment-lines :wk "Toggle Comments")
     "TAB TAB" '(comment-line :wk "Comment lines")
@@ -243,6 +244,7 @@
     "o e" '(elfeed :wk "Elfeed RSS")
     "o f" '(make-frame :wk "Open buffer in new frame")
     "o p" '(open-python-right-side :wk "Open Python REPL")
+    "o o" '(open-octave-right-side :wk "Open Octave REPL")
     "o F" '(select-frame-by-name :wk "Select frame by name"))
 
   ;; projectile-command-map already has a ton of bindings
@@ -332,6 +334,16 @@
     "w d" '(downcase-word :wk "Downcase word")
     "w u" '(upcase-word :wk "Upcase word")
     "w =" '(count-words :wk "Count words/lines for buffer"))
+
+  (karna/leader-keys
+    "y" '(:ignore t :wk "YASnippet")
+    "y i" '(consult-yasnippet :wk "Insert Consult yasnippet")
+    "y I" '(yas-insert-snippet :wk "Insert snippet")
+    "y n" '(yas-new-snippet :wk "New snippet")
+    "y v" '(yas-visit-snippet-file :wk "Edit snippet")
+    "y r" '(yas-reload-all :wk "Reload snippets")
+    "y t" '(yas-describe-tables :wk "Show available snippets"))
+
 )
 
 (global-set-key (kbd "C-=") 'text-scale-increase)
@@ -345,6 +357,8 @@
 	  (lambda ()
 	    (local-set-key (kbd "C-s") #'TeX-command-run-all)))
 
+;; Keybinding to manually insert snippets
+(global-set-key (kbd "C-c y") #'consult-yasnippet)
 
 (provide 'keybindings)
 ;; keybindings.el ends here
