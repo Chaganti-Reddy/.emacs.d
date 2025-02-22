@@ -42,8 +42,11 @@
   (menu-bar-mode -1)                  ;; Disable the menu bar
   (scroll-bar-mode -1)                ;; Disable the scroll bar
   (column-number-mode t)              ;; Show column numbers
+  (setq cursor-type 'box)             ;; some others are hollow, bar, nil
+  (setq blink-cursor-mode t)          ;; Enable cursor blinking
   (size-indication-mode t)            ;; Display file size in the mode line
   (fringe-mode -1)                    ;; Remove UI fringes
+  (setq animate-cursor-mode t)        ;; Enable cursor animation
   (tool-bar-mode -1)                  ;; Disable the tool bar
   (global-hl-line-mode -1)            ;; global highlighting of the current line
   (setq init-start-time (current-time))  ;; Record startup time
@@ -64,7 +67,7 @@
   ;;----------------------------------------------------------------------------
   ;; Appearance Tweaks
   ;;----------------------------------------------------------------------------
-  (add-to-list 'default-frame-alist '(alpha-background . 100)) ;; Set frame transparency
+  (add-to-list 'default-frame-alist '(alpha-background . 95)) ;; Set frame transparency
   (global-prettify-symbols-mode 1)      ;; Display certain keywords as symbols
 
   ;;----------------------------------------------------------------------------
