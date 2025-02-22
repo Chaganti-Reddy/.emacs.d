@@ -1,5 +1,51 @@
 ;;; org-agenda-config.el --- ORG Agenda Config -*- lexical-binding: t; -*-
 
+;; Improve Org Agenda with `org-super-agenda`
+(use-package org-super-agenda
+  :ensure t
+  :config
+  (setq org-super-agenda-groups
+	'((:name "🔥 Urgent"  :priority "A")
+	  (:name "📅 Today"   :time-grid t)
+	  (:name "💡 Ideas"   :tag "idea")
+	  (:name "🛠 Work"    :category "Work")
+	  (:name "🏡 Personal" :habit t)
+	  (:name "📖 Reading" :tag "reading")
+	  (:name "📝 Writing" :tag "write")
+	  (:name "📑 Review" :tag "review")
+	  (:name "🚀 Code" :tag "code")
+	  (:name "📚 Literature" :tag "lit")
+	  (:name "🛠 Testing" :tag "test")
+	  (:name "🗓 Planning" :tag "planning")
+	  (:name "🗂 Meeting" :tag "meeting")
+	  (:name "🗄 Submitted" :tag "submitted")
+	  (:name "📢 Published" :tag "published")
+	  (:name "❌ Abandoned" :tag "abandoned")))
+
+  (setq org-tag-alist
+	'((:startgroup)
+	  ("@errand"   . ?E)
+	  ("@home"     . ?H)
+	  ("@lab"      . ?L)
+	  ("@office"   . ?O)
+	  (:endgroup)
+	  ("agenda"    . ?a)
+	  ("planning"  . ?p)
+	  ("note"      . ?n)
+	  ("idea"      . ?i)
+	  ("lit"       . ?l)   ; literature review
+	  ("code"      . ?c)
+	  ("test"      . ?t)
+	  ("write"     . ?w)
+	  ("review"    . ?r)
+	  ("submitted" . ?s)
+	  ("published" . ?P)   ; uppercase P differentiates from planning
+	  ("abandoned" . ?x)
+	  ("meeting"   . ?m)
+	  ("reading"   . ?R)))
+
+  (org-super-agenda-mode))
+
 (setq org-agenda-files (directory-files-recursively org-directory "\\.org$") )
 
 (setq org-agenda-start-with-log-mode t
