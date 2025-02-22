@@ -32,8 +32,8 @@
 		    (when (and (boundp 'server-name)
 			       (string-suffix-p "server" server-name))
 		      (let ((after-init-time (current-time)))
-			(dolist (lib '("org" "ob" "ox" "ol" "org-roam" "org-modern" "toc-org"
-				       "org-capture" "org-agenda" 
+			(dolist (lib '("org" "ob" "ox" "ol" "org-roam" "org-modern" "toc-org" "org-roam-ui"
+				       "org-capture" "org-agenda" "org-super-agenda" "org-appear" "org-superstar" 
 				       "org-tempo" "ob-mermaid" "ox-latex" "calfw" "calfw-org"
 					    "latex" "reftex" "cdlatex"
 				       "consult" "elisp-mode" "flycheck"
