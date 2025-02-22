@@ -52,6 +52,7 @@
   - [[#orderless-smart-matching-for-completions][Orderless (Smart Matching for Completions)]]
   - [[#tabnine][TABNINE]]
   - [[#yasnippet][YASNIPPET]]
+  - [[#consult-yasnippet][CONSULT YASNIPPET]]
   - [[#archives-1][ARCHIVES]]
 - [[#git-programs][GIT PROGRAMS]]
   - [[#git-time-machine][Git Time Machine]]
@@ -69,7 +70,7 @@
   - [[#treesitter][TREESITTER]]
   - [[#eglot][EGLOT]]
   - [[#conda][CONDA]]
-  - [[#archives-2][ARCHIVES]]
+  - [[#pyenv][PYENV]]
 - [[#latex-setup][LATEX SETUP]]
   - [[#pdf-tools][PDF TOOLS]]
   - [[#epub-reader][EPUB READER]]
@@ -79,19 +80,19 @@
   - [[#citar][CITAR]]
   - [[#auctex-latexmk][AUCTEX-LATEXMK]]
   - [[#preview-auto][PREVIEW AUTO]]
-  - [[#archives-3][ARCHIVES]]
+  - [[#archives-2][ARCHIVES]]
 - [[#org-latex][ORG LATEX]]
   - [[#latex-compiler--basic-preview-settings][LATEX COMPILER & BASIC PREVIEW SETTINGS]]
   - [[#custom-latex-classes][CUSTOM LATEX CLASSES]]
   - [[#org-latex-preview][ORG LATEX PREVIEW]]
   - [[#citation-and-bibliography-integration][CITATION AND BIBLIOGRAPHY INTEGRATION]]
-  - [[#archives-4][ARCHIVES]]
+  - [[#archives-3][ARCHIVES]]
 - [[#markdown][MARKDOWN]]
   - [[#markdown-setup][MARKDOWN SETUP]]
   - [[#ox-hugo][OX-HUGO]]
   - [[#markdown-preview-mode][MARKDOWN PREVIEW MODE]]
   - [[#markdown-latex-preview][MARKDOWN LATEX PREVIEW]]
-  - [[#archives-5][ARCHIVES]]
+  - [[#archives-4][ARCHIVES]]
   - [[#impatient-mode][IMPATIENT MODE]]
 - [[#org-mode][ORG MODE]]
   - [[#settings][SETTINGS]]
@@ -116,7 +117,7 @@
 - [[#load-config-files][LOAD CONFIG FILES]]
 
 * PACKAGE MANAGER SETUP
-  I am using [[Elpaca][https://github.com/progfolio/elpaca]] as my package manager which is very fast and asynchronous package manager.
+  I am using [[https://github.com/progfolio/elpaca][Elpaca]] as my package manager which is very fast and asynchronous package manager.
 
 #+BEGIN_SRC emacs-lisp :tangle lisp/elpaca.el
 ;;; elpaca.el --- Package Manager Setup -*- lexical-binding: t; -*-
@@ -303,8 +304,11 @@
   (menu-bar-mode -1)                  ;; Disable the menu bar
   (scroll-bar-mode -1)                ;; Disable the scroll bar
   (column-number-mode t)              ;; Show column numbers
+  (setq cursor-type 'box)             ;; some others are hollow, bar, nil
+  (setq blink-cursor-mode t)          ;; Enable cursor blinking
   (size-indication-mode t)            ;; Display file size in the mode line
   (fringe-mode -1)                    ;; Remove UI fringes
+  (setq animate-cursor-mode t)        ;; Enable cursor animation
   (tool-bar-mode -1)                  ;; Disable the tool bar
   (global-hl-line-mode -1)            ;; global highlighting of the current line
   (setq init-start-time (current-time))  ;; Record startup time
@@ -325,7 +329,7 @@
   ;;----------------------------------------------------------------------------
   ;; Appearance Tweaks
   ;;----------------------------------------------------------------------------
-  (add-to-list 'default-frame-alist '(alpha-background . 100)) ;; Set frame transparency
+  (add-to-list 'default-frame-alist '(alpha-background . 95)) ;; Set frame transparency
   (global-prettify-symbols-mode 1)      ;; Display certain keywords as symbols
 
   ;;----------------------------------------------------------------------------
@@ -516,9 +520,10 @@ Native Compile support and silence some annoying warnings when a package gets in
 ;; Exclude specific files and directories from tracking
 (setq recentf-exclude
       '("~/.cache/emacs/"             ;; Exclude everything inside ~/.cache/emacs/
-	"/mnt/Karna/Git/Project-K/Org/Tasks.org" ;; Exclude this specific Org file
-	"_region_\\.tex$"              ;; Ignore temporary LaTeX region files
-	"^/tmp/"))                     ;; Exclude everything inside /tmp/
+      "~/.emacs.d/snippets/"          ;; Exclude everything inside ~/.emacs.d/snippets/
+      "/mnt/Karna/Git/Project-K/Org/Tasks.org" ;; Exclude this specific Org file
+      "_region_\\.tex$"              ;; Ignore temporary LaTeX region files
+      "^/tmp/"))                     ;; Exclude everything inside /tmp/
 
 ;; Enable recentf mode
 (recentf-mode 1)
@@ -1064,8 +1069,8 @@ Whenever the window scrolls a light will shine on top of your cursor so you know
   (setq dashboard-show-shortcuts nil)
   (setq dashboard-projects-backend 'projectile)
   (setq dashboard-banner-logo-title "I'll Walk My Own Path!")
-  (setq dashboard-startup-banner 'logo)
-  ;; (setq dashboard-startup-banner "~/.config/emacs/assets/emacs.png")
+  ;; (setq dashboard-startup-banner 'logo)
+  (setq dashboard-startup-banner "~/.emacs.d/assets/emacs.png")
   (setq dashboard-center-content t)
   (setq dashboard-items '((vocabulary)
 			  (recents . 5)
@@ -1503,11 +1508,13 @@ The `consult' package provides lots of commands that are enhanced variants of ba
   :custom
   (corfu-cycle t)                  ;; Cycle through candidates
   (corfu-auto t)                   ;; Auto-show completions
-  (corfu-auto-prefix 1)            ;; Show completions after typing 1 character
+  (corfu-auto-prefix 3)            ;; Show completions after typing 1 character
   (corfu-auto-delay 0.0)           ;; Instant completions
   (corfu-quit-no-match 'separator) ;; Quit when no match
   (corfu-echo-documentation t)     ;; Show docs in echo area
   (corfu-preview-current nil)      ;; No inline preview
+  (corfu-scroll-margin 2)          ;; Start scrolling when 2 candidates remain
+  (corfu-count 10)        ;; Show up to 20 completions
   :config
   (corfu-popupinfo-mode 1)         ;; Show docs like VSCode
   :hook
@@ -1594,6 +1601,13 @@ The `consult' package provides lots of commands that are enhanced variants of ba
 
   ;; LaTeX-specific completions
   (add-hook 'latex-mode-hook
+	    (lambda ()
+	      (add-hook 'completion-at-point-functions #'cape-tex 'append)
+	      (add-hook 'completion-at-point-functions #'cape-dabbrev 'append)
+	      (add-hook 'completion-at-point-functions #'cape-keyword 'append)
+	      (add-hook 'completion-at-point-functions #'cape-file 'append)))
+
+   (add-hook 'LaTeX-mode-hook
 	    (lambda ()
 	      (add-hook 'completion-at-point-functions #'cape-tex 'append)
 	      (add-hook 'completion-at-point-functions #'cape-dabbrev 'append)
@@ -1727,7 +1741,8 @@ Yasnippet is a snippet manager for Emacs.
   (setq yas-snippet-dirs '("~/.emacs.d/snippets/")) ;; Ensure your custom snippet directory is included
   (yas-reload-all))
 
-(add-hook 'latex-mode-hook #'yas-minor-mode)
+(add-hook 'LaTeX-mode-hook #'yas-minor-mode)
+(setq yas-triggers-in-field t)
 
 (use-package yasnippet-snippets
   :ensure t
@@ -1736,12 +1751,244 @@ Yasnippet is a snippet manager for Emacs.
   (yas-reload-all)
   (yasnippet-snippets-initialize))
 
-;; Keybinding to manually insert snippets
-(global-set-key (kbd "C-c y") #'yas-insert-snippet)
-
 
 (provide 'packages/yasnippet)
 ;; packages/yasnippet.el ends here
+#+END_SRC
+
+** CONSULT YASNIPPET
+   Consult integration for yasnippet insertion. Copied from [[https://github.com/mohkale/consult-yasnippet][Consult Yasnippet]]
+
+#+BEGIN_SRC emacs-lisp :tangle lisp/consult-yasnippet.el
+;;; consult-yasnippet.el --- A consulting-read interface for yasnippet -*- lexical-binding: t; -*-
+
+;; Copyright (C) 2021  mohsin kaleem
+
+;; Author: mohsin kaleem <mohkale@kisara.moe>
+;; Package-Requires: ((emacs "27.1") (yasnippet "0.14") (consult "0.16"))
+;; Version: 0.2
+;; URL: https://github.com/mohkale/consult-yasnippet
+
+;; This program is free software; you can redistribute it and/or modify
+;; it under the terms of the GNU General Public License as published by
+;; the Free Software Foundation, either version 3 of the License, or
+;; (at your option) any later version.
+
+;; This program is distributed in the hope that it will be useful,
+;; but WITHOUT ANY WARRANTY; without even the implied warranty of
+;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+;; GNU General Public License for more details.
+
+;; You should have received a copy of the GNU General Public License
+;; along with this program.  If not, see <https://www.gnu.org/licenses/>.
+
+;;; Commentary:
+
+;; Interactively select a yasnippet snippet through completing-read with in
+;; buffer previews.
+
+;;; Code:
+
+(defgroup consult-yasnippet nil
+  "Consult interface for yasnippet."
+  :group 'consult
+  :group 'editing)
+
+(defcustom consult-yasnippet-use-thing-at-point nil
+  "Use `thing-at-point' as initial value for `consult-yasnippet'."
+  :type 'boolean
+  :group 'consult-yasnippet)
+
+(defcustom consult-yasnippet-always-overwrite-thing-at-point nil
+  "Always overwrite `thing-at-point' when expanding a snippet.
+This option forces `consult-yasnippet' to replace `thing-at-point' with the
+expanded snippet even if the expansion doesn't match. This option only
+applies when `consult-yasnippet-use-thing-at-point' is t."
+  :type 'boolean
+  :group 'consult-yasnippet)
+
+(defun consult-yasnippet--expand-template (template region)
+  "Expand TEMPLATE at point saving REGION."
+  (deactivate-mark)
+  (goto-char (car region))
+
+  ;; Restore marked region (when it existed) so that `yas-expand-snippet'
+  ;; overwrites it.
+  (when (not (string-equal "" (buffer-substring (car region) (cdr region))))
+    (push-mark (point))
+    (push-mark (cdr region) nil t))
+
+  (cl-letf (((symbol-function 'yas-completing-read)
+	     (lambda (&rest _args) ""))
+	    ;; yasnippet doesn't have a multiple variant.
+	    ((symbol-function 'completing-read-multiple)
+	     (lambda (&rest _args) "")))
+    (yas-expand-snippet (yas--template-content template)
+			nil nil
+			(yas--template-expand-env template))))
+
+(defun consult-yasnippet--bounds-of-thing-at-point (template)
+  "Check for `thing-at-point' in TEMPLATE.
+Returns true if `thing-at-point' is a substring of either `template-key'
+or `template-name'. Matches only if `consult-yasnippet-use-thing-at-point'
+is t."
+  (if consult-yasnippet-use-thing-at-point
+      (let* ((thing (or (thing-at-point 'symbol) ""))
+	     (use-thing-at-point
+	      (or consult-yasnippet-always-overwrite-thing-at-point
+		  (when template
+		    (or (string-match-p thing (regexp-quote (yas--template-key template)))
+			(string-match-p thing (regexp-quote (yas--template-name template))))))))
+	(if use-thing-at-point
+	    (or (bounds-of-thing-at-point 'symbol)
+		(cons (point) (point)))
+	  (cons (point) (point))))
+    (cons (point) (point))))
+
+(defun consult-yasnippet--preview ()
+  "Previewer for `consult--read'.
+This function expands TEMPLATE at point in the buffer
+`consult-yasnippet--read-template' was started in. This includes
+overwriting any region that was active and removing any previous
+previews that're already active.
+
+When TEMPLATE is not given, this function essentially just resets
+the state of the current buffer to before any snippets were previewed.
+
+If `consult-yasnippet-use-thing-at-point' is t and region is not selected,
+this function removes the matching prefix from the preview."
+  (let* ((buf (current-buffer))
+	 (region-active-initially (use-region-p))
+	 (initial-region (if (use-region-p)
+			     (cons (region-beginning) (region-end))
+			   (cons (point) (point))))
+	 (initial-region-contents (buffer-substring (car initial-region) (cdr initial-region)))
+	 (region (cons (car initial-region) (cdr initial-region))))
+    (lambda (action template)
+      (with-current-buffer buf
+	(let* ((yas-verbosity 0)
+	       (inhibit-redisplay t)
+	       (inhibit-read-only t)
+	       (orig-offset (- (point-max) (cdr region)))
+	       (yas-prompt-functions '(yas-no-prompt)))
+	  ;; We always undo any snippet previews before maybe setting up
+	  ;; some new previews.
+	  (delete-region (car region) (cdr region))
+	  (goto-char (car region))
+	  (setq region (cons (car initial-region) (cdr initial-region)))
+	  (insert initial-region-contents)
+	  (when (not region-active-initially)
+	    (setq region (consult-yasnippet--bounds-of-thing-at-point template))
+	    (setq initial-region region)
+	    (setq initial-region-contents (buffer-substring (car region) (cdr region))))
+
+	  ;; Restore the region if it was initially active, so that yasnippet can overwrite
+	  (when (and region-active-initially (eq action 'return))
+	    (activate-mark)
+	    (set-mark (car region))
+	    (goto-char (cdr region)))
+
+	  (when (and template (not (eq action 'return)))
+	    (unwind-protect
+		(consult-yasnippet--expand-template template region)
+	      (unwind-protect
+		  (mapc #'yas--commit-snippet
+			(yas-active-snippets (point-min) (point-max)))
+		(setcdr region (- (point-max) orig-offset))
+		(deactivate-mark)))
+	    (redisplay)))))))
+
+(defun consult-yasnippet--candidates (templates)
+  "Convert TEMPLATES into candidates for `completing-read'."
+  (mapcar
+   (lambda (template)
+     (cons (concat
+	    (propertize (concat (yas--table-name (yas--template-table template))
+				" ")
+			'invisible t)
+	    (yas--template-name template)
+	    " ["
+	    (propertize (or (yas--template-key template)
+			    (and (functionp 'yas--template-regexp-key)
+				 (yas--template-regexp-key template)))
+			'face 'consult-key)
+	    "]")
+	   template))
+   templates))
+
+(defun consult-yasnippet--annotate (candidates)
+  (lambda (cand)
+    (when-let ((template (cdr (assoc cand candidates)))
+	       (table-name (yas--table-name (yas--template-table template))))
+      (concat
+       " "
+       (propertize " " 'display `(space :align-to (- right ,(+ 1 (length table-name)))))
+       table-name))))
+
+(defun consult-yasnippet--read-template (&optional all-templates)
+  "Backend implementation of `consult-yasnippet'.
+This starts a `completing-read' session with all the snippets in the current
+snippet table with support for previewing the snippet to be expanded and
+replacing the active region with the snippet expansion. When ALL-TEMPLATES
+is non-nil you get prompted with snippets from all snippet tables, not just
+the current one.
+
+This function doesn't actually expand the snippet, it only reads and then
+returns a snippet template from the user."
+  (unless (bound-and-true-p yas-minor-mode)
+    (error "`consult-yasnippet' can only be called while `yas-minor-mode' is active"))
+
+  (barf-if-buffer-read-only)
+
+  (let* ((buffer-undo-list t)                                                  ; Prevent querying user (and showing previews) from updating the undo-history
+	 (candidates
+	  (consult-yasnippet--candidates
+	   (if all-templates
+	       (yas--all-templates (map-values yas--tables))
+	     (yas--all-templates (yas--get-snippet-tables))))))
+    (consult--read
+     candidates
+     :prompt "Choose a snippet: "
+     :annotate (consult-yasnippet--annotate candidates)
+     :initial
+     (when consult-yasnippet-use-thing-at-point
+       (thing-at-point 'symbol))
+     :lookup 'consult--lookup-cdr
+     :require-match t
+     :state (consult-yasnippet--preview)
+     :category 'yasnippet)))
+
+;;;###autoload
+(defun consult-yasnippet-visit-snippet-file (template)
+  "Visit the snippet file associated with TEMPLATE.
+When called interactively this command previews snippet completions in
+the current buffer, and then opens the selected snippets template file
+using `yas--visit-snippet-file-1'."
+  (interactive (list (consult-yasnippet--read-template t)))
+  (yas--visit-snippet-file-1 template))
+
+;;;###autoload
+(defun consult-yasnippet (arg)
+  "Interactively select and expand a yasnippet template.
+This command presents a completing read interface containing all currently
+available snippet expansions, with live previews for each snippet. Once
+selected a chosen snippet will be expanded at point using
+`yas-expand-snippet'.
+
+With ARG select snippets from all snippet tables, not just the current one."
+  (interactive "P")
+  (when-let ((template (consult-yasnippet--read-template arg)))
+    (let* ((thing-bounds (if (region-active-p)
+			     (cons nil nil)
+			   (consult-yasnippet--bounds-of-thing-at-point template)))
+	   (thing-start (car thing-bounds))
+	   (thing-end (cdr thing-bounds)))
+      (yas-expand-snippet (yas--template-content template)
+			  thing-start thing-end
+			  (yas--template-expand-env template)))))
+
+(provide 'consult-yasnippet)
+;;; consult-yasnippet.el ends here
 #+END_SRC
 
 ** ARCHIVES
@@ -1997,7 +2244,7 @@ GPTEL is an excellent package written by karthink and the document is written [[
   (defun latex-math-from-calc ()
     "Evaluate `calc' on the contents of line at point."
     (interactive)
-    (let ((lang (if (memq major-mode '(org-mode latex-mode LaTex-mode))
+    (let ((lang (if (memq major-mode '(org-mode latex-mode LaTeX-mode))
 		    'latex 'normal)))
       (cond ((region-active-p)
 	     (let* ((beg (region-beginning))
@@ -2335,6 +2582,88 @@ peep-dired: Quick file previews within Dired
 (use-package yaml-mode
   :mode "\\.yml\\'" "\\.yaml\\'")
 
+;; --------------------------------------------------------------
+;; MATLAB Support using Octave (for now 😅)
+;; --------------------------------------------------------------
+
+;; Use Octave mode for .m files
+(setq auto-mode-alist
+      (cons '("\\.m\\'" . octave-mode) auto-mode-alist))
+
+;; Set Octave as the default interpreter in Emacs
+(setq inferior-octave-startup-args '("-f"))
+(setq inferior-octave-program "/usr/bin/octave")
+
+;; Enable syntax highlighting and indentation
+(add-hook 'octave-mode-hook
+	  (lambda ()
+	    (setq octave-comment-char ?%)
+	    (abbrev-mode 1)
+	    (auto-fill-mode 1)
+	    (electric-indent-mode 1)
+	    (setq indent-tabs-mode nil)
+	    (setq octave-block-offset 4)
+	    (if (eq window-system 'x)
+		(font-lock-mode 1))))
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((octave . t)))
+
+(add-hook 'inferior-octave-mode-hook
+	  (lambda ()
+	    (turn-on-font-lock)
+	    (define-key inferior-octave-mode-map [up]
+	      'comint-previous-input)
+	    (define-key inferior-octave-mode-map [down]
+	      'comint-next-input)))
+
+(with-eval-after-load 'octave
+  (define-key octave-mode-map (kbd "C-c C-l") 'octave-send-line)
+  (define-key octave-mode-map (kbd "C-c C-r") 'octave-send-region)
+  (define-key octave-mode-map (kbd "C-c C-b") 'octave-send-buffer)
+  (define-key octave-mode-map (kbd "C-c C-f") 'octave-send-defun)
+  (define-key octave-mode-map (kbd "C-c C-c") 'octave-send-block))
+
+;; (use-package matlab-mode
+;;   :ensure t
+;;   :mode ("\\.m\\'" . matlab-mode)
+;;   :config
+;;   (setq matlab-indent-function t)  ;; Smart indentation
+;;   (setq matlab-show-mlint-warnings t)  ;; Show MLint warnings
+;;   (setq matlab-shell-command "matlab")  ;; MATLAB command
+;;   (setq matlab-shell-command-switches '("-nodesktop" "-nosplash"))) ;; No GUI
+
+;; (add-hook 'matlab-mode-hook 'semantic-mode)
+;; (require 'ob-matlab)
+;; (org-babel-do-load-languages
+;;  'org-babel-load-languages
+;;  '((matlab . t)))
+
+;; Custom function to toggle an Octave REPL
+(defun open-octave-right-side ()
+  "Toggle an Octave REPL in a vertical split on the right side."
+  (interactive)
+  (let ((octave-buffer (get-buffer "*Inferior Octave*"))
+	(octave-window (get-buffer-window "*Inferior Octave*")))
+    (if octave-buffer
+	(if octave-window
+	    (delete-window octave-window)
+	  (progn
+	    (split-window-right)
+	    (other-window 1)
+	    (switch-to-buffer octave-buffer)
+	    (other-window 1)))
+      (progn
+	(split-window-right)
+	(other-window 1)
+	(run-octave)
+	(when (get-buffer "*Inferior Octave*")
+	  (switch-to-buffer "*Inferior Octave*"))
+	(other-window 1)))))
+
+;; --------------------------------------------------------------
+
 
 (provide 'dev)
 ;; dev.el ends here
@@ -2425,10 +2754,10 @@ peep-dired: Quick file previews within Dired
 ;; packages/conda.el ends here
 #+END_SRC
 
-** ARCHIVES
+** PYENV
 
-#+BEGIN_SRC emacs-lisp :tangle no
-;;; PYENV
+#+BEGIN_SRC emacs-lisp :tangle lisp/packages/pyenv.el
+;;; packages/pyenv.el --- Pyenv Integration -*- lexical-binding: t; -*-
 
 (use-package pyvenv
   :ensure t
@@ -2446,6 +2775,8 @@ peep-dired: Quick file previews within Dired
 (add-hook 'python-mode 'pyvenv-autoload)
 
 
+(provide 'packages/pyenv)
+;; packages/pyenv.el ends here
 #+END_SRC
 
 -----
@@ -2521,8 +2852,7 @@ I am using NOV to read EPUB files.
   :mode ("\\.tex\\'" . LaTeX-mode)
   :hook
   ((LaTeX-mode . LaTeX-math-mode)
-   (LaTeX-mode . TeX-fold-mode)
-   (LaTeX-mode-hook . magic-latex-buffer))
+   (LaTeX-mode . TeX-fold-mode))
   :config
   ;; Basic AUCTeX settings.
   (setq TeX-auto-save t
@@ -3206,7 +3536,11 @@ Allows us to create a Table of Contents in our Org docs. And also preserving Ind
     :commands toc-org-enable
     :init (add-hook 'org-mode-hook 'toc-org-enable))
 
-(setq org-src-preserve-indentation t)
+(setq org-src-preserve-indentation t
+      org-src-fontify-nativelt t
+      org-src-window-setup 'current-window
+      org-edit-src-content-indentation 0
+      org-src-tab-acts-natively t)
 
 ;; Prevent '<>' from auto-pairing in Org mode (fix for org-tempo)
 (add-hook 'org-mode-hook
@@ -3228,17 +3562,17 @@ Some UI Settings
 ;;; ORG UI SETTINGS
 ;; ------------------------------------------------
 
-;; ORG MODERN PACKAGE
-;;;; Better Looking Bullets
 (use-package org-modern
   :ensure t
-  :hook ((org-mode                 . org-modern-mode)
+  :hook ((org-mode . org-modern-mode)
 	 (org-agenda-finalize-hook . org-modern-agenda))
   :custom ((org-modern-todo t)
-	   (org-modern-table nil)
-	   (org-modern-variable-pitch nil)
-	   (org-modern-block-fringe nil))
+	   (org-modern-table t)
+	   (org-modern-variable-pitch t) ;; Enables proportional fonts for text
+	   (org-modern-block-fringe t))
   :commands (org-modern-mode org-modern-agenda)
+  :config (setq org-modern-star '("◉" "○" "◆" "◇" "▶")
+     org-modern-list '((?- . "•") (?+ . "➤") (?* . "▹")))
   :init (global-org-modern-mode))
 
 ;; --------------------------------------------------
@@ -3254,21 +3588,35 @@ Some UI Settings
 ;; --------------------------------------------------
 
 (custom-set-faces
-'(org-level-1 ((t (:inherit outline-1 :height 1.3))))
-'(org-level-2 ((t (:inherit outline-2 :height 1.25))))
-'(org-level-3 ((t (:inherit outline-3 :height 1.2))))
-'(org-level-4 ((t (:inherit outline-4 :height 1.15))))
-'(org-level-5 ((t (:inherit outline-5 :height 1.1))))
-'(org-level-6 ((t (:inherit outline-5 :height 1.05))))
-'(org-level-7 ((t (:inherit outline-5 :height 1.00)))))
+ '(org-level-1 ((t (:inherit outline-1 :height 1.4))))
+ '(org-level-2 ((t (:inherit outline-2 :height 1.3))))
+ '(org-level-3 ((t (:inherit outline-3 :height 1.2))))
+ '(org-level-4 ((t (:inherit outline-4 :height 1.15))))
+ '(org-level-5 ((t (:inherit outline-5 :height 1.1))))
+ '(org-level-6 ((t (:inherit outline-5 :height 1.05))))
+ '(org-level-7 ((t (:inherit outline-5 :height 1.00))))
+ '(org-document-title ((t (:height 1.6 :weight bold))))
+ '(org-block ((t (:inherit fixed-pitch :background "#282c34"))))
+ '(org-table ((t (:inherit fixed-pitch :foreground "#98be65")))))
 
 ;; --------------------------------------------------
 ;; ORG SUPERSTAR (ALTERNATIVE TO ORG BULLETS)
 ;; --------------------------------------------------
 
 (use-package org-superstar
-  :after org
-  :hook (org-mode . org-superstar-mode))
+  :ensure t
+  :hook (org-mode . org-superstar-mode)
+  :config
+  (setq org-superstar-headline-bullets-list '("◉" "●" "○" "◆" "●" "○" "◆")
+	org-superstar-itembullet-alist '((?+ . ?➤) (?- . ?✦))))
+
+(setq org-checkbox-hierarchical-statistics nil
+      org-checkbox-image "\\([%])\\")
+
+;; Prettify Org mode with `org-appear`
+(use-package org-appear
+  :ensure t
+  :hook (org-mode . org-appear-mode))
 
 
 #+END_SRC
@@ -3312,17 +3660,16 @@ Highlights the TODO keywords with different colors.
 
 (use-package hl-todo
   :ensure t
-  :defer t
   :hook ((org-mode . hl-todo-mode)
 	 (prog-mode . hl-todo-mode))
   :config
   (setq hl-todo-highlight-punctuation ":"
 	hl-todo-keyword-faces
-	`(("TODO"       warning bold)
-	  ("FIXME"      error bold)
-	  ("HACK"       font-lock-constant-face bold)
-	  ("REVIEW"     font-lock-keyword-face bold)
-	  ("NOTE"       success bold)
+	`(("TODO" warning bold)
+	  ("FIXME" error bold)
+	  ("HACK" font-lock-constant-face bold)
+	  ("REVIEW" font-lock-keyword-face bold)
+	  ("NOTE" success bold)
 	  ("DEPRECATED" font-lock-doc-face bold))))
 
 
@@ -3360,13 +3707,13 @@ Centering Org Mode to get ZEN mode feel.
 ;; CENTER ORG MODE
 ;; --------------------------------------------------
 
-(defun efs/org-mode-visual-fill ()
+(defun karna/org-mode-visual-fill ()
   (setq visual-fill-column-width 180
 	visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
 (use-package visual-fill-column
-  :hook (org-mode . efs/org-mode-visual-fill))
+  :hook (org-mode . karna/org-mode-visual-fill))
 
 
 #+END_SRC
@@ -3428,8 +3775,7 @@ Evaluate Mermaid code in org mode
 
 (setq org-confirm-babel-evaluate nil
       org-babel-clojure-backend 'cider
-      org-babel-lisp-eval-fn #'sly-eval
-      org-edit-src-content-indentation 0)
+      org-babel-lisp-eval-fn #'sly-eval)
 
 (org-babel-do-load-languages
  'org-babel-load-languages
@@ -3454,7 +3800,7 @@ This section sets up basic Org mode options such as the Org directory, default n
 
 (setq org-directory "/mnt/Karna/Git/Project-K/Org/"
       org-default-notes-file (expand-file-name "notes.org" org-directory)
-      org-ellipsis " ▼ "
+      org-ellipsis " ⬎ "
       org-superstar-headline-bullets-list '("◉" "●" "○" "◆" "●" "○" "◆")
       org-superstar-itembullet-alist '((?+ . ?➤) (?- . ?✦)) ; changes +/- symbols in item lists
       org-log-done 'time
@@ -3519,39 +3865,6 @@ This section configures the refile targets and ensures that Org buffers are save
 (advice-add 'org-refile :after 'org-save-all-org-buffers)
 
 
-#+END_SRC
-
-*** Org Tag Configuration
-This section defines the tag list for Org entries. The commented lines are preserved for potential future adjustments.
-
-#+BEGIN_SRC emacs-lisp :tangle lisp/org-config.el
-;; ------------------------------------------------
-;; ORG TAG CONFIGURATION
-;; ------------------------------------------------
-
-(setq org-tag-alist
-      '((:startgroup)
-	("@errand"   . ?E)
-	("@home"     . ?H)
-	("@lab"      . ?L)
-	("@office"   . ?O)
-	(:endgroup)
-	("agenda"    . ?a)
-	("planning"  . ?p)
-	("note"      . ?n)
-	("idea"      . ?i)
-	("lit"       . ?l)   ; literature review
-	("code"      . ?c)
-	("test"      . ?t)
-	("write"     . ?w)
-	("review"    . ?r)
-	("submitted" . ?s)
-	("published" . ?P)   ; uppercase P differentiates from planning
-	("abandoned" . ?x)
-	("meeting"   . ?m)
-	("reading"   . ?R)))
-
-
 (provide 'org-config)
 ;; org-config.el ends here
 #+END_SRC
@@ -3561,6 +3874,52 @@ This section configures Org Agenda by specifying agenda files, enabling log mode
 
 #+BEGIN_SRC emacs-lisp :tangle lisp/org-agenda-config.el
 ;;; org-agenda-config.el --- ORG Agenda Config -*- lexical-binding: t; -*-
+
+;; Improve Org Agenda with `org-super-agenda`
+(use-package org-super-agenda
+  :ensure t
+  :config
+  (setq org-super-agenda-groups
+	'((:name "🔥 Urgent"  :priority "A")
+	  (:name "📅 Today"   :time-grid t)
+	  (:name "💡 Ideas"   :tag "idea")
+	  (:name "🛠 Work"    :category "Work")
+	  (:name "🏡 Personal" :habit t)
+	  (:name "📖 Reading" :tag "reading")
+	  (:name "📝 Writing" :tag "write")
+	  (:name "📑 Review" :tag "review")
+	  (:name "🚀 Code" :tag "code")
+	  (:name "📚 Literature" :tag "lit")
+	  (:name "🛠 Testing" :tag "test")
+	  (:name "🗓 Planning" :tag "planning")
+	  (:name "🗂 Meeting" :tag "meeting")
+	  (:name "🗄 Submitted" :tag "submitted")
+	  (:name "📢 Published" :tag "published")
+	  (:name "❌ Abandoned" :tag "abandoned")))
+
+  (setq org-tag-alist
+	'((:startgroup)
+	  ("@errand"   . ?E)
+	  ("@home"     . ?H)
+	  ("@lab"      . ?L)
+	  ("@office"   . ?O)
+	  (:endgroup)
+	  ("agenda"    . ?a)
+	  ("planning"  . ?p)
+	  ("note"      . ?n)
+	  ("idea"      . ?i)
+	  ("lit"       . ?l)   ; literature review
+	  ("code"      . ?c)
+	  ("test"      . ?t)
+	  ("write"     . ?w)
+	  ("review"    . ?r)
+	  ("submitted" . ?s)
+	  ("published" . ?P)   ; uppercase P differentiates from planning
+	  ("abandoned" . ?x)
+	  ("meeting"   . ?m)
+	  ("reading"   . ?R)))
+
+  (org-super-agenda-mode))
 
 (setq org-agenda-files (directory-files-recursively org-directory "\\.org$") )
 
@@ -3687,6 +4046,19 @@ The custom capture templates allow you to quickly create new notes for default e
 	org-roam-graph-viewer "/usr/bin/zen-browser"))
 
 (setq org-roam-dailies-directory "/mnt/Karna/Git/Project-K/Org/Journal/")
+
+;; Org Roam UI for Knowledge Graph Visualization
+
+(use-package simple-httpd)
+
+(use-package org-roam-ui
+  :ensure t
+  :after org-roam
+  :config
+  (setq org-roam-ui-sync-theme t
+	org-roam-ui-follow t
+	org-roam-ui-update-on-save t
+	org-roam-ui-open-on-start t))
 
 
 #+END_SRC
@@ -4103,6 +4475,7 @@ List of all the keybinds that are used in my Emacs Config.
   (karna/leader-keys
     "SPC" '(counsel-M-x :wk "Counsel M-x")
     "." '(find-file :wk "Find file")
+    "," '(scratch-buffer :wk "Scratch buffer")
     "=" '(perspective-map :wk "Perspective") ;; Lists all the perspective keybindings
     "/" '(evilnc-comment-or-uncomment-lines :wk "Toggle Comments")
     "TAB TAB" '(comment-line :wk "Comment lines")
@@ -4327,6 +4700,7 @@ List of all the keybinds that are used in my Emacs Config.
     "o e" '(elfeed :wk "Elfeed RSS")
     "o f" '(make-frame :wk "Open buffer in new frame")
     "o p" '(open-python-right-side :wk "Open Python REPL")
+    "o o" '(open-octave-right-side :wk "Open Octave REPL")
     "o F" '(select-frame-by-name :wk "Select frame by name"))
 
   ;; projectile-command-map already has a ton of bindings
@@ -4416,6 +4790,16 @@ List of all the keybinds that are used in my Emacs Config.
     "w d" '(downcase-word :wk "Downcase word")
     "w u" '(upcase-word :wk "Upcase word")
     "w =" '(count-words :wk "Count words/lines for buffer"))
+
+  (karna/leader-keys
+    "y" '(:ignore t :wk "YASnippet")
+    "y i" '(consult-yasnippet :wk "Insert Consult yasnippet")
+    "y I" '(yas-insert-snippet :wk "Insert snippet")
+    "y n" '(yas-new-snippet :wk "New snippet")
+    "y v" '(yas-visit-snippet-file :wk "Edit snippet")
+    "y r" '(yas-reload-all :wk "Reload snippets")
+    "y t" '(yas-describe-tables :wk "Show available snippets"))
+
 )
 
 (global-set-key (kbd "C-=") 'text-scale-increase)
@@ -4429,6 +4813,8 @@ List of all the keybinds that are used in my Emacs Config.
 	  (lambda ()
 	    (local-set-key (kbd "C-s") #'TeX-command-run-all)))
 
+;; Keybinding to manually insert snippets
+(global-set-key (kbd "C-c y") #'consult-yasnippet)
 
 (provide 'keybindings)
 ;; keybindings.el ends here
@@ -4474,12 +4860,14 @@ Loading all the config files from my emacs lisp folder.
 (require 'treesitter) ;; Treesitter
 (require 'dev) ;; Development Stuff
 (require 'packages/conda) ;; Conda
+(require 'packages/pyenv) ;; PyEnv
 (require 'packages/latex) ;; Latex
 (require 'packages/org-latex) ;; Org Latex
 (require 'packages/markdown) ;; Markdown
 (require 'eshell-prompt) ;; Custom ESHELL Prompt
 (require 'shells) ;; Shells
 (require 'packages/calendar) ;; Calendar
+(require 'consult-yasnippet) ;; Consult Yasnippet
 
 (provide 'config)
 ;;; config.el ends here
