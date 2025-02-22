@@ -7,11 +7,13 @@
   :custom
   (corfu-cycle t)                  ;; Cycle through candidates
   (corfu-auto t)                   ;; Auto-show completions
-  (corfu-auto-prefix 1)            ;; Show completions after typing 1 character
+  (corfu-auto-prefix 3)            ;; Show completions after typing 1 character
   (corfu-auto-delay 0.0)           ;; Instant completions
   (corfu-quit-no-match 'separator) ;; Quit when no match
   (corfu-echo-documentation t)     ;; Show docs in echo area
   (corfu-preview-current nil)      ;; No inline preview
+  (corfu-scroll-margin 2)          ;; Start scrolling when 2 candidates remain
+  (corfu-count 10)        ;; Show up to 20 completions
   :config
   (corfu-popupinfo-mode 1)         ;; Show docs like VSCode
   :hook
