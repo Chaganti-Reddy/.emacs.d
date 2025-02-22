@@ -22,7 +22,7 @@
   (defun latex-math-from-calc ()
     "Evaluate `calc' on the contents of line at point."
     (interactive)
-    (let ((lang (if (memq major-mode '(org-mode latex-mode LaTex-mode))
+    (let ((lang (if (memq major-mode '(org-mode latex-mode LaTeX-mode))
 		    'latex 'normal)))
       (cond ((region-active-p)
 	     (let* ((beg (region-beginning))
