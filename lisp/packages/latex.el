@@ -49,8 +49,7 @@
   :mode ("\\.tex\\'" . LaTeX-mode)
   :hook
   ((LaTeX-mode . LaTeX-math-mode)
-   (LaTeX-mode . TeX-fold-mode)
-   (LaTeX-mode-hook . magic-latex-buffer))
+   (LaTeX-mode . TeX-fold-mode))
   :config
   ;; Basic AUCTeX settings.
   (setq TeX-auto-save t
