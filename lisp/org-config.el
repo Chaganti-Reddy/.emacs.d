@@ -10,7 +10,11 @@
     :commands toc-org-enable
     :init (add-hook 'org-mode-hook 'toc-org-enable))
 
-(setq org-src-preserve-indentation t)
+(setq org-src-preserve-indentation t
+      org-src-fontify-nativelt t
+      org-src-window-setup 'current-window
+      org-edit-src-content-indentation 0
+      org-src-tab-acts-natively t)
 
 ;; Prevent '<>' from auto-pairing in Org mode (fix for org-tempo)
 (add-hook 'org-mode-hook
@@ -25,17 +29,17 @@
 ;;; ORG UI SETTINGS
 ;; ------------------------------------------------
 
-;; ORG MODERN PACKAGE
-;;;; Better Looking Bullets
 (use-package org-modern
   :ensure t
-  :hook ((org-mode                 . org-modern-mode)
+  :hook ((org-mode . org-modern-mode)
 	 (org-agenda-finalize-hook . org-modern-agenda))
   :custom ((org-modern-todo t)
-	   (org-modern-table nil)
-	   (org-modern-variable-pitch nil)
-	   (org-modern-block-fringe nil))
+	   (org-modern-table t)
+	   (org-modern-variable-pitch t) ;; Enables proportional fonts for text
+	   (org-modern-block-fringe t))
   :commands (org-modern-mode org-modern-agenda)
+  :config (setq org-modern-star '("◉" "○" "◆" "◇" "▶")
+     org-modern-list '((?- . "•") (?+ . "➤") (?* . "▹")))
   :init (global-org-modern-mode))
 
 ;; --------------------------------------------------
@@ -51,21 +55,35 @@
 ;; --------------------------------------------------
 
 (custom-set-faces
-'(org-level-1 ((t (:inherit outline-1 :height 1.3))))
-'(org-level-2 ((t (:inherit outline-2 :height 1.25))))
-'(org-level-3 ((t (:inherit outline-3 :height 1.2))))
-'(org-level-4 ((t (:inherit outline-4 :height 1.15))))
-'(org-level-5 ((t (:inherit outline-5 :height 1.1))))
-'(org-level-6 ((t (:inherit outline-5 :height 1.05))))
-'(org-level-7 ((t (:inherit outline-5 :height 1.00)))))
+ '(org-level-1 ((t (:inherit outline-1 :height 1.4))))
+ '(org-level-2 ((t (:inherit outline-2 :height 1.3))))
+ '(org-level-3 ((t (:inherit outline-3 :height 1.2))))
+ '(org-level-4 ((t (:inherit outline-4 :height 1.15))))
+ '(org-level-5 ((t (:inherit outline-5 :height 1.1))))
+ '(org-level-6 ((t (:inherit outline-5 :height 1.05))))
+ '(org-level-7 ((t (:inherit outline-5 :height 1.00))))
+ '(org-document-title ((t (:height 1.6 :weight bold))))
+ '(org-block ((t (:inherit fixed-pitch :background "#282c34"))))
+ '(org-table ((t (:inherit fixed-pitch :foreground "#98be65")))))
 
 ;; --------------------------------------------------
 ;; ORG SUPERSTAR (ALTERNATIVE TO ORG BULLETS)
 ;; --------------------------------------------------
 
 (use-package org-superstar
-  :after org
-  :hook (org-mode . org-superstar-mode))
+  :ensure t
+  :hook (org-mode . org-superstar-mode)
+  :config
+  (setq org-superstar-headline-bullets-list '("◉" "●" "○" "◆" "●" "○" "◆")
+	org-superstar-itembullet-alist '((?+ . ?➤) (?- . ?✦))))
+
+(setq org-checkbox-hierarchical-statistics nil
+      org-checkbox-image "\\([%])\\")
+
+;; Prettify Org mode with `org-appear`
+(use-package org-appear
+  :ensure t
+  :hook (org-mode . org-appear-mode))
 
 ;; ------------------------------------------------
 ;; ORG REMARKS
@@ -95,30 +113,29 @@
 
 (use-package hl-todo
   :ensure t
-  :defer t
   :hook ((org-mode . hl-todo-mode)
 	 (prog-mode . hl-todo-mode))
   :config
   (setq hl-todo-highlight-punctuation ":"
 	hl-todo-keyword-faces
-	`(("TODO"       warning bold)
-	  ("FIXME"      error bold)
-	  ("HACK"       font-lock-constant-face bold)
-	  ("REVIEW"     font-lock-keyword-face bold)
-	  ("NOTE"       success bold)
+	`(("TODO" warning bold)
+	  ("FIXME" error bold)
+	  ("HACK" font-lock-constant-face bold)
+	  ("REVIEW" font-lock-keyword-face bold)
+	  ("NOTE" success bold)
 	  ("DEPRECATED" font-lock-doc-face bold))))
 
 ;; --------------------------------------------------
 ;; CENTER ORG MODE
 ;; --------------------------------------------------
 
-(defun efs/org-mode-visual-fill ()
+(defun karna/org-mode-visual-fill ()
   (setq visual-fill-column-width 180
 	visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
 (use-package visual-fill-column
-  :hook (org-mode . efs/org-mode-visual-fill))
+  :hook (org-mode . karna/org-mode-visual-fill))
 
 ;; ------------------------------------------------
 ;; ORG AUTO TANGLE
@@ -160,8 +177,7 @@
 
 (setq org-confirm-babel-evaluate nil
       org-babel-clojure-backend 'cider
-      org-babel-lisp-eval-fn #'sly-eval
-      org-edit-src-content-indentation 0)
+      org-babel-lisp-eval-fn #'sly-eval)
 
 (org-babel-do-load-languages
  'org-babel-load-languages
@@ -176,7 +192,7 @@
 
 (setq org-directory "/mnt/Karna/Git/Project-K/Org/"
       org-default-notes-file (expand-file-name "notes.org" org-directory)
-      org-ellipsis " ▼ "
+      org-ellipsis " ⬎ "
       org-superstar-headline-bullets-list '("◉" "●" "○" "◆" "●" "○" "◆")
       org-superstar-itembullet-alist '((?+ . ?➤) (?- . ?✦)) ; changes +/- symbols in item lists
       org-log-done 'time
@@ -232,32 +248,6 @@
 
 ;; Save Org buffers after refiling!
 (advice-add 'org-refile :after 'org-save-all-org-buffers)
-
-;; ------------------------------------------------
-;; ORG TAG CONFIGURATION
-;; ------------------------------------------------
-
-(setq org-tag-alist
-      '((:startgroup)
-	("@errand"   . ?E)
-	("@home"     . ?H)
-	("@lab"      . ?L)
-	("@office"   . ?O)
-	(:endgroup)
-	("agenda"    . ?a)
-	("planning"  . ?p)
-	("note"      . ?n)
-	("idea"      . ?i)
-	("lit"       . ?l)   ; literature review
-	("code"      . ?c)
-	("test"      . ?t)
-	("write"     . ?w)
-	("review"    . ?r)
-	("submitted" . ?s)
-	("published" . ?P)   ; uppercase P differentiates from planning
-	("abandoned" . ?x)
-	("meeting"   . ?m)
-	("reading"   . ?R)))
 
 
 (provide 'org-config)
