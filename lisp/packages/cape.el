@@ -42,6 +42,13 @@
 	      (add-hook 'completion-at-point-functions #'cape-keyword 'append)
 	      (add-hook 'completion-at-point-functions #'cape-file 'append)))
 
+   (add-hook 'LaTeX-mode-hook
+	    (lambda ()
+	      (add-hook 'completion-at-point-functions #'cape-tex 'append)
+	      (add-hook 'completion-at-point-functions #'cape-dabbrev 'append)
+	      (add-hook 'completion-at-point-functions #'cape-keyword 'append)
+	      (add-hook 'completion-at-point-functions #'cape-file 'append)))
+
   ;; SGML/HTML/XML modes
   (add-hook 'sgml-mode-hook
 	    (lambda ()
