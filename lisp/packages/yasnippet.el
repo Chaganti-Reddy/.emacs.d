@@ -10,7 +10,8 @@
   (setq yas-snippet-dirs '("~/.emacs.d/snippets/")) ;; Ensure your custom snippet directory is included
   (yas-reload-all))
 
-(add-hook 'latex-mode-hook #'yas-minor-mode)
+(add-hook 'LaTeX-mode-hook #'yas-minor-mode)
+(setq yas-triggers-in-field t)
 
 (use-package yasnippet-snippets
   :ensure t
@@ -18,9 +19,6 @@
   :config
   (yas-reload-all)
   (yasnippet-snippets-initialize))
-
-;; Keybinding to manually insert snippets
-(global-set-key (kbd "C-c y") #'yas-insert-snippet)
 
 
 (provide 'packages/yasnippet)
