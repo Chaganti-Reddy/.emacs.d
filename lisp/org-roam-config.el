@@ -41,6 +41,19 @@
 
 (setq org-roam-dailies-directory "/mnt/Karna/Git/Project-K/Org/Journal/")
 
+;; Org Roam UI for Knowledge Graph Visualization
+
+(use-package simple-httpd)
+
+(use-package org-roam-ui
+  :ensure t
+  :after org-roam
+  :config
+  (setq org-roam-ui-sync-theme t
+	org-roam-ui-follow t
+	org-roam-ui-update-on-save t
+	org-roam-ui-open-on-start t))
+
 ;;; ORG JOURNAL SETUP
 
 (setq org-journal-dir "/mnt/Karna/Git/Project-K/Org/Journal/"
