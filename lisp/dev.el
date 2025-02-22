@@ -141,6 +141,88 @@
 (use-package yaml-mode
   :mode "\\.yml\\'" "\\.yaml\\'")
 
+;; --------------------------------------------------------------
+;; MATLAB Support using Octave (for now 😅)
+;; --------------------------------------------------------------
+
+;; Use Octave mode for .m files
+(setq auto-mode-alist
+      (cons '("\\.m\\'" . octave-mode) auto-mode-alist))
+
+;; Set Octave as the default interpreter in Emacs
+(setq inferior-octave-startup-args '("-f"))
+(setq inferior-octave-program "/usr/bin/octave")
+
+;; Enable syntax highlighting and indentation
+(add-hook 'octave-mode-hook
+	  (lambda ()
+	    (setq octave-comment-char ?%)
+	    (abbrev-mode 1)
+	    (auto-fill-mode 1)
+	    (electric-indent-mode 1)
+	    (setq indent-tabs-mode nil)
+	    (setq octave-block-offset 4)
+	    (if (eq window-system 'x)
+		(font-lock-mode 1))))
+
+(org-babel-do-load-languages
+ 'org-babel-load-languages
+ '((octave . t)))
+
+(add-hook 'inferior-octave-mode-hook
+	  (lambda ()
+	    (turn-on-font-lock)
+	    (define-key inferior-octave-mode-map [up]
+	      'comint-previous-input)
+	    (define-key inferior-octave-mode-map [down]
+	      'comint-next-input)))
+
+(with-eval-after-load 'octave
+  (define-key octave-mode-map (kbd "C-c C-l") 'octave-send-line)
+  (define-key octave-mode-map (kbd "C-c C-r") 'octave-send-region)
+  (define-key octave-mode-map (kbd "C-c C-b") 'octave-send-buffer)
+  (define-key octave-mode-map (kbd "C-c C-f") 'octave-send-defun)
+  (define-key octave-mode-map (kbd "C-c C-c") 'octave-send-block))
+
+;; (use-package matlab-mode
+;;   :ensure t
+;;   :mode ("\\.m\\'" . matlab-mode)
+;;   :config
+;;   (setq matlab-indent-function t)  ;; Smart indentation
+;;   (setq matlab-show-mlint-warnings t)  ;; Show MLint warnings
+;;   (setq matlab-shell-command "matlab")  ;; MATLAB command
+;;   (setq matlab-shell-command-switches '("-nodesktop" "-nosplash"))) ;; No GUI
+
+;; (add-hook 'matlab-mode-hook 'semantic-mode)
+;; (require 'ob-matlab)
+;; (org-babel-do-load-languages
+;;  'org-babel-load-languages
+;;  '((matlab . t)))
+
+;; Custom function to toggle an Octave REPL
+(defun open-octave-right-side ()
+  "Toggle an Octave REPL in a vertical split on the right side."
+  (interactive)
+  (let ((octave-buffer (get-buffer "*Inferior Octave*"))
+	(octave-window (get-buffer-window "*Inferior Octave*")))
+    (if octave-buffer
+	(if octave-window
+	    (delete-window octave-window)
+	  (progn
+	    (split-window-right)
+	    (other-window 1)
+	    (switch-to-buffer octave-buffer)
+	    (other-window 1)))
+      (progn
+	(split-window-right)
+	(other-window 1)
+	(run-octave)
+	(when (get-buffer "*Inferior Octave*")
+	  (switch-to-buffer "*Inferior Octave*"))
+	(other-window 1)))))
+
+;; --------------------------------------------------------------
+
 
 (provide 'dev)
 ;; dev.el ends here
