@@ -36,12 +36,14 @@
 (require 'treesitter) ;; Treesitter
 (require 'dev) ;; Development Stuff
 (require 'packages/conda) ;; Conda
+(require 'packages/pyenv) ;; PyEnv
 (require 'packages/latex) ;; Latex
 (require 'packages/org-latex) ;; Org Latex
 (require 'packages/markdown) ;; Markdown
 (require 'eshell-prompt) ;; Custom ESHELL Prompt
 (require 'shells) ;; Shells
 (require 'packages/calendar) ;; Calendar
+(require 'consult-yasnippet) ;; Consult Yasnippet
 
 (provide 'config)
 ;;; config.el ends here
