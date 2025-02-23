@@ -49,6 +49,9 @@
   :mode ("\\.tex\\'" . LaTeX-mode)
   :hook
   ((LaTeX-mode . LaTeX-math-mode)
+   (LaTeX-mode . visual-line-mode)
+   (LaTeX-mode . prettify-symbols-mode)
+   (LaTeX-mode . rainbow-delimiters-mode)
    (LaTeX-mode . TeX-fold-mode))
   :config
   ;; Basic AUCTeX settings.
@@ -78,8 +81,6 @@
   preview-default-option-list '("displaymath" "graphics" "textmath" "footnotes" "sections" "showlabels" "psfixbb" "floats")
 	TeX-show-compilation nil))
 
-(add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
-
 (defun clear-latex-build ()
   "Remove all LaTeX compilation files except .tex and .pdf."
   (interactive)
@@ -90,7 +91,7 @@
 
 ;;; LATEX FRAGMENT SCALE
 
-(setq preview-scale-function 1)
+(setq preview-scale-function 1.2)
 
 ;; ----------------------------------------------------------------------------
 ;; REFTEX
@@ -121,10 +122,8 @@
 (with-eval-after-load 'tex
   (add-to-list 'TeX-view-program-list
 	       `("Zathura"
-		 (,(concat (expand-file-name "~/.local/bin/zathura") " "
-			   (when (boundp 'mode-io-correlate)
-			     " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" ")
-			   " %o"))
+		 (,(concat (expand-file-name "~/.local/bin/zathura")
+			   " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" %o"))
 		 "zathura"))
   (setq TeX-view-program-selection '((output-pdf "Zathura"))
 	TeX-source-correlate-start-server t
@@ -175,21 +174,23 @@
   :defer t
   :hook (LaTeX-mode . turn-on-cdlatex))
 
-;;; PREVIEW AUTO
-(use-package preview-auto
-  :after latex
-  :hook (LaTeX-mode . preview-auto-mode)
+;; ----------------------------------------------------------------------------
+;; MAGIC LATEX BUFFER
+;; ----------------------------------------------------------------------------
+
+(use-package magic-latex-buffer
+  :ensure t
+  :hook (LaTeX-mode . magic-latex-buffer)
   :config
-  (setq preview-protect-point t)
-  (setq preview-locating-previews-message nil)
-  (setq preview-leave-open-previews-visible t)
-  :custom
-  (preview-auto-interval 0.1)
+  ;; Enable syntax highlighting and custom styles
+  (setq magic-latex-enable-block-highlight t) ;; Highlight environments
+  (setq magic-latex-enable-suscript t)        ;; Subscript/Superscript rendering
+  (setq magic-latex-enable-inline-image t)    ;; Inline images (e.g., `\includegraphics`)
+  (setq magic-latex-enable-minibuffer-echo t) ;; Show formula info in minibuffer
 
-  ;; Uncomment the following only if you have followed the above
-  ;; instructions concerning, e.g., hyperref:
+  ;; Define how often it updates (adjust for performance)
+  (setq magic-latex-buffer-refresh-delay 0.5)) ;; 0.5s delay for updates
 
-  (preview-LaTeX-command-replacements '(preview-LaTeX-disable-pdfoutput)))
 
 
 (provide 'packages/latex)
