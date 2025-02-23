@@ -2334,6 +2334,15 @@ Enhancing Emacs' built-in Dired file manager with additional functionality.
 				("mkv" . "mpv")    ;; Open MKVs with mpv
 				("mp4" . "mpv")))) ;; Open MP4s with mpv
 
+;; Auto Create Directory if it doesn't exist
+(advice-add 'read-file-name :around
+	    (lambda (orig-fun &rest args)
+	      (let ((result (apply orig-fun args)))
+		(when (and (stringp result)
+			   (not (file-exists-p (file-name-directory result))))
+		  (make-directory (file-name-directory result) t))
+		result)))
+
 
 #+END_SRC
 
@@ -3028,19 +3037,16 @@ I am using NOV to read EPUB files.
   (setq magic-latex-buffer-refresh-delay 0.5)) ;; 0.5s delay for updates
 
 
-
-(provide 'packages/latex)
-;; packages/latex.el ends here
 #+END_SRC
 
 ** PREVIEW AUTO
 Previews latex preview automatically
 
-#+BEGIN_SRC emacs-lisp :tangle no
+#+BEGIN_SRC emacs-lisp :tangle lisp/packages/latex.el
 ;;; PREVIEW AUTO
 (use-package preview-auto
   :after latex
-  :hook (LaTeX-mode . preview-auto-mode)
+  ;; :hook (LaTeX-mode . preview-auto-mode)
   :config
   (setq preview-protect-point t)
   (setq preview-locating-previews-message nil)
@@ -4598,9 +4604,9 @@ List of all the keybinds that are used in my Emacs Config.
 
     ;; New prefix for favorite directories
     "d o" '(:ignore t :wk "Favorite Directories")
-    "d o p" `((lambda () (interactive) (dired "/mnt/Karna/Git/portfolio/")) :wk "Open Portfolio")
-    "d o P" `((lambda () (interactive) (dired "/mnt/Karna/Git/Project-K/")) :wk "Open Project-K")
-    "d o h" `((lambda () (interactive) (dired "~")) :wk "Open Home")
+    "d o p" `((lambda () (interactive) (let ((default-directory "/mnt/Karna/Git/portfolio/")) (execute-extended-command nil "find-file"))) :wk "Open Portfolio")
+    "d o P" `((lambda () (interactive) (let ((default-directory "/mnt/Karna/Git/Project-K/")) (execute-extended-command nil "find-file"))) :wk "Open Project-K")
+    "d o h" `((lambda () (interactive) (let ((default-directory "~/")) (execute-extended-command nil "find-file"))) :wk "Open Home")
     )
 
   (karna/leader-keys
