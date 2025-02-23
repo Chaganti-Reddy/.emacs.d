@@ -79,7 +79,9 @@
   - [[#preview-zathura][PREVIEW (ZATHURA)]]
   - [[#citar][CITAR]]
   - [[#auctex-latexmk][AUCTEX-LATEXMK]]
+  - [[#magic-latex-buffer][MAGIC LATEX BUFFER]]
   - [[#preview-auto][PREVIEW AUTO]]
+  - [[#xenops][Xenops]]
   - [[#archives-2][ARCHIVES]]
 - [[#org-latex][ORG LATEX]]
   - [[#latex-compiler--basic-preview-settings][LATEX COMPILER & BASIC PREVIEW SETTINGS]]
@@ -523,6 +525,7 @@ Native Compile support and silence some annoying warnings when a package gets in
       "~/.emacs.d/snippets/"          ;; Exclude everything inside ~/.emacs.d/snippets/
       "/mnt/Karna/Git/Project-K/Org/Tasks.org" ;; Exclude this specific Org file
       "_region_\\.tex$"              ;; Ignore temporary LaTeX region files
+      "<none>\\.tex$"              ;; Ignore temporary LaTeX region files
       "^/tmp/"))                     ;; Exclude everything inside /tmp/
 
 ;; Enable recentf mode
@@ -2852,6 +2855,9 @@ I am using NOV to read EPUB files.
   :mode ("\\.tex\\'" . LaTeX-mode)
   :hook
   ((LaTeX-mode . LaTeX-math-mode)
+   (LaTeX-mode . visual-line-mode)
+   (LaTeX-mode . prettify-symbols-mode)
+   (LaTeX-mode . rainbow-delimiters-mode)
    (LaTeX-mode . TeX-fold-mode))
   :config
   ;; Basic AUCTeX settings.
@@ -2881,8 +2887,6 @@ I am using NOV to read EPUB files.
   preview-default-option-list '("displaymath" "graphics" "textmath" "footnotes" "sections" "showlabels" "psfixbb" "floats")
 	TeX-show-compilation nil))
 
-(add-hook 'LaTeX-mode-hook #'rainbow-delimiters-mode)
-
 (defun clear-latex-build ()
   "Remove all LaTeX compilation files except .tex and .pdf."
   (interactive)
@@ -2893,7 +2897,7 @@ I am using NOV to read EPUB files.
 
 ;;; LATEX FRAGMENT SCALE
 
-(setq preview-scale-function 1)
+(setq preview-scale-function 1.2)
 
 
 #+END_SRC
@@ -2936,10 +2940,8 @@ I am using NOV to read EPUB files.
 (with-eval-after-load 'tex
   (add-to-list 'TeX-view-program-list
 	       `("Zathura"
-		 (,(concat (expand-file-name "~/.local/bin/zathura") " "
-			   (when (boundp 'mode-io-correlate)
-			     " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" ")
-			   " %o"))
+		 (,(concat (expand-file-name "~/.local/bin/zathura")
+			   " --synctex-forward %n:0:%b -x \"emacsclient +%{line} %{input}\" %o"))
 		 "zathura"))
   (setq TeX-view-program-selection '((output-pdf "Zathura"))
 	TeX-source-correlate-start-server t
@@ -3005,10 +3007,36 @@ I am using NOV to read EPUB files.
 
 #+END_SRC
 
+** MAGIC LATEX BUFFER
+
+#+BEGIN_SRC emacs-lisp :tangle lisp/packages/latex.el
+;; ----------------------------------------------------------------------------
+;; MAGIC LATEX BUFFER
+;; ----------------------------------------------------------------------------
+
+(use-package magic-latex-buffer
+  :ensure t
+  :hook (LaTeX-mode . magic-latex-buffer)
+  :config
+  ;; Enable syntax highlighting and custom styles
+  (setq magic-latex-enable-block-highlight t) ;; Highlight environments
+  (setq magic-latex-enable-suscript t)        ;; Subscript/Superscript rendering
+  (setq magic-latex-enable-inline-image t)    ;; Inline images (e.g., `\includegraphics`)
+  (setq magic-latex-enable-minibuffer-echo t) ;; Show formula info in minibuffer
+
+  ;; Define how often it updates (adjust for performance)
+  (setq magic-latex-buffer-refresh-delay 0.5)) ;; 0.5s delay for updates
+
+
+
+(provide 'packages/latex)
+;; packages/latex.el ends here
+#+END_SRC
+
 ** PREVIEW AUTO
 Previews latex preview automatically
 
-#+BEGIN_SRC emacs-lisp :tangle lisp/packages/latex.el
+#+BEGIN_SRC emacs-lisp :tangle no
 ;;; PREVIEW AUTO
 (use-package preview-auto
   :after latex
@@ -3024,6 +3052,36 @@ Previews latex preview automatically
   ;; instructions concerning, e.g., hyperref:
 
   (preview-LaTeX-command-replacements '(preview-LaTeX-disable-pdfoutput)))
+
+
+(provide 'packages/latex)
+;; packages/latex.el ends here
+#+END_SRC
+
+** Xenops
+- TANGLE it if you want to use `xenops` (Alternative to Preview-Latex) for real-time LaTeX rendering.
+
+#+BEGIN_SRC emacs-lisp :tangle no
+;;; XENOPS
+
+(use-package xenops
+  :ensure t
+  :hook ((LaTeX-mode . xenops-mode)  ;; Enable Xenops for LaTeX-mode
+	 ;; (org-mode . xenops-mode) ;; Uncomment if needed for Org
+	 )
+  :config
+
+  ;; Ensure cache directory exists
+  (setq xenops-cache-directory (expand-file-name "xenops-cache"
+						 (or (getenv "XDG_CACHE_HOME") "~/.cache/")))
+
+  ;; Customize LaTeX preview appearance
+  (setq xenops-math-image-scale-factor 1.2) ;; Adjust image size
+  (setq xenops-math-latex-process 'dvisvgm) ;; Use dvisvgm for better rendering
+
+  ;; Ensure bold math symbols
+  (setq xenops-math-latex-packages '("amsmath" "amssymb" "bm"))
+  (setq xenops-math-latex-macros '("\\renewcommand{\\mathbf}[1]{\\bm{#1}}")))
 
 
 (provide 'packages/latex)
@@ -3063,36 +3121,6 @@ This function is intended to be called on file open."
 
 ;;(setq TeX-view-program-selection '((output-pdf "PDF Tools"))
 ;;       TeX-source-correlate-start-server t)
-
-
-#+END_SRC
-
-*** Xenops
-- TANGLE it if you want to use `xenops` (Alternative to Preview-Latex) for real-time LaTeX rendering.
-
-#+BEGIN_SRC emacs-lisp :tangle no
-;;; XENOPS
-
-(use-package xenops
-  :ensure t
-  :defer t
-  :hook ((LaTeX-mode . xenops-mode)
-	 ;; (org-mode . xenops-mode)
-	 (LaTeX-mode . xenops-xen-mode))
-  :config
-  (setq xenops-render-on-save t)
-  (setq xenops-cache-directory (expand-file-name "xenops-cache" user-cache-directory))
-
-  ;; Customize LaTeX preview appearance
-  (setq xenops-math-image-scale-factor 1.2) ;; Increase image size if needed
-  (setq xenops-math-image-current-scale-factor 1) ;; Increase image size if needed
-  (setq xenops-math-latex-process 'dvisvgm) ;; Use dvisvgm for better rendering
-  (setq xenops-math-latex-packages
-	'("amsmath" "amssymb" "bm")) ;; Add 'bm' package for bold math
-
-  ;; Ensure bold math symbols
-  (setq xenops-math-latex-macros
-	'("\\renewcommand{\\mathbf}[1]{\\bm{#1}}")))
 
 
 #+END_SRC
