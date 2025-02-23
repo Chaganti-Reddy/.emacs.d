@@ -114,9 +114,9 @@
 
     ;; New prefix for favorite directories
     "d o" '(:ignore t :wk "Favorite Directories")
-    "d o p" `((lambda () (interactive) (dired "/mnt/Karna/Git/portfolio/")) :wk "Open Portfolio")
-    "d o P" `((lambda () (interactive) (dired "/mnt/Karna/Git/Project-K/")) :wk "Open Project-K")
-    "d o h" `((lambda () (interactive) (dired "~")) :wk "Open Home")
+    "d o p" `((lambda () (interactive) (let ((default-directory "/mnt/Karna/Git/portfolio/")) (execute-extended-command nil "find-file"))) :wk "Open Portfolio")
+    "d o P" `((lambda () (interactive) (let ((default-directory "/mnt/Karna/Git/Project-K/")) (execute-extended-command nil "find-file"))) :wk "Open Project-K")
+    "d o h" `((lambda () (interactive) (let ((default-directory "~/")) (execute-extended-command nil "find-file"))) :wk "Open Home")
     )
 
   (karna/leader-keys
