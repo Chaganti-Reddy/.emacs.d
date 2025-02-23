@@ -191,6 +191,21 @@
   ;; Define how often it updates (adjust for performance)
   (setq magic-latex-buffer-refresh-delay 0.5)) ;; 0.5s delay for updates
 
+;;; PREVIEW AUTO
+(use-package preview-auto
+  :after latex
+  ;; :hook (LaTeX-mode . preview-auto-mode)
+  :config
+  (setq preview-protect-point t)
+  (setq preview-locating-previews-message nil)
+  (setq preview-leave-open-previews-visible t)
+  :custom
+  (preview-auto-interval 0.1)
+
+  ;; Uncomment the following only if you have followed the above
+  ;; instructions concerning, e.g., hyperref:
+
+  (preview-LaTeX-command-replacements '(preview-LaTeX-disable-pdfoutput)))
 
 
 (provide 'packages/latex)
