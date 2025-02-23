@@ -41,6 +41,7 @@
       "~/.emacs.d/snippets/"          ;; Exclude everything inside ~/.emacs.d/snippets/
       "/mnt/Karna/Git/Project-K/Org/Tasks.org" ;; Exclude this specific Org file
       "_region_\\.tex$"              ;; Ignore temporary LaTeX region files
+      "<none>\\.tex$"              ;; Ignore temporary LaTeX region files
       "^/tmp/"))                     ;; Exclude everything inside /tmp/
 
 ;; Enable recentf mode
