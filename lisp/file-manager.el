@@ -33,6 +33,15 @@
 				("mkv" . "mpv")    ;; Open MKVs with mpv
 				("mp4" . "mpv")))) ;; Open MP4s with mpv
 
+;; Auto Create Directory if it doesn't exist
+(advice-add 'read-file-name :around
+	    (lambda (orig-fun &rest args)
+	      (let ((result (apply orig-fun args)))
+		(when (and (stringp result)
+			   (not (file-exists-p (file-name-directory result))))
+		  (make-directory (file-name-directory result) t))
+		result)))
+
 ;; ----------------------------------------------------------------------------
 ;; PEEP DIRED
 ;; ----------------------------------------------------------------------------
