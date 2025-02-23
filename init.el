@@ -39,7 +39,7 @@
 				       "consult" "elisp-mode" "flycheck"
 				       "simple" "expand-region" "undo-fu" "undo-fu-session" "doom-modeline"
 				       "yasnippet" "ace-window" "avy" "treemacs"
-				       "magit" "gcmh" "evil" "evil-collection" "which-key" "dashboard" "projectile" "perspective" "corfu" "cape" "gptel"
+				       "magit" "gcmh" "evil"  "which-key" "dashboard" "projectile" "perspective" "corfu" "cape" "gptel"
 					"ef-themes"
 				       ;; "ewal" "ewal-doom-themes" "doom-themes" "modus-themes"
 				       "dired" "ibuffer" "pdf-tools"))
