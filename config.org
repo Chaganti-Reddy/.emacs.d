@@ -332,7 +332,7 @@
   ;;----------------------------------------------------------------------------
   ;; Appearance Tweaks
   ;;----------------------------------------------------------------------------
-  (add-to-list 'default-frame-alist '(alpha-background . 95)) ;; Set frame transparency
+  (add-to-list 'default-frame-alist '(alpha-background . 100)) ;; Set frame transparency
   (global-prettify-symbols-mode 1)      ;; Display certain keywords as symbols
 
   ;;----------------------------------------------------------------------------
