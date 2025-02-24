@@ -31,9 +31,7 @@
 
   (org-super-agenda-mode))
 
-(setq org-agenda-time-grid '((daily today require-timed)
-			     (900 1200 1300 1700)))  ;; Times in 24-hour format without `:`
-
+(advice-add 'org-agenda-todo :after #'org-save-all-org-buffers)
 
 (setq org-agenda-files (directory-files-recursively org-directory "\\.org$") )
 (setq org-agenda-start-on-weekday nil) ; - to see from current day instead of from Monday
