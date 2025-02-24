@@ -82,30 +82,30 @@
 ;; Reduce delay for faster live previews
 (setq org-latex-preview-live-debounce 0.25)
 
+;; ;; Stolen from the package ov (Center Previews)
 
-;; Stolen from the package ov (Center Previews)
-(defun ov-at (&optional point)
-  "Get an overlay at POINT.
-POINT defaults to the current `point'."
-  (or point (setq point (point)))
-  (car (overlays-at point)))
-;; https://www.reddit.com/r/emacs/comments/169keg7/comment/jzierha/?utm_source=share&utm_medium=web2x&context=3
-(defun org-justify-fragment-overlay (beg end image &optional imagetype)
-  "Only equations at the beginning and also end of a line are justified."
-  (if
-   (and (= beg (line-beginning-position)) (= end (line-end-position)))
-   (let* ((ov (ov-at))
-  (disp (overlay-get ov 'display)))
-     (overlay-put ov 'line-prefix `(space :align-to (- center (0.5 . ,disp)))))))
-(advice-add 'org--make-preview-overlay :after 'org-justify-fragment-overlay)
+;; (defun ov-at (&optional point)
+;;   "Get an overlay at POINT.
+;; POINT defaults to the current `point'."
+;;   (or point (setq point (point)))
+;;   (car (overlays-at point)))
+;; ;; https://www.reddit.com/r/emacs/comments/169keg7/comment/jzierha/?utm_source=share&utm_medium=web2x&context=3
+;; (defun org-justify-fragment-overlay (beg end image &optional imagetype)
+;;   "Only equations at the beginning and also end of a line are justified."
+;;   (if
+;;    (and (= beg (line-beginning-position)) (= end (line-end-position)))
+;;    (let* ((ov (ov-at))
+;;   (disp (overlay-get ov 'display)))
+;;      (overlay-put ov 'line-prefix `(space :align-to (- center (0.5 . ,disp)))))))
+;; (advice-add 'org--make-preview-overlay :after 'org-justify-fragment-overlay)
 
+;; ;; Automatically refresh LaTeX previews on save or edits
 
-;; Automatically refresh LaTeX previews on save or edits
-(add-hook 'org-mode-hook
-	  (lambda ()
-	    (add-hook 'after-save-hook 'org-latex-preview nil 'local)
-	    (add-hook 'after-change-functions
-		      (lambda (&rest _) (org-latex-preview)) nil 'local)))
+;; (add-hook 'org-mode-hook
+;;	  (lambda ()
+;;	    (add-hook 'after-save-hook 'org-latex-preview nil 'local)
+;;	    (add-hook 'after-change-functions
+;;		      (lambda (&rest _) (org-latex-preview)) nil 'local)))
 
 ;; ------------------------------------------------------------
 ;; CITATION
@@ -121,6 +121,13 @@ POINT defaults to the current `point'."
 (require 'oc-biblatex)
 (require 'oc-natbib))
 ;; (setq org-cite-global-bibliography '("~/Path/To/bibliographyFile"))
+
+;;; ORG FRAGTOP
+
+(use-package org-fragtog
+  :ensure t
+  :defer t)
+(add-hook 'org-mode-hook 'org-fragtog-mode)
 
 
 (provide 'packages/org-latex)
