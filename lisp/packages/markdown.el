@@ -49,6 +49,17 @@
 	  (lambda ()
 	    (local-set-key (kbd "C-c d") 'insert-current-date)))
 
+;; Function to insert the current time in 24-hour format
+(defun insert-current-time ()
+  "Insert the current time in the format HH:MM at the point."
+  (interactive)
+  (insert (format-time-string "%H:%M")))
+
+;; Bind the function to C-c t in Org mode
+(add-hook 'org-mode-hook
+	  (lambda ()
+	    (local-set-key (kbd "C-c t") 'insert-current-time)))
+
 ;; ------------------------------------------------------------
 ;; MARKDOWN PREVIEW MODE
 ;; ------------------------------------------------------------
