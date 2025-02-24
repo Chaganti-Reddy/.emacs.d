@@ -1,52 +1,43 @@
 ;;; org-agenda-config.el --- ORG Agenda Config -*- lexical-binding: t; -*-
 
-;; Improve Org Agenda with `org-super-agenda`
+(require 'org-habit)
+
 (use-package org-super-agenda
   :ensure t
   :config
   (setq org-super-agenda-groups
-	'((:name "🔥 Urgent"  :priority "A")
-	  (:name "📅 Today"   :time-grid t)
-	  (:name "💡 Ideas"   :tag "idea")
-	  (:name "🛠 Work"    :category "Work")
-	  (:name "🏡 Personal" :habit t)
-	  (:name "📖 Reading" :tag "reading")
-	  (:name "📝 Writing" :tag "write")
-	  (:name "📑 Review" :tag "review")
-	  (:name "🚀 Code" :tag "code")
-	  (:name "📚 Literature" :tag "lit")
-	  (:name "🛠 Testing" :tag "test")
-	  (:name "🗓 Planning" :tag "planning")
-	  (:name "🗂 Meeting" :tag "meeting")
-	  (:name "🗄 Submitted" :tag "submitted")
-	  (:name "📢 Published" :tag "published")
-	  (:name "❌ Abandoned" :tag "abandoned")))
+        '((:name "🔥 Urgent" :priority "A" :order 1) ; High-priority tasks
+          (:name "📅 Today" :time-grid t :order 2) ; Tasks for today
+          (:name "📚 Research" :tag "research" :order 3) ; Research group
+          (:name "📖 Study" :tag "study" :order 4) ; Study tasks
+          (:name "🏡 Home" :tag "home" :order 5) ; Home tasks
+          (:name "🔔 Remainder" :tag "remainder" :order 6) ; Remainders
+          (:name "💪 Gym" :tag "gym" :order 7) ; Gym/habits
+          (:name "❌ Quit" :tag "quit" :order 99) ; Abandoned tasks
+          (:name "Other" :auto-group t :order 100))) ; Catch-all group
 
   (setq org-tag-alist
-	'((:startgroup)
-	  ("@errand"   . ?E)
-	  ("@home"     . ?H)
-	  ("@lab"      . ?L)
-	  ("@office"   . ?O)
-	  (:endgroup)
-	  ("agenda"    . ?a)
-	  ("planning"  . ?p)
-	  ("note"      . ?n)
-	  ("idea"      . ?i)
-	  ("lit"       . ?l)   ; literature review
-	  ("code"      . ?c)
-	  ("test"      . ?t)
-	  ("write"     . ?w)
-	  ("review"    . ?r)
-	  ("submitted" . ?s)
-	  ("published" . ?P)   ; uppercase P differentiates from planning
-	  ("abandoned" . ?x)
-	  ("meeting"   . ?m)
-	  ("reading"   . ?R)))
+        '((:startgroup)
+          ("study"    . ?s) ; Study tasks
+          ("home"     . ?h) ; Home tasks
+          ("remainder". ?r) ; Remainders
+          ("gym"      . ?g) ; Gym/habits
+          ("research" . ?R) ; Research tasks
+          (:endgroup)
+          ("litreview" . ?l) ; Literature review (sub-step of research)
+          ("experiment". ?e) ; Experiments (sub-step of research)
+          ("writing"   . ?w) ; Writing (sub-step of research)
+          ("quit" . ?x))) ; Abandoned tasks
 
   (org-super-agenda-mode))
 
+(setq org-agenda-time-grid '((daily today require-timed)
+                             (900 1200 1300 1700)))  ;; Times in 24-hour format without `:`
+
+
 (setq org-agenda-files (directory-files-recursively org-directory "\\.org$") )
+(setq org-agenda-start-on-weekday nil) ; - to see from current day instead of from Monday
+(setq org-agenda-start-day "-1d") ; - that's only for seeing week from yesterday, not from today
 
 (setq org-agenda-start-with-log-mode t
       org-log-done 'time
