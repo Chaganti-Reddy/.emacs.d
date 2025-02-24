@@ -7,8 +7,6 @@
 (use-package treemacs
   :ensure t
   :defer t
-  :bind
-  (("C-c t" . treemacs))
   :config
   (setq treemacs-width 30))
 
