@@ -2309,8 +2309,6 @@ Treemacs is a cool alternative to Neotree
 (use-package treemacs
   :ensure t
   :defer t
-  :bind
-  (("C-c t" . treemacs))
   :config
   (setq treemacs-width 30))
 
@@ -3385,6 +3383,18 @@ OX-HUGO is to convert org files into hugo supported markdown file
 	  (lambda ()
 	    (local-set-key (kbd "C-c d") 'insert-current-date)))
 
+;; Function to insert the current time in 24-hour format
+(defun insert-current-time ()
+  "Insert the current time in the format HH:MM at the point."
+  (interactive)
+  (insert (format-time-string "%H:%M")))
+
+;; Bind the function to C-c t in Org mode
+(add-hook 'org-mode-hook
+	  (lambda ()
+	    (local-set-key (kbd "C-c t") 'insert-current-time)))
+
+
 
 #+END_SRC
 
@@ -3949,9 +3959,7 @@ This section configures Org Agenda by specifying agenda files, enabling log mode
 
   (org-super-agenda-mode))
 
-(setq org-agenda-time-grid '((daily today require-timed)
-			     (900 1200 1300 1700)))  ;; Times in 24-hour format without `:`
-
+(advice-add 'org-agenda-todo :after #'org-save-all-org-buffers)
 
 (setq org-agenda-files (directory-files-recursively org-directory "\\.org$") )
 (setq org-agenda-start-on-weekday nil) ; - to see from current day instead of from Monday
