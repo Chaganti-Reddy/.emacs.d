@@ -23,7 +23,11 @@
     "=" '(perspective-map :wk "Perspective") ;; Lists all the perspective keybindings
     "/" '(evilnc-comment-or-uncomment-lines :wk "Toggle Comments")
     "TAB TAB" '(comment-line :wk "Comment lines")
-    "u" '(universal-argument :wk "Universal argument"))
+    "u" '(universal-argument :wk "Universal argument")
+    "<left>" '(evil-window-left :wk "Window left")
+    "<right>" '(evil-window-right :wk "Window right")
+    "<up>" '(evil-window-up :wk "Window up")
+    "<down>" '(evil-window-down :wk "Window down"))
 
    (karna/leader-keys
     "a" '(:ignore t :wk "A.I.")
