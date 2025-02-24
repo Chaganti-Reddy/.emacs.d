@@ -24,6 +24,7 @@
 			   (if (char-equal c ?<) t (,electric-pair-inhibit-predicate c))))))
 
 (eval-after-load 'org-indent '(diminish 'org-indent-mode)) ;; Removes "Ind" from showing in the modeline.
+(setq org-insert-heading-respect-content t) ;; M-RET will enter heading after the text w.r.t the previous heading
 
 ;; ------------------------------------------------
 ;;; ORG UI SETTINGS
@@ -195,7 +196,6 @@
       org-ellipsis " ⬎ "
       org-superstar-headline-bullets-list '("◉" "●" "○" "◆" "●" "○" "◆")
       org-superstar-itembullet-alist '((?+ . ?➤) (?- . ?✦)) ; changes +/- symbols in item lists
-      org-log-done 'time
       org-hide-emphasis-markers t
       ;; ex. of org-link-abbrev-alist in action
       ;; [[arch-wiki:Name_of_Page][Description]]
@@ -241,8 +241,7 @@
 (setq org-bookmark-names-plist nil) ;; Stop bookmarking on org captures and refiling
 
 (setq org-refile-targets
-      '(("Archive.org" :maxlevel . 1)
-	("Tasks.org" :maxlevel . 1)))
+      '(("Tasks.org" :maxlevel . 1)))
 
 (setq org-hide-drawers '("PROPERTIES"))
 
