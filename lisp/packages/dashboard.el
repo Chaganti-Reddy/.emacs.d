@@ -59,7 +59,7 @@
 	    (lambda ()
 	      (display-line-numbers-mode -1))))
 
-(setq dashboard-agenda-tags-format 'ignore)       
+(setq dashboard-agenda-tags-format 'ignore)
 
 (setq dashboard-agenda-prefix-format  "%i %s  ")
 
