@@ -303,6 +303,7 @@
   (electric-pair-mode 1)              ;; Auto-insert matching parentheses
   (global-display-line-numbers-mode 1) ;; Enable line numbers globally
   (global-visual-line-mode 1)         ;; Enable visual line wrapping
+  (add-hook 'text-mode-hook 'visual-line-mode)
   (menu-bar-mode -1)                  ;; Disable the menu bar
   (scroll-bar-mode -1)                ;; Disable the scroll bar
   (column-number-mode t)              ;; Show column numbers
@@ -523,7 +524,7 @@ Native Compile support and silence some annoying warnings when a package gets in
 (setq recentf-exclude
       '("~/.cache/emacs/"             ;; Exclude everything inside ~/.cache/emacs/
       "~/.emacs.d/snippets/"          ;; Exclude everything inside ~/.emacs.d/snippets/
-      "/mnt/Karna/Git/Project-K/Org/Journal/"          ;; Exclude everything inside Org Journal 
+      "/mnt/Karna/Git/Project-K/Org/Journal/"          ;; Exclude everything inside Org Journal
       "/mnt/Karna/Git/Project-K/Org/Tasks.org" ;; Exclude this specific Org file
       "_region_\\.tex$"              ;; Ignore temporary LaTeX region files
       "<none>\\.tex$"              ;; Ignore temporary LaTeX region files
@@ -1116,7 +1117,7 @@ Whenever the window scrolls a light will shine on top of your cursor so you know
 	    (lambda ()
 	      (display-line-numbers-mode -1))))
 
-(setq dashboard-agenda-tags-format 'ignore)       
+(setq dashboard-agenda-tags-format 'ignore)
 
 (setq dashboard-agenda-prefix-format  "%i %s  ")
 
@@ -3246,33 +3247,35 @@ This function is intended to be called on file open."
 ;; Reduce delay for faster live previews
 (setq org-latex-preview-live-debounce 0.25)
 
+;; ;; Stolen from the package ov (Center Previews)
 
-;; Stolen from the package ov (Center Previews)
-(defun ov-at (&optional point)
-  "Get an overlay at POINT.
-POINT defaults to the current `point'."
-  (or point (setq point (point)))
-  (car (overlays-at point)))
-;; https://www.reddit.com/r/emacs/comments/169keg7/comment/jzierha/?utm_source=share&utm_medium=web2x&context=3
-(defun org-justify-fragment-overlay (beg end image &optional imagetype)
-  "Only equations at the beginning and also end of a line are justified."
-  (if
-   (and (= beg (line-beginning-position)) (= end (line-end-position)))
-   (let* ((ov (ov-at))
-  (disp (overlay-get ov 'display)))
-     (overlay-put ov 'line-prefix `(space :align-to (- center (0.5 . ,disp)))))))
-(advice-add 'org--make-preview-overlay :after 'org-justify-fragment-overlay)
+;; (defun ov-at (&optional point)
+;;   "Get an overlay at POINT.
+;; POINT defaults to the current `point'."
+;;   (or point (setq point (point)))
+;;   (car (overlays-at point)))
+;; ;; https://www.reddit.com/r/emacs/comments/169keg7/comment/jzierha/?utm_source=share&utm_medium=web2x&context=3
+;; (defun org-justify-fragment-overlay (beg end image &optional imagetype)
+;;   "Only equations at the beginning and also end of a line are justified."
+;;   (if
+;;    (and (= beg (line-beginning-position)) (= end (line-end-position)))
+;;    (let* ((ov (ov-at))
+;;   (disp (overlay-get ov 'display)))
+;;      (overlay-put ov 'line-prefix `(space :align-to (- center (0.5 . ,disp)))))))
+;; (advice-add 'org--make-preview-overlay :after 'org-justify-fragment-overlay)
 
+;; ;; Automatically refresh LaTeX previews on save or edits
 
-;; Automatically refresh LaTeX previews on save or edits
-(add-hook 'org-mode-hook
-	  (lambda ()
-	    (add-hook 'after-save-hook 'org-latex-preview nil 'local)
-	    (add-hook 'after-change-functions
-		      (lambda (&rest _) (org-latex-preview)) nil 'local)))
-
+;; (add-hook 'org-mode-hook
+;;	  (lambda ()
+;;	    (add-hook 'after-save-hook 'org-latex-preview nil 'local)
+;;	    (add-hook 'after-change-functions
+;;		      (lambda (&rest _) (org-latex-preview)) nil 'local)))
 
 #+END_SRC
+
+#+RESULTS:
+: 0.25
 
 ** CITATION AND BIBLIOGRAPHY INTEGRATION
 - Loads citeproc for citation formatting.
@@ -3296,8 +3299,6 @@ POINT defaults to the current `point'."
 ;; (setq org-cite-global-bibliography '("~/Path/To/bibliographyFile"))
 
 
-(provide 'packages/org-latex)
-;; packages/org-latex.el ends here
 #+END_SRC
 
 ** ARCHIVES
@@ -3305,7 +3306,7 @@ POINT defaults to the current `point'."
 *** ORG FRAGTOP
 - Automatically toggles LaTeX fragment previews when editing Org files.
 
-#+BEGIN_SRC emacs-lisp :tangle no
+#+BEGIN_SRC emacs-lisp :tangle lisp/packages/org-latex.el
 ;;; ORG FRAGTOP
 
 (use-package org-fragtog
@@ -3314,6 +3315,8 @@ POINT defaults to the current `point'."
 (add-hook 'org-mode-hook 'org-fragtog-mode)
 
 
+(provide 'packages/org-latex)
+;; packages/org-latex.el ends here
 #+END_SRC
 
 -----
@@ -3591,6 +3594,7 @@ Allows us to create a Table of Contents in our Org docs. And also preserving Ind
 			   (if (char-equal c ?<) t (,electric-pair-inhibit-predicate c))))))
 
 (eval-after-load 'org-indent '(diminish 'org-indent-mode)) ;; Removes "Ind" from showing in the modeline.
+(setq org-insert-heading-respect-content t) ;; M-RET will enter heading after the text w.r.t the previous heading
 
 
 #+END_SRC
@@ -3844,7 +3848,6 @@ This section sets up basic Org mode options such as the Org directory, default n
       org-ellipsis " ⬎ "
       org-superstar-headline-bullets-list '("◉" "●" "○" "◆" "●" "○" "◆")
       org-superstar-itembullet-alist '((?+ . ?➤) (?- . ?✦)) ; changes +/- symbols in item lists
-      org-log-done 'time
       org-hide-emphasis-markers t
       ;; ex. of org-link-abbrev-alist in action
       ;; [[arch-wiki:Name_of_Page][Description]]
@@ -3921,33 +3924,33 @@ This section configures Org Agenda by specifying agenda files, enabling log mode
   :ensure t
   :config
   (setq org-super-agenda-groups
-        '((:name "🔥 Urgent" :priority "A" :order 1) ; High-priority tasks
-          (:name "📅 Today" :time-grid t :order 2) ; Tasks for today
-          (:name "📚 Research" :tag "research" :order 3) ; Research group
-          (:name "📖 Study" :tag "study" :order 4) ; Study tasks
-          (:name "🏡 Home" :tag "home" :order 5) ; Home tasks
-          (:name "🔔 Remainder" :tag "remainder" :order 6) ; Remainders
-          (:name "💪 Gym" :tag "gym" :order 7) ; Gym/habits
-          (:name "❌ Quit" :tag "quit" :order 99) ; Abandoned tasks
-          (:name "Other" :auto-group t :order 100))) ; Catch-all group
+	'((:name "🔥 Urgent" :priority "A" :order 1) ; High-priority tasks
+	  (:name "📅 Today" :time-grid t :order 2) ; Tasks for today
+	  (:name "📚 Research" :tag "research" :order 3) ; Research group
+	  (:name "📖 Study" :tag "study" :order 4) ; Study tasks
+	  (:name "🏡 Home" :tag "home" :order 5) ; Home tasks
+	  (:name "🔔 Remainder" :tag "remainder" :order 6) ; Remainders
+	  (:name "💪 Gym" :tag "gym" :order 7) ; Gym/habits
+	  (:name "❌ Quit" :tag "quit" :order 99) ; Abandoned tasks
+	  (:name "Other" :auto-group t :order 100))) ; Catch-all group
 
   (setq org-tag-alist
-        '((:startgroup)
-          ("study"    . ?s) ; Study tasks
-          ("home"     . ?h) ; Home tasks
-          ("remainder". ?r) ; Remainders
-          ("gym"      . ?g) ; Gym/habits
-          ("research" . ?R) ; Research tasks
-          (:endgroup)
-          ("litreview" . ?l) ; Literature review (sub-step of research)
-          ("experiment". ?e) ; Experiments (sub-step of research)
-          ("writing"   . ?w) ; Writing (sub-step of research)
-          ("quit" . ?x))) ; Abandoned tasks
+	'((:startgroup)
+	  ("study"    . ?s) ; Study tasks
+	  ("home"     . ?h) ; Home tasks
+	  ("remainder". ?r) ; Remainders
+	  ("gym"      . ?g) ; Gym/habits
+	  ("research" . ?R) ; Research tasks
+	  (:endgroup)
+	  ("litreview" . ?l) ; Literature review (sub-step of research)
+	  ("experiment". ?e) ; Experiments (sub-step of research)
+	  ("writing"   . ?w) ; Writing (sub-step of research)
+	  ("quit" . ?x))) ; Abandoned tasks
 
   (org-super-agenda-mode))
 
 (setq org-agenda-time-grid '((daily today require-timed)
-                             (900 1200 1300 1700)))  ;; Times in 24-hour format without `:`
+			     (900 1200 1300 1700)))  ;; Times in 24-hour format without `:`
 
 
 (setq org-agenda-files (directory-files-recursively org-directory "\\.org$") )
