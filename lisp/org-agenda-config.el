@@ -6,33 +6,33 @@
   :ensure t
   :config
   (setq org-super-agenda-groups
-        '((:name "🔥 Urgent" :priority "A" :order 1) ; High-priority tasks
-          (:name "📅 Today" :time-grid t :order 2) ; Tasks for today
-          (:name "📚 Research" :tag "research" :order 3) ; Research group
-          (:name "📖 Study" :tag "study" :order 4) ; Study tasks
-          (:name "🏡 Home" :tag "home" :order 5) ; Home tasks
-          (:name "🔔 Remainder" :tag "remainder" :order 6) ; Remainders
-          (:name "💪 Gym" :tag "gym" :order 7) ; Gym/habits
-          (:name "❌ Quit" :tag "quit" :order 99) ; Abandoned tasks
-          (:name "Other" :auto-group t :order 100))) ; Catch-all group
+	'((:name "🔥 Urgent" :priority "A" :order 1) ; High-priority tasks
+	  (:name "📅 Today" :time-grid t :order 2) ; Tasks for today
+	  (:name "📚 Research" :tag "research" :order 3) ; Research group
+	  (:name "📖 Study" :tag "study" :order 4) ; Study tasks
+	  (:name "🏡 Home" :tag "home" :order 5) ; Home tasks
+	  (:name "🔔 Remainder" :tag "remainder" :order 6) ; Remainders
+	  (:name "💪 Gym" :tag "gym" :order 7) ; Gym/habits
+	  (:name "❌ Quit" :tag "quit" :order 99) ; Abandoned tasks
+	  (:name "Other" :auto-group t :order 100))) ; Catch-all group
 
   (setq org-tag-alist
-        '((:startgroup)
-          ("study"    . ?s) ; Study tasks
-          ("home"     . ?h) ; Home tasks
-          ("remainder". ?r) ; Remainders
-          ("gym"      . ?g) ; Gym/habits
-          ("research" . ?R) ; Research tasks
-          (:endgroup)
-          ("litreview" . ?l) ; Literature review (sub-step of research)
-          ("experiment". ?e) ; Experiments (sub-step of research)
-          ("writing"   . ?w) ; Writing (sub-step of research)
-          ("quit" . ?x))) ; Abandoned tasks
+	'((:startgroup)
+	  ("study"    . ?s) ; Study tasks
+	  ("home"     . ?h) ; Home tasks
+	  ("remainder". ?r) ; Remainders
+	  ("gym"      . ?g) ; Gym/habits
+	  ("research" . ?R) ; Research tasks
+	  (:endgroup)
+	  ("litreview" . ?l) ; Literature review (sub-step of research)
+	  ("experiment". ?e) ; Experiments (sub-step of research)
+	  ("writing"   . ?w) ; Writing (sub-step of research)
+	  ("quit" . ?x))) ; Abandoned tasks
 
   (org-super-agenda-mode))
 
 (setq org-agenda-time-grid '((daily today require-timed)
-                             (900 1200 1300 1700)))  ;; Times in 24-hour format without `:`
+			     (900 1200 1300 1700)))  ;; Times in 24-hour format without `:`
 
 
 (setq org-agenda-files (directory-files-recursively org-directory "\\.org$") )
