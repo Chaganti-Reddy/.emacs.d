@@ -59,6 +59,12 @@
 	    (lambda ()
 	      (display-line-numbers-mode -1))))
 
+(setq dashboard-agenda-tags-format 'ignore)       
+
+(setq dashboard-agenda-prefix-format  "%i %s  ")
+
+(setq dashboard-agenda-item-icon "󰸗") ;; Nerd Font calendar icon
+
 
 (provide 'packages/dashboard)
 ;;; packages/dashboard.el ends here
