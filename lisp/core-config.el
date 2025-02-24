@@ -39,6 +39,7 @@
   (electric-pair-mode 1)              ;; Auto-insert matching parentheses
   (global-display-line-numbers-mode 1) ;; Enable line numbers globally
   (global-visual-line-mode 1)         ;; Enable visual line wrapping
+  (add-hook 'text-mode-hook 'visual-line-mode)
   (menu-bar-mode -1)                  ;; Disable the menu bar
   (scroll-bar-mode -1)                ;; Disable the scroll bar
   (column-number-mode t)              ;; Show column numbers
