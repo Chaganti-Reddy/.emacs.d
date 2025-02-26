@@ -1,51 +1,50 @@
-;;; ui-config.el --- UI Configurations -*- lexical-binding: t; -*-
+;;; ui-config.el - Configuration for UI elements. -*- lexical-binding: t -*-
+
+;;; Commentary:
+
+;; UI Configuration for Emacs such as themes, fonts etc..,
+
+;;; Code:
 
 ;; ----------------------------------------------------------------------------
-;; THEMES
+;; EF THEMES CONFIGURATION
 ;; ----------------------------------------------------------------------------
-
 (use-package ef-themes
   :ensure t
   :config
-  (defvar my/current-ef-theme 'ef-winter
-    "Stores the current theme to toggle between `ef-cyprus` and `ef-winter`.")
+  (defcustom karna/current-ef-theme 'ef-winter
+    "Stores the current theme to toggle between `ef-cyprus` and `ef-winter`."
+    :type 'symbol
+    :group 'karna)
 
-  (defun my/toggle-ef-theme ()
+  (defun karna/toggle-ef-theme ()
     "Toggle between `ef-cyprus` and `ef-winter` themes."
     (interactive)
-    (setq my/current-ef-theme (if (eq my/current-ef-theme 'ef-cyprus)
-				  'ef-winter
-				'ef-cyprus))
-    (ef-themes-select my/current-ef-theme)
-    (message "Switched to %s" my/current-ef-theme))
+    (setq karna/current-ef-theme
+          (if (eq karna/current-ef-theme 'ef-cyprus)
+              'ef-winter
+            'ef-cyprus))
+    (ef-themes-select karna/current-ef-theme)
+    (message "Switched to %s" karna/current-ef-theme))
 
-  ;; Load default theme
-  (ef-themes-select my/current-ef-theme))
+  ;; Load default theme on startup
+  (custom-set-variables '(ef-themes-to-toggle (list karna/current-ef-theme)))
+  (ef-themes-select karna/current-ef-theme))
 
 ;; ----------------------------------------------------------------------------
 ;; FONT SETTINGS
 ;; ----------------------------------------------------------------------------
-
-(defvar my/default-font "JetBrainsMono Nerd Font"
+(defvar karna/default-font "JetBrains Mono Nerd Font"
   "Default font for Emacs.")
 
-(add-to-list 'default-frame-alist `(font . ,(format "%s-12:bold" my/default-font)))
+(defvar karna/font-size 12
+  "Default font size for Emacs.")
 
-(set-face-attribute 'default nil
-		    :font my/default-font
-		    :height 120
-		    :weight 'bold)
-
-(set-face-attribute 'fixed-pitch nil
-		    :font my/default-font
-		    :height 130
-		    :weight 'bold)
-
-(set-face-attribute 'variable-pitch nil
-		    :font my/default-font
-		    :height 120
-		    :weight 'bold)
-
+(let ((font-spec (format "%s-%d:semi-bold" karna/default-font karna/font-size)))
+  (add-to-list 'default-frame-alist `(font . ,font-spec))
+  (set-face-attribute 'default nil :font font-spec)
+  (set-face-attribute 'fixed-pitch nil :font font-spec)
+  (set-face-attribute 'variable-pitch nil :font font-spec))
 
 ;; Italics for comments & keywords
 (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
@@ -57,39 +56,29 @@
 (set-display-table-slot standard-display-table 'wrap (make-glyph-code ?–))
 
 ;; ----------------------------------------------------------------------------
-;;; ICONS
+;; ICONS
 ;; ----------------------------------------------------------------------------
-
 (use-package all-the-icons
   :ensure t
   :if (display-graphic-p))
 
 (use-package all-the-icons-dired
   :ensure t
-  :defer t
-  :hook (dired-mode . (lambda () (all-the-icons-dired-mode t))))
+  :if (display-graphic-p)
+  :hook (dired-mode . all-the-icons-dired-mode))
 
 (use-package all-the-icons-completion
   :ensure t
-  :defer t
-  :hook (marginalia-mode . #'all-the-icons-completion-marginalia-setup)
+  :if (display-graphic-p)
+  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
   :init
   (all-the-icons-completion-mode))
 
-(use-package nerd-icons :defer t
+(use-package nerd-icons
+  :ensure t
+  :if (display-graphic-p)
   :custom
   (nerd-icons-color-icons t))
-
-;;; BEACON
-
-(use-package beacon
-  :ensure t
-  :defer t
-  :init
-  ;;(setq beacon-size 40)
-  ;;(setq beacon-color "#ff00ff")
-  (beacon-mode 1))
-
 
 (provide 'ui-config)
 ;;; ui-config.el ends here
