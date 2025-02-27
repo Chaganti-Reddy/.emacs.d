@@ -8,43 +8,44 @@
 
 (use-package eglot
   :ensure nil
-  :custom
-  :init 
+  :defer
+  :init
   (fset #'jsonrpc--log-event #'ignore)
+  :custom
   (eglot-autoshutdown t)                      ;; Auto-shutdown LSP server when no managed buffers exist
   (eglot-sync-connect 1)                      ;; Make connection synchronous for immediate availability
   (eglot-events-buffer-size 0)                ;; Disable event logging (for performance)
   (eldoc-echo-area-use-multiline-p nil)       ;; Prevent multiline messages in minibuffer
   :bind (:map eglot-mode-map
-              ("C-c a" . eglot-code-actions)           ;; Show code actions
-              ("C-c f" . eglot-format-buffer)          ;; Format buffer
-              ("C-c r" . eglot-rename)                 ;; Rename symbol
-              ("C-c i" . consult-imenu)                ;; Jump to function/class (via consult-imenu)
-              ("C-c o" . eglot-code-action-organize-imports)) ;; Organize imports
+	      ("C-c a" . eglot-code-actions)           ;; Show code actions
+	      ("C-c f" . eglot-format-buffer)          ;; Format buffer
+	      ("C-c r" . eglot-rename)                 ;; Rename symbol
+	      ("C-c i" . consult-imenu)                ;; Jump to function/class (via consult-imenu)
+	      ("C-c o" . eglot-code-action-organize-imports)) ;; Organize imports
   :hook ((python-ts-mode . eglot-ensure)
-         (go-ts-mode . eglot-ensure)
-         (yaml-mode . eglot-ensure)
-         (dockerfile-mode . eglot-ensure)
-         (web-mode . eglot-ensure)
-         (css-mode . eglot-ensure)
-         (html-mode . eglot-ensure)
-         (typescript-ts-mode . eglot-ensure)
-         (javascript-ts-mode . eglot-ensure)
-         (json-ts-mode . eglot-ensure)
-         (eglot-managed-mode . karna/eglot-setup)) ;; Custom setup function
+	 (go-ts-mode . eglot-ensure)
+	 (yaml-mode . eglot-ensure)
+	 (dockerfile-mode . eglot-ensure)
+	 (web-mode . eglot-ensure)
+	 (css-mode . eglot-ensure)
+	 (html-mode . eglot-ensure)
+	 (typescript-ts-mode . eglot-ensure)
+	 (javascript-ts-mode . eglot-ensure)
+	 (json-ts-mode . eglot-ensure)
+	 (eglot-managed-mode . karna/eglot-setup)) ;; Custom setup function
   :config
   ;; Associate modes with their respective language servers
   (setq eglot-server-programs
-        `((python-ts-mode   . ("pyright-langserver" "--stdio"))
-          (go-ts-mode       . ("gopls"))
-          (yaml-mode        . ("yaml-language-server" "--stdio"))
-          (dockerfile-mode  . ("docker-langserver" "--stdio"))
-          (web-mode         . ("vscode-html-language-server" "--stdio"))
-          (html-mode        . ("vscode-html-language-server" "--stdio"))
-          (css-mode         . ("vscode-css-language-server" "--stdio"))
-          (javascript-ts-mode . ("typescript-language-server" "--stdio"))
-          (typescript-ts-mode . ("typescript-language-server" "--stdio"))
-          (json-ts-mode     . ("vscode-json-language-server" "--stdio"))))
+	`((python-ts-mode   . ("pyright-langserver" "--stdio"))
+	  (go-ts-mode       . ("gopls"))
+	  (yaml-mode        . ("yaml-language-server" "--stdio"))
+	  (dockerfile-mode  . ("docker-langserver" "--stdio"))
+	  (web-mode         . ("vscode-html-language-server" "--stdio"))
+	  (html-mode        . ("vscode-html-language-server" "--stdio"))
+	  (css-mode         . ("vscode-css-language-server" "--stdio"))
+	  (javascript-ts-mode . ("typescript-language-server" "--stdio"))
+	  (typescript-ts-mode . ("typescript-language-server" "--stdio"))
+	  (json-ts-mode     . ("vscode-json-language-server" "--stdio"))))
 
   ;; Custom setup for Eglot
   (defun karna/eglot-setup ()
@@ -58,12 +59,14 @@
 ;; ELDOC: Documentation Display
 ;; ----------------------------
 (use-package eldoc
+  :defer
   :ensure nil
   :custom
   (eldoc-echo-area-use-multiline-p t) ;; Show full documentation in echo area
   (eldoc-documentation-strategy 'eldoc-documentation-compose))
 
 (use-package eldoc-box
+  :defer
   :ensure t
   :hook (eglot-managed-mode . eldoc-box-hover-mode)
   :bind (:map eglot-mode-map
@@ -182,6 +185,7 @@
 ;; --------------------------------------------------------------
 ;; 🐍 Conda Virtual Environment Management
 ;; --------------------------------------------------------------
+(unless IS-GUIX
 (use-package conda
   :ensure t
   :defer t
@@ -195,7 +199,7 @@
   (conda-mode-line-setup)                 ;; Update modeline when Conda env changes.
 
   ;; Hook for restarting Python shell when activating a Conda env.
-  (add-hook 'conda-postactivate-hook #'karna/restart-python-shell-with-conda))
+  (add-hook 'conda-postactivate-hook #'karna/restart-python-shell-with-conda)))
 
 (with-eval-after-load 'conda
   (conda-mode-line-setup))
@@ -244,10 +248,10 @@
 (defun karna/pyvenv-autoload ()
   "Auto-activate Python virtual environment if 'env' exists in the project."
   (require 'pyvenv)
-  (require 'projectile)
-  (let ((venv-path (locate-dominating-file default-directory "env")))
-    (when venv-path
-      (pyvenv-activate (expand-file-name "env" venv-path)))))
+  (let* ((proj (project-current))
+	 (venv-path (when proj (expand-file-name "env" (project-root proj)))))
+    (when (and venv-path (file-exists-p venv-path))
+      (pyvenv-activate venv-path))))
 
 (add-hook 'python-mode-hook #'karna/pyvenv-autoload)
 
