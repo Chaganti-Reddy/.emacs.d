@@ -31,14 +31,15 @@
   :defer t
   :custom
   (eshell-toggle-size-fraction 3)
-  (eshell-toggle-use-projectile-root t)
+  (eshell-toggle-use-project-root t)
   (eshell-toggle-run-command nil)
   (eshell-toggle-init-function #'eshell-toggle-init-ansi-term))
 
-  (use-package eshell-syntax-highlighting
-    :after esh-mode
-    :config
-    (eshell-syntax-highlighting-global-mode +1))
+(use-package eshell-syntax-highlighting
+  :defer
+  :after esh-mode
+  :config
+  (eshell-syntax-highlighting-global-mode +1))
 
   ;; eshell-syntax-highlighting -- adds fish/zsh-like syntax highlighting.
   ;; eshell-rc-script -- your profile for eshell; like a bashrc for eshell.
@@ -92,50 +93,6 @@
 		  (reusable-frames . visible)
 		  (window-height . 0.4))))
 
-;; -------------------------------------------------------------------------
-;; VTERM MULTI
-;; -------------------------------------------------------------------------
-
-(use-package multi-vterm
-  :ensure t
-  :after evil  ;; Ensure Evil is loaded before configuring keys
-  :config
-  (add-hook 'vterm-mode-hook
-	    (lambda ()
-	      (setq-local evil-insert-state-cursor 'box)
-	      (evil-insert-state)))
-
-  (define-key vterm-mode-map [return] #'vterm-send-return)
-
-  (setq vterm-keymap-exceptions nil)
-
-  ;; Evil keybindings
-  (with-eval-after-load 'evil
-    (evil-define-key 'insert vterm-mode-map (kbd "C-e")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-f")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-a")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-v")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-b")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-w")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-u")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-d")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-n")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-m")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-p")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-j")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-k")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-r")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-t")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-g")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-c")      #'vterm--self-insert)
-    (evil-define-key 'insert vterm-mode-map (kbd "C-SPC")    #'vterm--self-insert)
-    (evil-define-key 'normal vterm-mode-map (kbd "C-d")      #'vterm--self-insert)
-    (evil-define-key 'normal vterm-mode-map (kbd ",c")       #'multi-vterm)
-    (evil-define-key 'normal vterm-mode-map (kbd ",n")       #'multi-vterm-next)
-    (evil-define-key 'normal vterm-mode-map (kbd ",p")       #'multi-vterm-prev)
-    (evil-define-key 'normal vterm-mode-map (kbd "i")        #'evil-insert-resume)
-    (evil-define-key 'normal vterm-mode-map (kbd "o")        #'evil-insert-resume)
-    (evil-define-key 'normal vterm-mode-map (kbd "<return>") #'evil-insert-resume)))
 
 (provide 'shells)
 ;; shells.el ends here
