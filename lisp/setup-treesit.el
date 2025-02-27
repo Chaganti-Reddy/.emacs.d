@@ -9,6 +9,7 @@
 ;; TREE-SITTER CORE CONFIGURATION
 ;; ----------------------------------------------------------------------------
 (use-package treesit
+  :defer
   :ensure nil ;; Built-in, no need to install
   :custom
   (treesit-language-source-alist
@@ -40,6 +41,7 @@
 ;; TREE-SITTER AUTO CONFIGURATION
 ;; ----------------------------------------------------------------------------
 (use-package treesit-auto
+  :defer
   :custom
   (treesit-auto-install 'prompt) ;; Ask before installing missing grammars
   (c-ts-mode-indent-offset 4)
