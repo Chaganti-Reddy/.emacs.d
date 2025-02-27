@@ -1,7 +1,7 @@
 ;;; projects.el --- Project.el Configuration -*- lexical-binding: t; -*-
 
 ;;; Commentary:
-;; My project.el configuration for project management 
+;; My project.el configuration for project management
 
 ;;; Code:
 
@@ -15,7 +15,6 @@
 (setq project-ignored-directories
       '("node_modules" "dist" "build" "vendor" ".venv" "tmp" "cache" "log" "bower_components"))
 
-;; Store known projects (equivalent to projectile-known-projects-file)
 (setq project-list-file (expand-file-name ".cache/projects" user-emacs-directory))
 
 ;; Keybindings for easy access
