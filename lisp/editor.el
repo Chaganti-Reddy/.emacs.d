@@ -28,72 +28,6 @@ Uses:
      (t (message "No formatter available for %s" major-mode))))
   :hook (prog-mode . format-all-ensure-formatter))
 
-
-;; ----------------------------------------------------------------------------
-;; 🔄 Vim-like Undo Management (`undo-fu` + `undo-fu-session`)
-;; ----------------------------------------------------------------------------
-
-(use-package undo-fu
-  :ensure t
-  :defer t
-  :config
-  (setq undo-fu-allow-undo-in-region t  ;; Allow undo in active region
-        undo-fu-ignore-keyboard-quit t) ;; Prevent undo reset on `C-g`
-  
-  ;; Define simple undo/redo functions
-  (defun karna/undo ()
-    "Perform an undo using `undo-fu`."
-    (interactive)
-    (undo-fu-only-undo))
-  
-  (defun karna/redo ()
-    "Perform a redo using `undo-fu`."
-    (interactive)
-    (undo-fu-only-redo)))
-
-(use-package undo-fu-session
-  :ensure t
-  :defer t
-  :config
-  (setq undo-fu-session-incompatible-files '("/COMMIT_EDITMSG\\'" "/git-rebase-todo\\'")
-        undo-fu-session-directory (karna/dir-concat user-cache-directory "undo-fu-session/")) ;; Store undo history in cache
-  :hook ((prog-mode conf-mode text-mode tex-mode) . undo-fu-session-mode))
-
-;; ----------------------------------------------------------------------------
-;; 📌 BREADCRUMB NAVIGATION FOR EMACS
-;; ----------------------------------------------------------------------------
-
-(use-package breadcrumb
-  :ensure t
-  :defer t
-  :init
-  (breadcrumb-mode 1)  ;; Enable breadcrumb globally.
-  :config
-  (setq breadcrumb-imenu-max-length 30
-	breadcrumb-project-max-length 30
-	breadcrumb-imenu-crumb-separator " » "
-	breadcrumb-project-crumb-separator " / "
-	header-line-format
-	'((:eval (concat (breadcrumb-project-crumbs) "  " (breadcrumb-imenu-crumbs))))))
-
-;; ----------------------------------------------------------------------------
-;; 📌 RAINBOW MODE (Color Highlighting)
-;; ----------------------------------------------------------------------------
-
-(use-package rainbow-mode
-  :ensure t
-  :defer t
-  :hook ((org-mode prog-mode) . rainbow-mode))
-
-;; ----------------------------------------------------------------------------
-;; 📌 RAINBOW DELIMITERS (For Parenthesis Highlighting)
-;; ----------------------------------------------------------------------------
-
-(use-package rainbow-delimiters
-  :ensure t
-  :defer t
-  :hook (prog-mode . rainbow-delimiters-mode))
-
 ;; ----------------------------------------------------------------------------
 ;; DRAG STUFF (Move Text with Ease)
 ;; ----------------------------------------------------------------------------
@@ -185,16 +119,14 @@ Uses:
   (sideline-flymake-display-mode 'line) ;; Show errors on the current line
   (sideline-backends-right '(sideline-flymake)))
 
-;; ----------------------------------------------------------------------------
-;; WAKATIME MODE
-;; ----------------------------------------------------------------------------
-
-(use-package wakatime-mode
-  :ensure t
+(use-package flyspell
+  :ensure nil
+  :defer t
+  :hook
+  ((prog-mode . flyspell-prog-mode)
+   (text-mode . turn-on-flyspell))
   :config
-  (when (executable-find "wakatime-cli")
-    (global-wakatime-mode)))
-
+  (flyspell-mode +1))
 
 (provide 'editor)
 ;;; editor.el ends here
