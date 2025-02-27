@@ -7,6 +7,7 @@
 
 (use-package cape
   :ensure t
+  :defer
   :init
   (dolist (hook '((prog-mode-hook . (cape-keyword cape-dabbrev cape-file))
                   (emacs-lisp-mode-hook . (cape-elisp-symbol cape-elisp-block cape-file))
@@ -17,6 +18,11 @@
     (dolist (fn (cdr hook))
       (add-hook (car hook) (lambda ()
                              (add-hook 'completion-at-point-functions fn 'append))))))
+
+
+(setq ispell-program-name "hunspell")
+(setq ispell-dictionary "en_US")
+(setq ispell-alternate-dictionary "/usr/share/hunspell/en_US.dic")
 
 (provide 'setup-cape)
 ;;; setup-cape.el ends here
