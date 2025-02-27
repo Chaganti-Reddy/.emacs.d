@@ -29,6 +29,7 @@
 ;; ----------------------------
 (use-package capf-autosuggest
   :ensure t
+  :defer
   :hook (eshell-mode . capf-autosuggest-mode)
   :custom (capf-autosuggest-dwim-next-line nil))
 
