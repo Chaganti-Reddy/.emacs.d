@@ -8,8 +8,9 @@
 
 (use-package yasnippet
   :ensure t
+  :defer
   :hook ((prog-mode . yas-minor-mode)
-	 (text-mode . yas-minor-mode)
+	 (org-mode . yas-minor-mode)
 	 (LaTeX-mode . yas-minor-mode))
   :custom
   (yas-snippet-dirs '("~/.emacs.d/snippets/")) ;; Custom snippet directory
@@ -19,6 +20,7 @@
 
 (use-package yasnippet-snippets
   :ensure t
+  :defer
   :after yasnippet
   :config
   (yas-reload-all))
