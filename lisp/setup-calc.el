@@ -7,14 +7,19 @@
 ;;; Code:
 
 (use-package calc
+  :ensure nil
+  :defer t
   :bind (("C-x c" . calc)
          ("C-S-e" . latex-math-from-calc)
          ("C-c e" . calc-embedded))
   :config
   (use-package calc-embed
+    :ensure nil
+    :defer t
     :bind (:map calc-override-minor-modes-map
            ("'" . calc-algebraic-entry)))
   (use-package calc-yank
+    :ensure nil
     :defer
     :config
     (define-advice calc-finish-stack-edit (:around (orig-fn &rest args) pop-to-buffer)
@@ -43,6 +48,8 @@
                                       calc-angle-mode rad)))))))))
 
 (use-package calc
+  :ensure nil
+  :defer t
   :after org-latex-preview
   :hook (calc-mode . my/olp-calc-settings)
   :config
@@ -55,6 +62,7 @@
 
 (use-package literate-calc-mode
   :ensure t
+  :defer t
   :hook (org-mode . literate-calc-minor-mode))
 
 
