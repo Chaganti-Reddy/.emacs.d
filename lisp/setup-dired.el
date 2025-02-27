@@ -10,6 +10,7 @@
 ;; DIRED CONFIGURATION (Minimal & Fast)
 ;; ----------------------------------------------------------------------------
 (use-package dired
+  :defer
   :ensure nil
   :commands (dired dired-jump)
   :bind (("C-x d" . dired)) ;; Open Dired quickly
@@ -38,6 +39,7 @@
 ;; DIRED-PREVIEW (File Previews in Dired)
 ;; ----------------------------------------------------------------------------
 (use-package dired-preview
+  :defer
   :after dired
   :custom
   (dired-preview-delay 0.3)  ;; Adjust delay before previewing
