@@ -1,0 +1,76 @@
+#+LATEX_HEADER: \usepackage{mathtools}
+#+LATEX_HEADER: \usepackage{cancel}
+
+
+*  Function Execution
+#+caption: Keys that will execute some elisp functions (name: ~table_elisp_func~)
+#+name: table_elisp_func
+#+attr_latex: :align |llll| :placement [H]
+|--------+---------------------+-----------------------+----------------------|
+| key    | sym                 | latex                 | description          |
+|--------+---------------------+-----------------------+----------------------|
+| ~/~    | $\frac{\Box}{\Box}$ | ~quail-TeQ-frac~      | fraction on previous |
+| ~eq~   |                     | ~quail-TeQ-equation~  | equation environment |
+| ~mat~  |                     | ~quail-TeQ-matrix~    | pmatrix environment  |
+| ~case~ |                     | ~quail-TeQ-case~      | case environment     |
+| ~al~   |                     | ~quail-TeQ-aligned~   | aligned environment  |
+| ~gg~   |                     | ~quail-TeQ-next~      | go to next space     |
+| ~GG~   |                     | ~quail-TeQ-prev~      | go to prev space     |
+| ~el~   |                     | ~quail-TeQ-endofline~ | end of line          |
+| ~nl~   |                     | ~quail-TeQ-nextline~  | new line below       |
+| ~pl~   |                     | ~quail-TeQ-prevline~  | new line above       |
+|--------+---------------------+-----------------------+----------------------|
+
+*  Parentheses
+#+caption:  Parentheses (name: ~table_parentheses~)
+#+name: table_parentheses
+#+attr_latex: :align |l|ll| :placement [H]
+|---------------+-------------------------------+-------------------------------------------|
+| key           |                               | ~+.~                                      |
+|---------------+-------------------------------+-------------------------------------------|
+| ~().~         | $\left( \Box \right)$         | $\left( \Box \middle\vert \Box \right)$   |
+| ~{}.~         | $\left\{ \Box \right\}$       | $\left\{ \Box \middle\vert \Box \right\}$ |
+| ~<>.~         | $\left< \Box \right>$         | $\left< \Box \middle\vert \Box \right>$   |
+| ~[].~         | $\left[ \Box \right]$         | $\left[ \Box \middle\vert \Box \right]$   |
+|---------------+-------------------------------+-------------------------------------------|
+| \vert \vert . | $\left\vert \Box \right\vert$ | $\left\Vert \Box \right\Vert$             |
+|---------------+-------------------------------+-------------------------------------------|
+| ~(.~          | $\left( \Box \right.{}$       | $\left( \Box \right\vert$                 |
+| ~[.~          | $\left[ \Box \right.{}$       | $\left[ \Box \right\vert$                 |
+| ~{.~          | $\left\{ \Box \right.{}$      | $\left\{ \Box \right\vert$                |
+| ~<.~          | $\left< \Box \right.{}$       | $\left< \Box \right\vert$                 |
+|---------------+-------------------------------+-------------------------------------------|
+| ~.)~          | $\left. \Box \right)$         | $\left\vert \Box \right)$                 |
+| ~.]~          | $\left. \Box \right]$         | $\left\vert \Box \right]$                 |
+| ~.}~          | $\left. \Box \right\}$        | $\left\vert \Box \right\}$                |
+| ~.>~          | $\left. \Box \right>$         | $\left\vert \Box \right>$                 |
+|---------------+-------------------------------+-------------------------------------------|
+| ~[].f~        | $\lfloor \Box \rfloor$        | $\left\lfloor \Box \right\rfloor$         |
+| ~[].c~        | $\lceil \Box \rceil$          | $\left\lceil \Box  \right\rceil$          |
+|---------------+-------------------------------+-------------------------------------------|
+
+*  Texts
+#+caption: Text types in equation (name: ~table_text~)
+#+name: table_text
+#+attr_latex: :align |llll| :placement [H]
+|------+------------------------+------------+------------------|
+| key  | sym                    | latex      | description      |
+|------+------------------------+------------+------------------|
+| ~te~ | $\text{Lorem Ipsum}$   | ~\text{~   | (te)xt           |
+| ~tt~ | $\mathrm{Lorem Ipsum}$ | ~\mathrm{~ | (t)ext (m)ath    |
+| ~tb~ | $\mathbf{Lorem Ipsum}$ | ~\mathbf{~ | (t)ext (b)old    |
+| ~ti~ | $\mathit{Lorem Ipsum}$ | ~\mathit{~ | (t)ext (i)talics |
+|------+------------------------+------------+------------------|
+
+*  Misc.
+**  XY Diagram related
+#+caption:  XY diagram related (name: ~table_xy~)
+#+name: table_xy
+#+attr_latex: :align |llll| :placement [H]
+|------+--------------+-------+-------------|
+| key  | sym          | latex | description |
+|------+--------------+-------+-------------|
+| ~xy~ | ~\xymatrix{~ |       |             |
+| ~ar~ | ~\ar~        |       |             |
+|------+--------------+-------+-------------|
+

@@ -1,0 +1,216 @@
+#+title:    Emacs TeQ: (TeX + Quail) 
+#+subtitle: Input Method written in Quail for entering LaTeX math expressions
+#+author:   Garid Zorigoo
+
+#+startup: show2levels
+
+* Installation:
+** Quick-and-dirty:
+1. Download this repo
+2. Open [[file:Emacs-TeQ.el]] file in your ~Emacs~
+3. Do (=M-x eval-buffer=) in the openned file.
+4. Done. you've registered =TeQ-Math= in the current session
+5. For usage see below: [[id:30aca60a-2897-439c-b8a0-86ced1f5b090][Usage]]
+** For full installation:
+1. Download this repo
+2. Add following to your =init.el= file:
+
+#+begin_src emacs-lisp
+(add-to-list 'load-path (expand-file-name "~/.config/emacs/Emacs-TeQ"))
+
+(register-input-method
+ "TeQ-Math" "Emacs-Teq-Latex" 'quail-use-package
+ "TeQ-" "TeQ-Math input"
+ "Emacs-TeQ.el")
+#+end_src
+
+3. Make sure that you're using correct path to downloaded repo.
+   (for my case above, it's: =~/.config/emacs/Emacs-TeQ=)
+4. For usage see below: [[id:30aca60a-2897-439c-b8a0-86ced1f5b090][Usage]]
+* Usage/Quick-tutorial:
+:PROPERTIES:
+:ID:       30aca60a-2897-439c-b8a0-86ced1f5b090
+:END:
+
+1. To select input method: Do (~M-x set-input-method~) and select ~TeQ-Math~
+2. To turn on/off: (~M-x toggle-input-method~) or it's also bind to  (~C-\~)
+3. Try following quick examples: (for full list check the [[file:Emacs-TeQ.pdf]])
+
+** Typing alphabet related symbols: ([[file:Resources/01-Roman-Greek-Alphabets.org][01-Roman-Greek]]):
+|------------------+-----------------------------------+----------------------------------------+-------------------------------------------|
+| Type this column | Result:                           | Breakdown:                             | Where it's defined                        |
+|------------------+-----------------------------------+----------------------------------------+-------------------------------------------|
+| =a.dd=           | ~\ddot{\alpha}~ ($\ddot{\alpha}$) | ~a.~ ($\alpha$) + =dd= ($\ddot{\Box}$) | [[file:Emacs-TeQ.pdf][manual]] in table:5 |
+| =Rv=             | ~\vec{R}~       ($\vec{R}$)       | ~R~ ($R$) + ~v~ ($\vec{\Box}$)         | [[file:Emacs-TeQ.pdf][manual]] in table:1 |
+|------------------+-----------------------------------+----------------------------------------+-------------------------------------------|
+
+** Typing symbols: ([[file:Resources/02-Symbols-and-their-modification.org][02-Symbols]]):
+|------------------+-----------------------------------------+------------------------------------------------+--------------------------------------------|
+| Type this column | Result:                                 | Breakdown:                                     | Where it's defined                         |
+|------------------+-----------------------------------------+------------------------------------------------+--------------------------------------------|
+| ~=>~             | ~\Rightarrow~      ($\Rightarrow$)      | ~=>~  looks like $\Rightarrow$                 | [[file:Emacs-TeQ.pdf][manual]] in table:14 |
+| ~<=>n~           | ~\nLeftrightarrow~ ($\nLeftrightarrow$) | ~<=>~ ($\Leftrightarrow$) + =n= (add: negate)) | [[file:Emacs-TeQ.pdf][manual]] in table:14 |
+| ~exn~            | ~\nexists~         ($\nexists$)         | ~ex~ ($\exists$) + =n= (add: negate))          | [[file:Emacs-TeQ.pdf][manual]] in table:7  |
+| ~inn~            | ~\notin~           ($\notin$)           | ~ex~ ($\exists$) + =n= (add: negate))          | [[file:Emacs-TeQ.pdf][manual]] in table:12 |
+|------------------+-----------------------------------------+------------------------------------------------+--------------------------------------------|
+
+** Typing functions: ([[file:Resources/03-Functions-Sum-Integral-Differential.org][03-Functions]]):
+|------------------+------------------------+-----------------------------------------+--------------------------------------------|
+| Type this column | Result:                | Breakdown:                              | Where it's defined                         |
+|------------------+------------------------+-----------------------------------------+--------------------------------------------|
+| =cosn=           | ~\arccos~ ($\arccos$ ) | ~cos~ ($\cos$) + ~n~ (negate)           | [[file:Emacs-TeQ.pdf][manual]] in table:24 |
+| =sin2=           | ~\sin^2~  ($\sin^2$  ) | ~sin~ ($\sin$) + ~2~ (power of 2)       | [[file:Emacs-TeQ.pdf][manual]] in table:24 |
+| =int=            | ~\int~    ($\int$    ) |                                         | [[file:Emacs-TeQ.pdf][manual]] in table:26 |
+| =inti=           | ~\iint~   ($\iint$   ) | ~\int~ ($\int$)  + ~i~ (add: variation) | [[file:Emacs-TeQ.pdf][manual]] in table:26 |
+| =into=           | ~\oint~   ($\oint$   ) | ~\int~ ($\int$)  + ~o~ (add: variation) | [[file:Emacs-TeQ.pdf][manual]] in table:26 |
+|------------------+------------------------+-----------------------------------------+--------------------------------------------|
+
+** Typing parenthesis: ([[file:Resources/04-Structural-and-Parentheses.org][04-Structural]])
+|------------------+-----------------------------------------------------------------+----------------------------------------------------+--------------------------------------------|
+| Type this column | Result:                                                         | Breakdown:                                         | Where it's defined                         |
+|------------------+-----------------------------------------------------------------+----------------------------------------------------+--------------------------------------------|
+| ~{}..~           | ~\left\{ \middle\vert \right\}~ $\left\{ \middle\vert \right\}$ | ~{}.~  ($\left\{ \right\}$) + ~.~ (add: variation) | [[file:Emacs-TeQ.pdf][manual]] in table:30 |
+| ~[]..~           | ~\left[ \middle\vert \right]~ $\left[ \middle\vert \right]$     | ~{}.~  ($\left[ \right]$) + ~.~ (add: variation)   | [[file:Emacs-TeQ.pdf][manual]] in table:30 |
+|------------------+-----------------------------------------------------------------+----------------------------------------------------+--------------------------------------------|
+
+Please check full translation key tables in the [[file:Emacs-TeQ.pdf][PDF manual]].
+   Or you can check each seperate org files:
+   1. [[file:Resources/01-Roman-Greek-Alphabets.org]]
+   2. [[file:Resources/02-Symbols-and-their-modification.org]]
+   3. [[file:Resources/03-Functions-Sum-Integral-Differential.org]]
+   4. [[file:Resources/04-Structural-and-Parentheses.org]]
+   
+
+* COMMENT Executable elisp function definition
+#+name: quail-executions
+#+begin_src emacs-lisp
+(defun quail-func-init ()
+  (quail-delete-region)
+  (setq quail-current-str nil
+	quail-converting nil
+	quail-conversion-str ""))
+
+(defun quail-func-end ()
+  (throw 'quail-tag nil))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defun quail-TeQ-equation (key idx)
+  (quail-func-init)
+  (if (eq major-mode 'org-mode)
+    (org-return) (message "not org"))
+  (insert "\\begin{equation}\n\n\\end{equation}")
+  (previous-line)
+  (when (require 'org-indent nil 'noerror) (org-indent-mode 1))
+  (quail-func-end))
+
+(defun quail-TeQ-aligned (key idx)
+  (quail-func-init)
+  (insert "\\begin{aligned}\n\n\\end{aligned}")
+  (previous-line)
+  (when (require 'org-indent nil 'noerror) (org-indent-mode 1))
+  (quail-func-end))
+
+(defun quail-TeQ-matrix (key idx)
+  (quail-func-init)
+  (insert "\\begin{pmatrix}\n & & \\\\ \n & & \\\\ \n & & \\\\ \n\\end{pmatrix}")
+  (previous-line) (previous-line) (previous-line)
+  (beginning-of-line)
+  (when (require 'org-indent nil 'noerror) (org-indent-mode 1))
+  (quail-func-end))
+
+(defun quail-TeQ-case (key idx)
+  (quail-func-init)
+  (insert "\\begin{case}\n & \\text{ if } \\\\ \n & \\text{ else } \\\\ \n\\end{case}")
+  (previous-line) (previous-line)
+  (beginning-of-line)
+  (when (require 'org-indent nil 'noerror) (org-indent-mode 1))
+  (quail-func-end))
+
+(defun quail-TeQ-endofline (key idx)
+  (quail-func-init)
+  (end-of-line)
+  (insert "\\\\")
+  (when (require 'evil nil 'noerror) (evil-normal-state))
+  (quail-func-end))
+
+(defun quail-TeQ-nextline (key idx)
+  (quail-func-init)
+  (end-of-line)
+  (insert "\n")
+  ;; (when (require 'evil nil 'noerror) (evil-normal-state))
+  (quail-func-end))
+
+(defun quail-TeQ-prevline (key idx)
+  (quail-func-init)
+  ;; (end-of-line)
+  (beginning-of-line)
+  (insert "\n")
+  (previous-line)
+  ;; (when (require 'evil nil 'noerror) (evil-normal-state))
+  (quail-func-end))
+
+
+(defun quail-TeQ-next (key idx)
+  (quail-func-init)
+  ;; (evil-find-char 1 32)
+  (right-char)
+  (right-char)
+  (quail-func-end))
+
+(defun quail-TeQ-prev (key idx)
+  (quail-func-init)
+  (evil-find-char-backward 1 32)
+  ;(left-char)
+  ;(left-char)
+  (quail-func-end))
+
+(defun quail-TeQ-frac (key idx)
+  (quail-func-init)
+
+  (backward-sexp) (kill-sexp)
+  (if (looking-back "[a-zA-Z]" 0)
+      (progn
+	(backward-word)
+	(if (= (preceding-char) ?\\ )
+	    (progn (message "yes") (kill-word 1)
+		   (backward-delete-char 1) (insert "\\frac{\\")
+		   (yank 1) (yank 2) (insert "}{}"))
+	  (progn (message "no") (forward-word)
+		 (insert "\\frac{") (yank) (insert "}{}")))
+	)
+    (progn (message "no")
+					;(forward-word)
+	   (insert "\\frac{") (yank) (insert "}{}"))
+    )
+  (backward-char)
+
+  (quail-func-end))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+#+end_src
+
+#+RESULTS: quail-executions
+: quail-TeQ-frac
+
+* COMMENT Making the ~el~
+#+begin_src elisp :tangle Emacs-TeQ.el :noweb yes
+(require 'quail)
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+
+<<quail-executions>>
+
+(quail-define-package
+ "TeQ-Math" "Emacs-Teq-Latex"  "TeQ-" t
+ "TeQ-Math input"
+ nil t t t t nil nil nil nil nil t)
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(quail-define-rules
+    ;; Greek Alphabets
+    <<el-from-table>>
+)
+#+end_src
+
+#+RESULTS:
