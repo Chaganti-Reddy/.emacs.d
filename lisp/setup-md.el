@@ -12,11 +12,13 @@
 
 (use-package markdown-mode
   :ensure t
+  :defer
   :mode (("README\\.md\\'" . gfm-mode)
          ("\\.\\(?:md\\|markdown\\|mkd\\|mdown\\|mkdn\\|mdwn\\)\\'" . markdown-mode)))
 
 (use-package markdown-preview-mode
   :ensure t
+  :defer
   :commands (markdown-preview-mode
              markdown-preview-open-browser
              markdown-preview-cleanup)
@@ -38,6 +40,7 @@
 
 (use-package ox-gfm
   :ensure t
+  :defer
   :after org
   :defer t) ;; GitHub Flavored Markdown (GFM) export
 
@@ -47,6 +50,7 @@
 
 (use-package ox-hugo
   :ensure t
+  :defer
   :after ox)
 
 ;; ============================================================
@@ -74,6 +78,8 @@
 ;; ============================================================
 
 (use-package preview-auto
+  :disabled
+  :defer
   :after latex
   :custom
   (preview-protect-point t)                    ;; Prevents cursor from jumping when updating previews
@@ -83,6 +89,7 @@
   (preview-LaTeX-command-replacements '(preview-LaTeX-disable-pdfoutput))) ;; Avoids PDF output issues
 
 (use-package preview-tailor
+  :disabled
   :ensure t
   :after preview
   :hook (kill-emacs . preview-tailor-save)
@@ -93,23 +100,23 @@
 ;; FUNCTION TO ENABLE LATEX PREVIEW IN MARKDOWN
 ;; ============================================================
 
-(defun karna/setup-markdown-latex-preview ()
-  "Setup LaTeX preview in Markdown mode using a temporary TeX file."
-  (setq-local preview-tailor-local-multiplier 0.7)
-
-  ;; Generate a new temporary LaTeX file for previews
-  (let ((tex-file (make-temp-file "preview-master" nil ".tex")))
-    (with-temp-file tex-file
-      (insert "\\documentclass{article}\n"
-              "\\usepackage{amsmath, amssymb}\n"
-              "\\begin{document}\n"
-              "% Your LaTeX preview content will be inserted here\n"
-              "\\end{document}\n"))
-    (setq-local TeX-master tex-file))
-
-  (preview-auto-mode 1)) ;; Ensure `preview-auto-mode` is activated
-
-(add-hook 'markdown-mode-hook #'karna/setup-markdown-latex-preview)
+;(defun karna/setup-markdown-latex-preview ()
+;  "Setup LaTeX preview in Markdown mode using a temporary TeX file."
+;  (setq-local preview-tailor-local-multiplier 0.7)
+;
+;  ;; Generate a new temporary LaTeX file for previews
+;  (let ((tex-file (make-temp-file "preview-master" nil ".tex")))
+;    (with-temp-file tex-file
+;      (insert "\\documentclass{article}\n"
+;              "\\usepackage{amsmath, amssymb}\n"
+;              "\\begin{document}\n"
+;              "% Your LaTeX preview content will be inserted here\n"
+;              "\\end{document}\n"))
+;    (setq-local TeX-master tex-file))
+;
+;  (preview-auto-mode 1)) ;; Ensure `preview-auto-mode` is activated
+;
+;(add-hook 'markdown-mode-hook #'karna/setup-markdown-latex-preview)
 
 (provide 'setup-md)
 
