@@ -7,6 +7,7 @@
 
 (use-package corfu
   :ensure t
+  :defer
   :init
   (global-corfu-mode)
   :custom
