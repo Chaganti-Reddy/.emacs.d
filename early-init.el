@@ -1,22 +1,31 @@
 ;;; early-init.el -*- lexical-binding: t; -*-
 
-;; Disable package.el since you're managing packages manually
-(setq package-enable-at-startup nil)
+;; early-init.el is run before init.el,
+;; - before package initialization, and
+;; - before UI initialization
 
-;; Set native compilation cache directory (Emacs 30+)
-(when (boundp 'native-comp-eln-load-path)
-  (startup-redirect-eln-cache (expand-file-name "~/.cache/emacs/eln-cache")))
+;; Defer garbage collection further back in the startup process
+(setq gc-cons-threshold most-positive-fixnum)
 
-;; Optimize startup performance
-(setq gc-cons-threshold most-positive-fixnum
-      gc-cons-percentage 0.6
-      inhibit-compacting-font-caches t)
+;; In Emacs 27+, package initialization occurs before `user-init-file' is
+;; loaded, but after `early-init-file'.
+(setq package-enable-at-startup nil
+      package-quickstart nil
+      load-prefer-newer t)
 
-;; Restore reasonable garbage collection after startup
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (setq gc-cons-threshold (* 50 1000 1000)
-                  gc-cons-percentage 0.1)))
+;; Prevent the glimpse of un-styled Emacs by disabling these UI elements early.
+(push '(menu-bar-lines . 0) default-frame-alist)
+(push '(tool-bar-lines . 0) default-frame-alist)
+(push '(vertical-scroll-bars) default-frame-alist)
 
-;; Reduce frame flickering during startup
 (setq frame-inhibit-implied-resize t)
+
+;; * Native Compilation 
+
+(when (boundp 'native-comp-eln-load-path)
+  (add-to-list 'native-comp-eln-load-path
+               (concat "~/.cache/emacs/" "eln-cache/"))
+  (setq native-comp-async-report-warnings-errors 'silent
+        native-comp-deferred-compilation t))
+
+;;;################################################################
