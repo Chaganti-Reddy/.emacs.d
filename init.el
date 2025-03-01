@@ -60,6 +60,25 @@
 ;; Block until current queue processed.
 (elpaca-wait)
 
+(use-package elpaca-ui
+  :ensure nil
+  :bind (:map elpaca-ui-mode-map
+         ("p" . previous-line)
+         ("F" . elpaca-ui-mark-pull))
+  :after popper
+  :init
+  (add-to-list 'popper-reference-buffers
+               'elpaca-log-mode)
+  (setf (alist-get '(major-mode . elpaca-log-mode)
+                   display-buffer-alist
+                   nil nil #'equal)
+        '((display-buffer-at-bottom
+          display-buffer-in-side-window)
+          (side . bottom)
+          (slot . 49)
+          (window-height . 0.4)
+          (body-function . select-window))))
+
 (eval-when-compile
   (eval-after-load 'advice
     `(setq ad-redefinition-action 'accept))
@@ -98,7 +117,7 @@
 ;; Trying out [[https://gitlab.com/koral/gcmh][gcmh]] on an experimental basis.
 (condition-case-unless-debug nil 
     (use-package gcmh
-      :defer 2
+      :defer 2.5
       :ensure t
       ;; :hook (after-init . gcmh-mode)
       :config
@@ -120,6 +139,7 @@ Cancel the previous one if present."
       (gcmh-mode 1))
   (error (setq gc-cons-threshold (* 32 1024 1024)
                gc-cons-percentage 0.2)))
+
 
 ;; * DAEMON
 ;;;################################################################
@@ -145,8 +165,7 @@ Cancel the previous one if present."
                     (when (string-suffix-p "server" server-name)
                       (let ((after-init-time (current-time)))
                          (dolist (lib '("org" "ob" "ox" "ol" "org-roam"
-                                       "org-capture" "org-agenda" "org-fragtog"
-                                       "org-gcal" "latex" "reftex" "cdlatex"
+                                       "org-capture" "org-agenda" "latex" "reftex" "cdlatex"
                                        "consult" "helpful" "elisp-mode"
                                        "expand-region" "embrace"
                                        "ace-window" "avy" "yasnippet"
@@ -159,8 +178,9 @@ Cancel the previous one if present."
                                                                   after-init-time))))
                           (message "[Pre-loaded packages in %.3fs]" elapsed)))))))))
 
+
 (use-package org
-  :defer
+  :defer t
   :ensure `(org
             :remotes ("tecosaur"
                       :repo "https://git.tecosaur.net/tec/org-mode.git"
@@ -189,36 +209,11 @@ Cancel the previous one if present."
             :pin nil))
 
 ;;;################################################################
-;; * MODELINE
-;;;################################################################
-(require 'setup-modeline)
-
-;;;################################################################
 ;; * UI
 ;;;################################################################
 
 ;; Miscellaneous UI preferences.
 (require 'setup-ui)
-
-;;;################################################################
-;; * CUSTOM FILE
-;;;################################################################
-
-;; Don't populate the init file with custom-set-variables, create and use a
-;; separate file instead.
-(use-package cus-edit
-  :ensure nil
-  :config
-  ;; Get custom-set-variables out of init.el
-  (defvar my/custom-file (dir-concat user-emacs-directory "custom.el"))
-  (setq custom-file my/custom-file)
-
-  (defun my/cus-edit ()
-    (let ((file my/custom-file))
-      (unless (file-exists-p file)
-        (make-empty-file file))
-      (load-file file)))
-  :hook (after-init . my/cus-edit))
 
 (elpaca-wait)
 
@@ -298,26 +293,6 @@ Cancel the previous one if present."
       org-html-htmlize-output-type 'inline-css
       org-html-htmlize-browser "zen-browser")
 
-(setq org-file-apps
-      '(("auto-mode" . emacs)               ;; Open files in Emacs by default
-        ("\\.mm\\'" . default)              ;; Use system default for .mm files
-        ("\\.x?html?\\'" . "zen-browser %s") ;; Open HTML files in zen-browser
-        ("\\.pdf\\'" . "~/.local/bin/zathura %s"))) ;; Open PDFs in Zathura
-
-;; Workaround for xdg-open issue when opening files in Org mode
-(defun karna/org-open-file-wrapper (orig-fun &rest args)
-  "Fix xdg-open issue in Org mode."
-  (let ((process-connection-type nil))
-    (apply orig-fun args)))
-
-(advice-add 'org-open-file :around #'karna/org-open-file-wrapper)
-
-(use-package wakatime-mode
-  :ensure t
-  :config
-  (when (executable-find "wakatime-cli")
-    (global-wakatime-mode)))
-
 ;;;######################################################################
 ;; * INTERFACING WITH THE OS
 ;;;######################################################################
@@ -325,12 +300,6 @@ Cancel the previous one if present."
 (if IS-WINDOWS
     (setq shell-file-name "C:/cygwin/cygwin.bat"))
 
-;;;----------------------------------------------------------------
-;; ** SHELL AND ESHELL PREFERENCES
-;;;----------------------------------------------------------------
-;; Settings for shell, eshell and vterm
-;;(require 'shells)
-;;(require 'eshell-prompt)
 
 ;;;######################################################################
 ;; * LINE NUMBERS
@@ -356,50 +325,6 @@ Cancel the previous one if present."
 
 (setq display-line-numbers-width-start t
       display-line-numbers-type t)
-
-
-;;;################################################################
-;; * EDITING
-;;;######################################################################
-(use-package iedit
-  :ensure t
-  :defer
-  :bind (("C-M-;" . iedit-mode)
-         ("M-s n" . my/iedit-1-down)
-         ("M-s p" . my/iedit-1-up))
-  :config
-  (defun my/iedit-1-down (arg)
-    (interactive "p")
-    (let ((current-prefix-arg '(1)))
-      (call-interactively #'iedit-mode)
-      (iedit-expand-down-to-occurrence)))
-  (defun my/iedit-1-up (arg)
-    (interactive "p")
-    (let ((current-prefix-arg '(1)))
-      (call-interactively #'iedit-mode)
-      (iedit-expand-up-to-occurrence))))
-
-(use-package quail
-  :ensure nil
-  :defer
-  :commands my/cdlatex-input-tex
-  :config
-  (defun my/cdlatex-input-tex ()
-  (interactive)
-  (require 'cdlatex nil t)
-  (let ((cim current-input-method))
-    (unless (equal cim "TeX")
-      (activate-input-method "TeX"))
-    (cl-letf (((symbol-function 'texmathp)
-               (lambda () t))
-              ((symbol-function 'insert)
-               (lambda (symbol)
-                 (setq unread-input-method-events
-                       (nconc (quail-input-string-to-events symbol)
-                              (list 0))))))
-      (cdlatex-math-symbol))
-    (unless (equal cim "TeX")
-      (run-at-time 0 nil (lambda () (activate-input-method cim)))))))
 
 ;; * MANAGE STATE
 ;; ** RECENTF
@@ -432,7 +357,7 @@ Cancel the previous one if present."
 ;; Save history across various prompts
 (use-package savehist
   :ensure nil
-  :defer 2
+  :defer 3
   :hook (after-init . savehist-mode)
   :config
   (setq savehist-file (dir-concat user-cache-directory "savehist")
@@ -441,36 +366,6 @@ Cancel the previous one if present."
         savehist-save-minibuffer-history t)
   (add-to-list 'savehist-additional-variables 'global-mark-ring))
 
-;;;################################################################
-;; ** UNDO HISTORY
-
-;; The =undo-fu-session= package saves and restores the undo states of buffers
-;; across Emacs sessions.
-(use-package undo-fu
-  :ensure t
-  :defer t
-  :config
-  (setq undo-fu-allow-undo-in-region t  ;; Allow undo in active region
-        undo-fu-ignore-keyboard-quit t) ;; Prevent undo reset on `C-g`
-  
-  ;; Define simple undo/redo functions
-  (defun karna/undo ()
-    "Perform an undo using `undo-fu`."
-    (interactive)
-    (undo-fu-only-undo))
-  
-  (defun karna/redo ()
-    "Perform a redo using `undo-fu`."
-    (interactive)
-    (undo-fu-only-redo)))
-
-(use-package undo-fu-session
-  :ensure t
-  :defer t
-  :config
-  (setq undo-fu-session-incompatible-files '("/COMMIT_EDITMSG\\'" "/git-rebase-todo\\'")
-        undo-fu-session-directory (dir-concat user-cache-directory "undo-fu-session/")) ;; Store undo history in cache
-  :hook ((prog-mode conf-mode text-mode tex-mode) . undo-fu-session-mode))
 
 ;;;################################################################
 ;; * WINDOW MANAGEMENT
@@ -525,274 +420,18 @@ Cancel the previous one if present."
   (popper-mode +1)
   (popper-echo-mode +1)) ;; For echo area hints
 
-;;;################################################################
-;; * UTILITY
-;;;################################################################
-;; Count words, print ASCII table, etc
-(require 'utilities)
-
-;; Async compilation
-(use-package async
-  :defer
-  :hook (package-menu-mode . my/async-bytecomp-ensure)
-  :init (dired-async-mode 1)
-  :config
-  (defun my/async-bytecomp-ensure ()
-    (async-bytecomp-package-mode 1)))
-
-;; ----------------------------------------------------------------------------
-;; DASHBOARD CONFIGURATION
-;; ----------------------------------------------------------------------------
-
-(use-package dashboard
-  :disabled
-  :ensure t
-  :init
-  (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))
-	dashboard-set-heading-icons t
-	dashboard-set-file-icons t
-	dashboard-display-icons-p t
-	dashboard-icon-type 'nerd-icons
-	dashboard-show-shortcuts nil
-	dashboard-projects-backend 'project-el
-	dashboard-banner-logo-title "I'll Walk My Own Path!"
-	dashboard-startup-banner "~/.emacs.d/assets/emacs.png"
-	dashboard-center-content t
-	dashboard-items '((vocabulary)
-			  (recents . 5)
-			  (agenda . 5)
-			  (bookmarks . 10)
-			  (projects . 5))
-	dashboard-startupify-list '(dashboard-insert-banner
-				    dashboard-insert-newline
-				    dashboard-insert-banner-title
-				    dashboard-insert-newline
-				    dashboard-insert-init-info
-				    dashboard-insert-items)
-	dashboard-item-generators '((vocabulary . karna/dashboard-insert-vocabulary)
-				    (recents . dashboard-insert-recents)
-				    (bookmarks . dashboard-insert-bookmarks)
-				    (agenda . dashboard-insert-agenda)
-				    (projects . dashboard-insert-projects)))
-
-  (defun karna/dashboard-insert-vocabulary (_list-size)
-    "Insert a 'Word of the Day' section in the dashboard."
-    (dashboard-insert-heading " Word of the Day:"
-			      nil
-			      (all-the-icons-faicon "newspaper-o"
-						    :height 1.2
-						    :v-adjust 0.0
-						    :face 'dashboard-heading))
-    (insert "\n")
-    (when (file-exists-p (concat user-emacs-directory "assets/words"))
-      (let* ((lines (with-temp-buffer
-		      (insert-file-contents (concat user-emacs-directory "assets/words"))
-		      (split-string (buffer-string) "\n" t)))
-	     (random-line (when lines (nth (random (length lines)) lines))))
-	(when random-line
-	  (insert "    " (string-join (split-string random-line) " "))))))
-
-  :config
-  (dashboard-setup-startup-hook)
-  (add-hook 'dashboard-mode-hook (lambda () (display-line-numbers-mode -1))))
-
-;; Dashboard Agenda Customizations
-(setq dashboard-agenda-tags-format 'ignore
-      dashboard-agenda-prefix-format "%i %s  "
-      dashboard-agenda-item-icon "󰸗") ;; Nerd Font calendar icon
-
-;; ----------------------------------------------------------------------------
-;; BREADCRUMB NAVIGATION FOR EMACS
-;; ----------------------------------------------------------------------------
-
-(use-package breadcrumb
-  :ensure t
-  :defer 
-  :init
-  (breadcrumb-mode 1)  ;; Enable breadcrumb globally.
-  :config
-  (setq breadcrumb-imenu-max-length 30
-	breadcrumb-project-max-length 30
-	breadcrumb-imenu-crumb-separator " » "
-	breadcrumb-project-crumb-separator " / "
-	header-line-format
-	'((:eval (concat (breadcrumb-project-crumbs) "  " (breadcrumb-imenu-crumbs))))))
-
-;; Colorize color names and parens in buffers
-(use-package rainbow-mode
-  :defer
-  :commands rainbow-mode
-  :ensure t)
-
-(use-package rainbow-delimiters
-  :defer
-  :commands rainbow-delimiters-mode
-  :ensure t)
-
-;;;###autoload
-(defun describe-word (word &optional prefix)
-  "Briefly describe WORD entered by user. With PREFIX argument,
-  show verbose descriptions with hyperlinks."
-  (interactive "sDescribe word: \nP")
-  (shell-command (concat "dict " word (cond ((null prefix) nil)
-                                            (t " -v")))))
-
-;;;###autoload
-(defun describe-word-at-point (&optional prefix)
-  "Briefly describe word at point. With PREFIX argument, show
-  verbose descriptions with hyperlinks."
-  (interactive "P")
-  (let ( (word
-          (if (region-active-p)
-              (buffer-substring (region-beginning)
-                                (region-end))
-            (thing-at-point 'word))) )
-    (shell-command (concat "dict " (cond ((null prefix) nil)
-                                         (t "-f "))
-                           word))))
-
-
-;; IMENU
-
-(use-package imenu
-  :ensure nil
-  :defer
-  :hook (imenu-after-jump . my/imenu-show-entry)
-  :bind ("M-s i" . imenu)
-  :config
-  (setq imenu-use-markers t
-        imenu-auto-rescan t
-        imenu-max-item-length 100
-        imenu-use-popup-menu nil
-        imenu-eager-completion-buffer t
-        imenu-space-replacement " "
-        imenu-level-separator "/")
-
-  (declare-function org-at-heading-p "org")
-  (declare-function org-show-entry "org")
-  (declare-function org-reveal "org")
-  (declare-function outline-show-entry "outline")
-
-  (defun my/imenu-show-entry ()
-    "Reveal index at point after successful `imenu' execution.
-To be used with `imenu-after-jump-hook' or equivalent."
-    (cond
-     ((and (eq major-mode 'org-mode)
-           (org-at-heading-p))
-      (org-show-entry)
-      (org-reveal t))
-     ((bound-and-true-p prot-outline-minor-mode)
-      (outline-show-entry)))))
-
-;; Scratch 
-(use-package scratch
-  :ensure t
-  :defer
-  :config
-  (defun my/scratch-buffer-setup ()
-    "Add contents to `scratch' buffer and name it accordingly.
-If region is active, add its contents to the new buffer."
-    (let* ((mode major-mode))
-      (rename-buffer (format "*Scratch for %s*" mode) t)))
-  (setf (alist-get "\\*Scratch for" display-buffer-alist nil nil #'equal)
-        '((display-buffer-same-window)))
-  :hook (scratch-create-buffer . my/scratch-buffer-setup)
-  :bind ("C-c s" . scratch))
-
-(defun delete-window-if-not-single ()
-  "Delete window if not the only one."
-  (when (not (one-window-p))
-    (delete-window)))
-
-;; Hl-TODO
-(use-package hl-todo
-  :ensure t
-  :defer 
-  :hook ((prog-mode org-mode) . hl-todo-mode)
-  :bind (:map prog-mode-map
-         ("M-g t" . hl-todo-next)
-         ("M-g T" . hl-todo-previous))
-  :config
-  (setq hl-todo-highlight-punctuation ":"
-        hl-todo-keyword-faces
-        '(("TODO" . warning)
-          ("FIXME" . error)
-          ("HACK" . font-lock-constant-face)
-          ("REVIEW" . font-lock-keyword-face)
-          ("NOTE" . success)
-          ("DEPRECATED" . font-lock-doc-face))
-        hl-todo-wrap-movement t)
-
-  (defvar-keymap hl-todo-repeat-map
-    :repeat t
-    "n" #'hl-todo-next
-    "p" #'hl-todo-previous))
-
-;;;################################################################
-;; * COMPILATION
-;;;################################################################
-
-;; compile!
-(use-package compile
-  :ensure nil
-  :defer t
-  :hook (compilation-filter . ansi-color-compilation-filter)
-  :config
-  (setq compilation-always-kill t
-        compilation-ask-about-save nil
-        compilation-scroll-output 'first-error)
-  (global-set-key [(f9)] 'compile))
-
-;;;----------------------------------------------------------------
-;; ** EGLOT - LSP
-;;;----------------------------------------------------------------
-(require 'setup-eglot)
-(require 'setup-treesit)
-(require 'editor)
-
 ;; EVIL MODE 
 (require 'setup-evil)
-
-;; LATEX 
-(require 'setup-doc) ;; PDF TOOLS 
-(require 'setup-latex)
-
-(add-to-list 'load-path (expand-file-name "~/.emacs.d/plugins/Emacs-TeQ/"))
-
-(register-input-method
- "TeQ-Math" "Emacs-Teq-Latex" 'quail-use-package
- "TeQ-" "TeQ-Math input"
- "Emacs-TeQ.el")
-
-;;;----------------------------------------------------------------
-;; ** CALC
-;;;----------------------------------------------------------------
-(require 'setup-calc)
-
-;;;----------------------------------------------------------------
-;; ** MINIBUFFER + CORFU + CAPE + WORKSPACE
-;;;----------------------------------------------------------------
-
 (require 'setup-consult)
-(require 'setup-minibuffer) 
-(require 'setup-yas)
-(require 'setup-cape)
-(require 'setup-corfu)
-(require 'setup-orderless)
-(require 'workspace)
-;; (require 'setup-completions-default)
-
-(setq tab-always-indent 'complete)
 
 ;;----------------------------------------------------------------
 ;; ** BOOKMARKS
 ;;----------------------------------------------------------------
 (use-package bookmark
   :ensure nil
-  :defer t
+  :defer 3
   :config
   (setq bookmark-default-file (dir-concat user-cache-directory "bookmarks")))
-
 
 ;;----------------------------------------------------------------
 ;; ** PROJECTS
@@ -801,8 +440,6 @@ If region is active, add its contents to the new buffer."
 (require 'setup-gptel)
 (require 'projects)
 (require 'setup-dired)
-;; (require 'setup-calendar)
-(require 'setup-md)
 
 ;;----------------------------------------------------------------
 ;; ** MIXED-PITCH-MODE
@@ -822,72 +459,6 @@ If region is active, add its contents to the new buffer."
         (setq line-spacing 0.12)
       (setq line-spacing 0.0))))
 
-;;;----------------------------------------------------------------
-;; ** OLIVETTI
-;;----------------------------------------------------------------
-(use-package olivetti
-  :commands (my/olivetti-mode)
-  :ensure t
-  :defer
-  :config
-  (setq-default
-   olivetti-body-width 90
-   olivetti-minimum-body-width 76
-   olivetti-recall-visual-line-mode-entry-state t)
-
-  (define-minor-mode my/olivetti-mode
-    "Toggle buffer-local `olivetti-mode' with additional parameters.
-
-Fringes are disabled. The modeline is hidden, except for
-`prog-mode' buffers (see `my/mode-line-hidden-mode'). The default
-typeface is set to a proportionately spaced family, except for
-programming modes (see `my/variable-pitch-mode'). The cursor
-becomes a blinking bar. Evil-mode (if bound) is disabled."
-    :init-value nil
-    :global nil
-    (if my/olivetti-mode
-        (progn
-          (olivetti-mode 1)
-          (set-window-fringes (selected-window) 0 0)
-          (unless (derived-mode-p 'prog-mode)
-            ;; (my/mode-line-hidden-mode 1)
-            (mixed-pitch-mode 1))
-          (if (bound-and-true-p evil-mode)
-              (evil-emacs-state))
-          ;; (setq-local line-spacing 0.16)
-          ;; (setq-local cursor-type '(bar . 2))
-          )
-      (olivetti-mode -1)
-      (set-window-fringes (selected-window) nil) ; Use default width
-      (mixed-pitch-mode -1)
-      (kill-local-variable 'line-spacing)
-      ;; (unless (derived-mode-p 'prog-mode)
-      ;;   (my/mode-line-hidden-mode -1))
-      (when (and (bound-and-true-p evil-mode)
-                 (evil-emacs-state-p))
-        (evil-exit-emacs-state))
-      (kill-local-variable 'cursor-type)))
-
-  (define-minor-mode my/reader-mode
-    "Mode to read a buffer in style. Pop it out into a frame,
-turn on `view-mode', and `my/olivetti-mode', which in turn hides
-the mode-line and switches to `variable-pitch-mode'."
-    :init-value
-    :global-nil
-    (if my/reader-mode
-        (progn
-          (make-frame '((name . "dropdown_reader")))
-          (my/olivetti-mode 1)
-          (view-mode 1)
-          (if (equal major-mode 'org-mode)
-              (org-show-all)))
-      (view-mode -1)
-      (my/olivetti-mode -1)
-      (delete-frame)))
-
-  :bind
-  ("C-c O" . my/olivetti-mode)
-  ("C-c R" . my/reader-mode))
 
 ;;;################################################################I
 ;; * FONTS AND COLORS
@@ -1032,14 +603,396 @@ the mode-line and switches to `variable-pitch-mode'."
           (4 . (1.14))
           (t . (monochrome)))))
 
+;;;################################################################
+;; * KEYBIND SETUP
+;;;################################################################
+(require 'setup-keybinds)
+
+;;;################################################################
+;; * MODELINE
+;;;################################################################
+(require 'setup-modeline)
+
+(use-package wakatime-mode
+  :ensure t
+  :config
+  (when (executable-find "wakatime-cli")
+    (global-wakatime-mode)))
+
+
+;;;################################################################
+;; * EDITING
+;;;######################################################################
+(use-package iedit
+  :ensure t
+  :defer
+  :bind (("C-M-;" . iedit-mode)
+         ("M-s n" . my/iedit-1-down)
+         ("M-s p" . my/iedit-1-up))
+  :config
+  (defun my/iedit-1-down (arg)
+    (interactive "p")
+    (let ((current-prefix-arg '(1)))
+      (call-interactively #'iedit-mode)
+      (iedit-expand-down-to-occurrence)))
+  (defun my/iedit-1-up (arg)
+    (interactive "p")
+    (let ((current-prefix-arg '(1)))
+      (call-interactively #'iedit-mode)
+      (iedit-expand-up-to-occurrence))))
+
+;; IMENU
+
+(use-package imenu
+  :ensure nil
+  :defer t
+  :hook (imenu-after-jump . my/imenu-show-entry)
+  :bind ("M-s i" . imenu)
+  :config
+  (setq imenu-use-markers t
+        imenu-auto-rescan t
+        imenu-max-item-length 100
+        imenu-use-popup-menu nil
+        imenu-eager-completion-buffer t
+        imenu-space-replacement " "
+        imenu-level-separator "/")
+
+  (declare-function org-at-heading-p "org")
+  (declare-function org-show-entry "org")
+  (declare-function org-reveal "org")
+  (declare-function outline-show-entry "outline")
+
+  (defun my/imenu-show-entry ()
+    "Reveal index at point after successful `imenu' execution.
+To be used with `imenu-after-jump-hook' or equivalent."
+    (cond
+     ((and (eq major-mode 'org-mode)
+           (org-at-heading-p))
+      (org-show-entry)
+      (org-reveal t))
+     ((bound-and-true-p prot-outline-minor-mode)
+      (outline-show-entry)))))
+
+;; Scratch 
+(use-package scratch
+  :ensure t
+  :defer t
+  :config
+  (defun my/scratch-buffer-setup ()
+    "Add contents to `scratch' buffer and name it accordingly.
+If region is active, add its contents to the new buffer."
+    (let* ((mode major-mode))
+      (rename-buffer (format "*Scratch for %s*" mode) t)))
+  (setf (alist-get "\\*Scratch for" display-buffer-alist nil nil #'equal)
+        '((display-buffer-same-window)))
+  :hook (scratch-create-buffer . my/scratch-buffer-setup)
+  :bind ("C-c s" . scratch))
+
+(defun delete-window-if-not-single ()
+  "Delete window if not the only one."
+  (when (not (one-window-p))
+    (delete-window)))
+
+(require 'editor)
+
+;;;################################################################
+;; * UTILITY
+;;;################################################################
+;; Count words, print ASCII table, etc
+(require 'utilities)
+
+;;;###autoload
+(defun describe-word (word &optional prefix)
+  "Briefly describe WORD entered by user. With PREFIX argument,
+  show verbose descriptions with hyperlinks."
+  (interactive "sDescribe word: \nP")
+  (shell-command (concat "dict " word (cond ((null prefix) nil)
+                                            (t " -v")))))
+
+;;;###autoload
+(defun describe-word-at-point (&optional prefix)
+  "Briefly describe word at point. With PREFIX argument, show
+  verbose descriptions with hyperlinks."
+  (interactive "P")
+  (let ( (word
+          (if (region-active-p)
+              (buffer-substring (region-beginning)
+                                (region-end))
+            (thing-at-point 'word))) )
+    (shell-command (concat "dict " (cond ((null prefix) nil)
+                                         (t "-f "))
+                           word))))
+
+(use-package async
+  :defer t
+  :hook (package-menu-mode . my/async-bytecomp-ensure)
+  :config
+  (defun my/async-bytecomp-ensure ()
+    (async-bytecomp-package-mode 1))
+  :init
+  (with-eval-after-load 'dired
+    (dired-async-mode 1)))
+
+;;;################################################################
+;; * PROGRAMMING
+;;;################################################################
+
+;; ** CALC
+(require 'setup-calc)
+
+;;;################################################################
+;; ** UNDO HISTORY
+
+;; The =undo-fu-session= package saves and restores the undo states of buffers
+;; across Emacs sessions.
+(use-package undo-fu
+  :ensure t
+  :defer t
+  :config
+  (setq undo-fu-allow-undo-in-region t  ;; Allow undo in active region
+        undo-fu-ignore-keyboard-quit t) ;; Prevent undo reset on `C-g`
+  
+  ;; Define simple undo/redo functions
+  (defun karna/undo ()
+    "Perform an undo using `undo-fu`."
+    (interactive)
+    (undo-fu-only-undo))
+  
+  (defun karna/redo ()
+    "Perform a redo using `undo-fu`."
+    (interactive)
+    (undo-fu-only-redo)))
+
+(use-package undo-fu-session
+  :ensure t
+  :defer t
+  :config
+  (setq undo-fu-session-incompatible-files '("/COMMIT_EDITMSG\\'" "/git-rebase-todo\\'")
+        undo-fu-session-directory (dir-concat user-cache-directory "undo-fu-session/")) ;; Store undo history in cache
+  :hook ((prog-mode conf-mode text-mode tex-mode) . undo-fu-session-mode))
+
+;;;----------------------------------------------------------------
+;; ** EGLOT - LSP
+;;;----------------------------------------------------------------
+(require 'setup-eglot)
+(require 'setup-treesit)
+(require 'setup-minibuffer) 
+(require 'setup-orderless)
+
+;; LATEX 
+(require 'setup-doc) ;; PDF TOOLS 
+(require 'setup-latex)
+
+(use-package quail
+  :ensure nil
+  :defer
+  :commands my/cdlatex-input-tex
+  :config
+  (defun my/cdlatex-input-tex ()
+  (interactive)
+  (require 'cdlatex nil t)
+  (let ((cim current-input-method))
+    (unless (equal cim "TeX")
+      (activate-input-method "TeX"))
+    (cl-letf (((symbol-function 'texmathp)
+               (lambda () t))
+              ((symbol-function 'insert)
+               (lambda (symbol)
+                 (setq unread-input-method-events
+                       (nconc (quail-input-string-to-events symbol)
+                              (list 0))))))
+      (cdlatex-math-symbol))
+    (unless (equal cim "TeX")
+      (run-at-time 0 nil (lambda () (activate-input-method cim)))))))
+
+(add-to-list 'load-path (expand-file-name "~/.emacs.d/plugins/Emacs-TeQ/"))
+
+(register-input-method
+ "TeQ-Math" "Emacs-Teq-Latex" 'quail-use-package
+ "TeQ-" "TeQ-Math input"
+ "Emacs-TeQ.el")
+
+;;;----------------------------------------------------------------
+;; ** CORFU + CAPE + WORKSPACE
+;;;----------------------------------------------------------------
+(require 'setup-yas)
+(require 'setup-corfu)
+(require 'setup-cape)
+(require 'workspace)
+;; (require 'setup-completions-default)
+
+(setq tab-always-indent 'complete)
+
+;;;----------------------------------------------------------------
+;; ** OLIVETTI
+;;----------------------------------------------------------------
+(use-package olivetti
+  :commands (my/olivetti-mode)
+  :ensure t
+  :defer
+  :config
+  (setq-default
+   olivetti-body-width 180
+   olivetti-minimum-body-width 76
+   olivetti-recall-visual-line-mode-entry-state t)
+
+  (define-minor-mode my/olivetti-mode
+    "Toggle buffer-local `olivetti-mode' with additional parameters.
+
+Fringes are disabled. The modeline is hidden, except for
+`prog-mode' buffers (see `my/mode-line-hidden-mode'). The default
+typeface is set to a proportionately spaced family, except for
+programming modes (see `my/variable-pitch-mode'). The cursor
+becomes a blinking bar. Evil-mode (if bound) is disabled."
+    :init-value nil
+    :global nil
+    (if my/olivetti-mode
+        (progn
+          (olivetti-mode 1)
+          (set-window-fringes (selected-window) 0 0)
+          (unless (derived-mode-p 'prog-mode)
+            ;; (my/mode-line-hidden-mode 1)
+            (mixed-pitch-mode 1))
+          (if (bound-and-true-p evil-mode)
+              (evil-emacs-state))
+          ;; (setq-local line-spacing 0.16)
+          ;; (setq-local cursor-type '(bar . 2))
+          )
+      (olivetti-mode -1)
+      (set-window-fringes (selected-window) nil) ; Use default width
+      (mixed-pitch-mode -1)
+      (kill-local-variable 'line-spacing)
+      ;; (unless (derived-mode-p 'prog-mode)
+      ;;   (my/mode-line-hidden-mode -1))
+      (when (and (bound-and-true-p evil-mode)
+                 (evil-emacs-state-p))
+        (evil-exit-emacs-state))
+      (kill-local-variable 'cursor-type)))
+
+  (define-minor-mode my/reader-mode
+    "Mode to read a buffer in style. Pop it out into a frame,
+turn on `view-mode', and `my/olivetti-mode', which in turn hides
+the mode-line and switches to `variable-pitch-mode'."
+    :init-value
+    :global-nil
+    (if my/reader-mode
+        (progn
+          (make-frame '((name . "dropdown_reader")))
+          (my/olivetti-mode 1)
+          (view-mode 1)
+          (if (equal major-mode 'org-mode)
+              (org-show-all)))
+      (view-mode -1)
+      (my/olivetti-mode -1)
+      (delete-frame)))
+
+  :bind
+  ("C-c O" . my/olivetti-mode)
+  ("C-c R" . my/reader-mode))
 
 ;; ORG MODE 
 
 (require 'setup-org)
 (require 'setup-roam)
 (require 'org-latex-check-health)
+(require 'setup-calendar)
+(require 'setup-md)
+
+;;;----------------------------------------------------------------
+;; ** SHELL AND ESHELL PREFERENCES
+;;;----------------------------------------------------------------
+;; Settings for shell, eshell and vterm
+(require 'shells)
+(require 'eshell-prompt)
+
+;; compile!
+(use-package compile
+  :ensure nil
+  :defer t
+  :hook (compilation-filter . ansi-color-compilation-filter)
+  :config
+  (setq compilation-always-kill t
+        compilation-ask-about-save nil
+        compilation-scroll-output 'first-error)
+  (global-set-key [(f9)] 'compile))
 
 ;;;################################################################
-;; * KEYBIND SETUP
+;; * CUSTOM FILE
 ;;;################################################################
-(require 'setup-keybinds)
+
+;; Don't populate the init file with custom-set-variables, create and use a
+;; separate file instead.
+(use-package cus-edit
+  :ensure nil
+  :config
+  ;; Get custom-set-variables out of init.el
+  (defvar my/custom-file (dir-concat user-emacs-directory "custom.el"))
+  (setq custom-file my/custom-file)
+
+  (defun my/cus-edit ()
+    (let ((file my/custom-file))
+      (unless (file-exists-p file)
+        (make-empty-file file))
+      (load-file file)))
+  :hook (after-init . my/cus-edit))
+
+;; ----------------------------------------------------------------------------
+;; DASHBOARD CONFIGURATION
+;; ----------------------------------------------------------------------------
+
+(use-package dashboard
+  :disabled
+  :ensure t
+  :init
+  (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))
+	dashboard-set-heading-icons t
+	dashboard-set-file-icons t
+	dashboard-display-icons-p t
+	dashboard-icon-type 'nerd-icons
+	dashboard-show-shortcuts nil
+	dashboard-projects-backend 'project-el
+	dashboard-banner-logo-title "I'll Walk My Own Path!"
+	dashboard-startup-banner "~/.emacs.d/assets/emacs.png"
+	dashboard-center-content t
+	dashboard-items '((vocabulary)
+			  (recents . 5)
+			  (agenda . 5)
+			  (bookmarks . 10)
+			  (projects . 5))
+	dashboard-startupify-list '(dashboard-insert-banner
+				    dashboard-insert-newline
+				    dashboard-insert-banner-title
+				    dashboard-insert-newline
+				    dashboard-insert-init-info
+				    dashboard-insert-items)
+	dashboard-item-generators '((vocabulary . karna/dashboard-insert-vocabulary)
+				    (recents . dashboard-insert-recents)
+				    (bookmarks . dashboard-insert-bookmarks)
+				    (agenda . dashboard-insert-agenda)
+				    (projects . dashboard-insert-projects)))
+
+  (defun karna/dashboard-insert-vocabulary (_list-size)
+    "Insert a 'Word of the Day' section in the dashboard."
+    (dashboard-insert-heading " Word of the Day:"
+			      nil
+			      (all-the-icons-faicon "newspaper-o"
+						    :height 1.2
+						    :v-adjust 0.0
+						    :face 'dashboard-heading))
+    (insert "\n")
+    (when (file-exists-p (concat user-emacs-directory "assets/words"))
+      (let* ((lines (with-temp-buffer
+		      (insert-file-contents (concat user-emacs-directory "assets/words"))
+		      (split-string (buffer-string) "\n" t)))
+	     (random-line (when lines (nth (random (length lines)) lines))))
+	(when random-line
+	  (insert "    " (string-join (split-string random-line) " "))))))
+
+  :config
+  (dashboard-setup-startup-hook)
+  (add-hook 'dashboard-mode-hook (lambda () (display-line-numbers-mode -1))))
+
+;; Dashboard Agenda Customizations
+(setq dashboard-agenda-tags-format 'ignore
+      dashboard-agenda-prefix-format "%i %s  "
+      dashboard-agenda-item-icon "󰸗") ;; Nerd Font calendar icon
