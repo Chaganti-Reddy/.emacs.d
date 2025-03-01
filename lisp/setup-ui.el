@@ -155,18 +155,18 @@
 ;; ----------------------------------------------------------------------------
 (use-package all-the-icons
   :ensure t
-  :defer
+  :defer t
   :if (display-graphic-p))
 
 (use-package all-the-icons-dired
   :ensure t
-  :defer
+  :defer t
   :if (display-graphic-p)
   :hook (dired-mode . all-the-icons-dired-mode))
 
 (use-package all-the-icons-completion
   :ensure t
-  :defer
+  :defer t
   :if (display-graphic-p)
   :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
   :init
@@ -174,7 +174,7 @@
 
 (use-package nerd-icons
   :ensure t
-  :defer
+  :defer t
   :if (display-graphic-p)
   :custom
   (nerd-icons-color-icons t))
