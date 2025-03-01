@@ -774,6 +774,7 @@ If region is active, add its contents to the new buffer."
 ;;;----------------------------------------------------------------
 ;; ** EGLOT - LSP
 ;;;----------------------------------------------------------------
+
 (require 'setup-eglot)
 (require 'setup-treesit)
 (require 'setup-minibuffer) 
