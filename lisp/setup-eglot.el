@@ -51,7 +51,7 @@
   (defun karna/eglot-setup ()
     "Custom settings for `eglot-managed-mode`."
     (setq-local completion-category-defaults nil) ;; Avoid interference with custom completion
-    (setq-local completion-category-overrides '((eglot (styles orderless)))) ;; Use `orderless` for better completion
+    (setq-local completion-category-overrides '((eglot (orderless styles)))) ;; Use `orderless` for better completion
     (when (featurep 'eldoc-box)
       (add-hook 'eldoc-mode-hook #'eldoc-box-hover-mode nil t)))) ;; Enable `eldoc-box-hover-mode` for in-place docs
 
@@ -106,6 +106,10 @@
 ;; --------------------------------------------------------------
 ;; 🐍 Python Development (Linter + Formatter)
 ;; --------------------------------------------------------------
+
+
+(add-to-list 'auto-mode-alist '("\\.py\\'" . python-ts-mode))
+
 (use-package python-black
   :after python
   :hook (python-ts-mode . python-black-on-save-mode))
@@ -185,7 +189,6 @@
 ;; --------------------------------------------------------------
 ;; 🐍 Conda Virtual Environment Management
 ;; --------------------------------------------------------------
-(unless IS-GUIX
 (use-package conda
   :ensure t
   :defer t
@@ -199,10 +202,13 @@
   (conda-mode-line-setup)                 ;; Update modeline when Conda env changes.
 
   ;; Hook for restarting Python shell when activating a Conda env.
-  (add-hook 'conda-postactivate-hook #'karna/restart-python-shell-with-conda)))
-
+  (add-hook 'conda-postactivate-hook #'karna/restart-python-shell-with-conda))
 (with-eval-after-load 'conda
   (conda-mode-line-setup))
+
+;; Manually add conda to PATH if needed
+(add-to-list 'exec-path (expand-file-name "~/miniconda/bin")) ; Update path
+(setenv "PATH" (concat (expand-file-name "~/miniconda/bin:") (getenv "PATH")))
 
 (defun mood-line-segment-python-env ()
   "Display the current Python virtual environment or Conda environment in the modeline."
@@ -229,7 +235,7 @@
 	  (progn
 	    (setq-local python-shell-interpreter env-bin)
 	    (setq-local python-shell-interpreter-args "-i")
-	    (setq-local pythonic-interpreter env-bin)  ;; If using pythonic.el.
+	    (setq-local python-interpreter env-bin)  ;; If using pythonic.el.
 	    (run-python (concat env-bin " -i") nil nil)
 	    (message "Switched Python shell to Conda environment: %s"
 		     conda-env-current-name))
@@ -253,7 +259,7 @@
     (when (and venv-path (file-exists-p venv-path))
       (pyvenv-activate venv-path))))
 
-(add-hook 'python-mode-hook #'karna/pyvenv-autoload)
+(add-hook 'python-ts-mode-hook #'karna/pyvenv-autoload)
 
 ;; --------------------------------------------------------------
 ;; 🐍 Open Python REPL in a Right Split
