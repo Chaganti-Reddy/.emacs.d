@@ -61,6 +61,7 @@
                   scroll-other-window scroll-other-window-down))))
 
 (use-package literate-calc-mode
+  :disabled
   :ensure t
   :defer t
   :hook (org-mode . literate-calc-minor-mode))
