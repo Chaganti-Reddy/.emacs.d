@@ -1,3 +1,121 @@
-#+TITLE: Karna's GNU Emacs Config
+#+TITLE: Emacs Configuration Framework
+#+AUTHOR: Karna
+#+OPTIONS: toc:nil num:nil
 
-This repository contains my emacs configuration.
+* Introduction
+A comprehensive Emacs configuration focused on:
+- Modern editing experience with Evil mode (Vim keybindings)
+- Enhanced Org-mode workflow with Roam integration
+- Professional LaTeX typesetting setup
+- Intelligent code completion (Corfu/Cape)
+- Language Server Protocol support (Eglot)
+- Custom snippets and templates
+- Tree-sitter powered syntax parsing
+
+* Features
+** Core Components
+- ~setup-core.el~ :: Base configuration and package management
+- ~setup-ui.el~ :: Visual customization (themes, fonts, modeline)
+- ~setup-completions-default.el~ :: Auto-completion framework
+- ~setup-eglot.el~ :: LSP integration for multiple languages
+
+** Major Modes
+- ~setup-org.el~ :: Org-mode configuration with:
+  - Roam knowledge management
+  - Babel code execution
+  - Advanced export capabilities
+- ~setup-latex.el~ :: AUCTeX setup with:
+  - PDF previews
+  - BibTeX integration
+  - Math notation support
+- ~setup-md.el~ :: Markdown editing enhancements
+- ~setup-treesit.el~ :: Tree-sitter configurations
+
+** Editing Enhancements
+- Vim-style editing via ~setup-evil.el~
+- Smart snippet expansion with ~setup-yas.el~
+- Advanced search with ~setup-consult.el~
+- Project management in ~projects.el~
+- Terminal emulation in ~shells.el~
+
+* Installation
+** Requirements
+- Emacs 30+
+- Git
+- Python 3+ (for LSP servers)
+- LaTeX distribution (TeX Live/MikTeX)
+
+** Quick Setup
+1. Clone repository:
+   #+begin_src sh
+   git clone https://github.com/yourusername/emacs-config ~/.emacs.d
+   #+end_src
+
+2. Run Emacs with debugger mode:
+   #+begin_src sh
+   emacs --debug-init
+   #+end_src
+
+3. Start Emacs - packages will auto-install via ~elpaca.el~
+
+* Configuration Structure
+** Core Files
+- ~init.el~ :: Main entry point
+- ~early-init.el~ :: Early performance tweaks
+- ~custom.el~ :: Custom variables storage
+
+** Lisp Modules
+| File                  | Description                      |
+|-----------------------+----------------------------------|
+| setup-org.el          | Org-mode customization          |
+| setup-latex.el        | LaTeX writing environment       |
+| setup-eglot.el        | Language Server Protocol config |
+| setup-completions.el  | Auto-completion framework        |
+| setup-modeline.el     | Custom modeline presentation    |
+
+** Assets Directory
+- Theme configurations for org mode export (~theme-*.setup~)
+- Web assets for Org HTML export
+- License files for bundled JS libraries
+
+* Plugins
+Custom and third-party extensions:
+- [[https://github.com/yourusername/Emacs-TeQ][Emacs-TeQ]] :: Mathematical notation toolkit
+- ~consult-project-extra.el~ :: Enhanced project search
+- ~repeat-help.el~ :: Interactive command repetition
+
+* Snippets
+YASnippet templates for rapid content creation:
+- LaTeX:
+  - Math symbols and environments
+  - Document templates (article, beamer)
+  - TikZ diagram scaffolding
+- Org Mode:
+  - Source code blocks
+  - Export templates
+  - Reveal.js integration
+- Eshell scripting helpers
+
+* Tree-Sitter Support
+Pre-built parsers included:
+- Bash (~libtree-sitter-bash.so~)
+- JSON (~libtree-sitter-json.so~)
+- Python (~libtree-sitter-python.so~)
+
+Add new grammars via ~M-x treesit-install-language-grammar~
+
+* License
+[[file:LICENSE][GNU General Public License v3.0]]
+- Bundled third-party resources maintain their original licenses
+- JavaScript libraries in ~assets/src/lib/js~ include respective licenses
+
+* Contributing
+Patches and suggestions welcome! Please:
+1. Fork the repository
+2. Create feature branch
+3. Submit pull request with detailed description
+
+* Documentation
+- See individual file headers for configuration details
+- Keybindings available via ~M-x describe-personal-keybindings~
+- Use ~embark-act~ to explore context-sensitive actions
