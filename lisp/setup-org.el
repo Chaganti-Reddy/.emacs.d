@@ -12,7 +12,7 @@
 
 (use-package org
   :ensure nil
-  :defer 
+  :defer t 
   :bind (("\C-cl" . org-store-link)
            ("\C-ca" . org-agenda)
            :map org-mode-map
@@ -59,11 +59,9 @@
                 org-catch-invisible-edits 'smart
                 org-imenu-depth 7
                 org-extend-today-until 3
-                org-default-notes-file "~/org/do.org"
                 org-M-RET-may-split-line '((headline) (default . nil))
                 org-fast-tag-selection-single-key 'expert
                 org-link-elisp-confirm-function nil
-                org-export-backends '(ascii html latex)
                 org-yank-image-save-method "figures"
                 ;; org-indent-indentation-per-level 2 
                 org-return-follows-link t)
@@ -130,9 +128,23 @@
 			     (if (char-equal c ?<) t (,electric-pair-inhibit-predicate c)))))))
 (advice-add 'org-refile :after 'org-save-all-org-buffers)
 
+(setq org-file-apps
+      '(("auto-mode" . emacs)               ;; Open files in Emacs by default
+        ("\\.mm\\'" . default)              ;; Use system default for .mm files
+        ("\\.x?html?\\'" . "zen-browser %s") ;; Open HTML files in zen-browser
+        ("\\.pdf\\'" . "~/.local/bin/zathura %s"))) ;; Open PDFs in Zathura
+
+;; Workaround for xdg-open issue when opening files in Org mode
+(defun karna/org-open-file-wrapper (orig-fun &rest args)
+  "Fix xdg-open issue in Org mode."
+  (let ((process-connection-type nil))
+    (apply orig-fun args)))
+
+(advice-add 'org-open-file :around #'karna/org-open-file-wrapper)
+
 (use-package org-id
   :ensure nil
-  :defer
+  :defer t
   :config
   (setq org-id-link-to-org-use-id
         'create-if-interactive-and-no-custom-id
@@ -141,14 +153,14 @@
 
 (use-package org-fold
   :ensure nil
-  :defer 
+  :defer t 
   :config
   (setf (alist-get 'agenda org-fold-show-context-detail)
         'local))
 
 (use-package org-footnote
   :ensure nil
-  :defer
+  :defer t
   :config
   (setq org-footnote-section nil
         org-footnote-define-inline nil))
@@ -156,7 +168,7 @@
 ;; Custom DWIM functionality for `org-ctrl-c-ctrl-c'
 (use-package org
   :ensure nil
-  :defer
+  :defer t
   :after (org ox-latex org-latex-preview)
   :config
   (defvar my/org-output-buffers
@@ -199,7 +211,7 @@
 ;;; ============================================================
 
 (use-package org-modern
-  :defer
+  :defer t
   :ensure t
   :hook ((org-modern-mode . my/org-modern-spacing))
   :config
@@ -218,7 +230,7 @@
 (use-package org-appear
   :disabled
   :ensure t
-  :defer
+  :defer t
   :hook (org-mode . org-appear-mode)
   :config
   (setq-default org-hide-emphasis-markers t)
@@ -243,7 +255,7 @@
   (visual-fill-column-mode 1))
 
 (use-package visual-fill-column
-  :defer             
+  :defer t            
   :ensure t)
 
 ;;; ------------------------------------------------------------
@@ -252,8 +264,7 @@
 
 (use-package org-auto-tangle
   :ensure t
-  :defer
-  :diminish
+  :defer t 
   :config (setq org-auto-tangle-default t))
 
 (defun karna/insert-auto-tangle-tag ()
@@ -273,7 +284,7 @@
 ;; Install Mermaid CLI using - sudo npm install -g @mermaid-js/mermaid-cli
 (use-package ob-mermaid
   :ensure t
-  :defer
+  :defer t
   :config
   (setq ob-mermaid-cli-path "/usr/bin/mmdc") ;; Adjust this path to your mermaid-cli
   (org-babel-do-load-languages 'org-babel-load-languages
@@ -358,8 +369,7 @@
 
 (use-package org-tempo
   :ensure nil
-  :after org
-  :defer 1
+  :defer t
   :config
   (pcase-dolist (`(,key ,expansion)
                  '(("n" "name")
@@ -890,8 +900,9 @@
       (org-tree-slide-mode -1)
       ;; (kill-local-variable 'org-hide-emphasis-markers)
       (my/olivetti-mode -1)
-      (text-scale-decrease 6)
-      (text-scale-mode -1)))
+      (text-scale-decrease 3)
+      (text-scale-mode -1)
+      (visual-fill-column-mode 1)))
 
   :bind (("C-c P"      . my/org-presentation-mode)
          :map org-tree-slide-mode-map
