@@ -7,7 +7,6 @@
 
 (use-package cape
   :ensure t
-  :defer
   :init
   (dolist (hook '((prog-mode-hook . (cape-keyword cape-dabbrev cape-file))
                   (emacs-lisp-mode-hook . (cape-elisp-symbol cape-elisp-block cape-file))
