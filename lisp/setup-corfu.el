@@ -7,9 +7,10 @@
 
 (use-package corfu
   :ensure t
-  :defer
-  :init
-  (global-corfu-mode)
+  :defer t
+  :hook ((prog-mode . corfu-mode)
+         (org-mode . corfu-mode)
+         (latex-mode . corfu-mode))
   :custom
   (corfu-cycle t)                  ;; Enable cycling through candidates
   (corfu-auto t)                   ;; Auto-show completions
@@ -35,6 +36,7 @@
   :after corfu
   :config
   (add-to-list 'corfu-margin-formatters #'nerd-icons-corfu-formatter))
+
 
 (provide 'setup-corfu)
 ;;; setup-corfu.el ends here
