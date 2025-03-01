@@ -163,20 +163,16 @@ Uses:
 ;; BREADCRUMB NAVIGATION FOR EMACS
 ;; ----------------------------------------------------------------------------
 
+
 (use-package breadcrumb
   :ensure t
-  :defer t
-  :hook ((org-mode . breadcrumb-mode)
-         (LaTeX-mode . breadcrumb-mode)
-         (prog-mode . breadcrumb-mode)
-         (text-mode . breadcrumb-mode))
   :config
   (setq breadcrumb-imenu-max-length 30
         breadcrumb-project-max-length 30
         breadcrumb-imenu-crumb-separator " » "
-        breadcrumb-project-crumb-separator " / "
-        header-line-format
-        '((:eval (concat (breadcrumb-project-crumbs) "  " (breadcrumb-imenu-crumbs))))))
+        breadcrumb-project-crumb-separator " / ")
+  (breadcrumb-mode 1))  ;; Enable globally
+
 
 
 ;; Colorize color names and parens in buffers
