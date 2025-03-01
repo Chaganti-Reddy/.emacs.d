@@ -75,7 +75,9 @@
     "c m" '(consult-man            :wk "Man Pages")
     "c k" '(consult-bookmark       :wk "Bookmarks")
     "c P" '(consult-project-extra-find :wk "Consult Project")
-    "c y" '(karna/year-calendar    :wk "Show year calendar"))
+    "c y" '(karna/year-calendar    :wk "Show year calendar")
+    "c <right>" '(karna/scroll-year-calendar-forward :wk "Scroll year calendar forward")
+    "c <left>" '(karna/scroll-year-calendar-backward :wk "Scroll year calendar backward"))
 
     (karna/leader-keys
     "d" '(:ignore t :wk "Dired")
