@@ -63,6 +63,7 @@
     (setq trash-directory "~/.Trash"))
 
 (setq dired-kill-when-opening-new-dired-buffer t)
+(add-hook 'dired-mode-hook 'dired-hide-details-mode)
 
 ;; ----------------------------------------------------------------------------
 ;; SUDO EDIT (Edit Files as Root)
