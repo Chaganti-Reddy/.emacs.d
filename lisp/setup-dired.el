@@ -10,8 +10,8 @@
 ;; DIRED CONFIGURATION (Minimal & Fast)
 ;; ----------------------------------------------------------------------------
 (use-package dired
-  :defer
   :ensure nil
+  :defer
   :commands (dired dired-jump)
   :bind (("C-x d" . dired)) ;; Open Dired quickly
   :custom
@@ -26,7 +26,6 @@
 ;; ----------------------------------------------------------------------------
 (use-package dired-open
   :after dired
-  :defer t
   :custom
   (dired-open-extensions
    '(("gif"  . "sxiv")
@@ -39,7 +38,6 @@
 ;; DIRED-PREVIEW (File Previews in Dired)
 ;; ----------------------------------------------------------------------------
 (use-package dired-preview
-  :defer
   :after dired
   :custom
   (dired-preview-delay 0.3)  ;; Adjust delay before previewing
@@ -59,6 +57,12 @@
 			   (not (file-exists-p (file-name-directory result))))
 		  (make-directory (file-name-directory result) t))
 		result)))
+
+(setq delete-by-moving-to-trash t)
+(if (eq system-type 'darwin)
+    (setq trash-directory "~/.Trash"))
+
+(setq dired-kill-when-opening-new-dired-buffer t)
 
 ;; ----------------------------------------------------------------------------
 ;; SUDO EDIT (Edit Files as Root)
