@@ -903,7 +903,6 @@ the mode-line and switches to `variable-pitch-mode'."
 ;;;----------------------------------------------------------------
 ;; Settings for shell, eshell and vterm
 (require 'shells)
-(require 'eshell-prompt)
 
 ;; compile!
 (use-package compile
