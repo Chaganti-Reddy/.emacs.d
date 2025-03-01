@@ -8,19 +8,17 @@
 
 (use-package yasnippet
   :ensure t
-  :defer
-  :hook ((prog-mode . yas-minor-mode)
-	 (org-mode . yas-minor-mode)
-	 (LaTeX-mode . yas-minor-mode))
+  :hook ((prog-mode org-mode LaTeX-mode) . yas-minor-mode)
   :custom
-  (yas-snippet-dirs '("~/.emacs.d/snippets/")) ;; Custom snippet directory
-  (yas-triggers-in-field t) ;; Allow nested expansion inside fields
+  (yas-snippet-dirs (list (expand-file-name "~/.emacs.d/snippets/")))
+  (yas-triggers-in-field t)
   :config
-  (yas-reload-all))
+  ;; Load system snippets after yasnippet-snippets is loaded
+  (with-eval-after-load 'yasnippet-snippets
+    (add-to-list 'yas-snippet-dirs yasnippet-snippets-dir)))
 
 (use-package yasnippet-snippets
   :ensure t
-  :defer
   :after yasnippet
   :config
   (yas-reload-all))
