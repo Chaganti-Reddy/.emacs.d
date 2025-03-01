@@ -4,18 +4,12 @@
 ;; ESHELL CONFIGURATION
 ;; -------------------------------------------------------------------------
 
-(setopt eshell-prompt-function 'fancy-shell)
-(setopt eshell-prompt-regexp "^[^#$\n]* [$#] ")
 (setopt eshell-highlight-prompt nil)
-
-;; Disabling company mode in eshell, because it's annoying.
-(setq company-global-modes '(not eshell-mode))
 
 ;; Adding a keybinding for 'pcomplete-list' on F9 key.
 (add-hook 'eshell-mode-hook
 	  (lambda ()
 	    (define-key eshell-mode-map (kbd "<f9>") #'pcomplete-list)))
-
 
 ;; A function for easily creating multiple buffers of 'eshell'.
 ;; NOTE: `C-u M-x eshell` would also create new 'eshell' buffers.
@@ -45,14 +39,14 @@
   ;; eshell-rc-script -- your profile for eshell; like a bashrc for eshell.
   ;; eshell-aliases-file -- sets an aliases file for the eshell.
 
-  (setq eshell-rc-script (concat user-emacs-directory "eshell/profile")
-	eshell-aliases-file (concat user-emacs-directory "eshell/aliases")
-	eshell-history-size 5000
-	eshell-buffer-maximum-lines 5000
-	eshell-hist-ignoredups t
-	eshell-scroll-to-bottom-on-input t
-	eshell-destroy-buffer-when-process-dies t
-	eshell-visual-commands'("bash" "zsh" "htop" "ssh" "top" "fish"))
+(setq eshell-rc-script (concat user-emacs-directory "eshell/profile")
+  eshell-aliases-file (concat user-emacs-directory "eshell/aliases")
+  eshell-history-size 5000
+  eshell-buffer-maximum-lines 5000
+  eshell-hist-ignoredups t
+  eshell-scroll-to-bottom-on-input t
+  eshell-destroy-buffer-when-process-dies t
+  eshell-visual-commands'("zsh" "bash" "htop" "ssh" "top" "fish"))
 
 ;; -------------------------------------------------------------------------
 ;; VTERM
