@@ -35,8 +35,10 @@ Uses:
 (use-package drag-stuff
   :ensure t
   :defer t
-  :init
-  (drag-stuff-global-mode 1)
+  :hook ((org-mode . drag-stuff-mode)
+         (LaTeX-mode . drag-stuff-mode)
+         (prog-mode . drag-stuff-mode)
+         (text-mode . drag-stuff-mode))
   :config
   (drag-stuff-define-keys))
 
@@ -47,8 +49,10 @@ Uses:
 (use-package puni
   :ensure t
   :defer t
-  :init (puni-global-mode))
-
+  :hook ((org-mode . puni-mode)
+         (LaTeX-mode . puni-mode)
+         (prog-mode . puni-mode)
+         (text-mode . puni-mode)))
 ;; ----------------------------------------------------------------------------
 ;; 📌 EXPAND REGION (Quick Selection Expansion)
 ;; ----------------------------------------------------------------------------
@@ -65,7 +69,10 @@ Uses:
 (use-package ws-butler
   :ensure t
   :defer t
-  :init (ws-butler-global-mode))
+  :hook ((org-mode . ws-butler-mode)
+         (LaTeX-mode . ws-butler-mode)
+         (prog-mode . ws-butler-mode)
+         (text-mode . ws-butler-mode)))
 
 ;; ----------------------------------------------------------------------------
 ;; HIGHLIGHT INDENTATION GUIDES
@@ -99,13 +106,13 @@ Uses:
 (use-package flycheck
   :ensure t
   :defer t
-  :init
-  (global-flycheck-mode)
+  :hook ((prog-mode . flycheck-mode)
+         (LaTeX-mode . flycheck-mode))
   :config
   ;; Adjust when Flycheck runs syntax checks.
   (setq flycheck-check-syntax-automatically '(save idle-change mode-enabled)
-	;; Increase the error threshold to avoid disabling checkers on too many errors.
-	flycheck-checker-error-threshold 1000))
+        ;; Increase the error threshold to avoid disabling checkers on too many errors.
+        flycheck-checker-error-threshold 1000))
 
 ;; ----------------------------------------------------------------------------
 ;; SIDELINE FLYMAKE
@@ -114,7 +121,8 @@ Uses:
 (use-package sideline-flymake
   :ensure t
   :defer t
-  :hook (flymake-mode . sideline-mode)
+  :hook ((prog-mode . sideline-mode)
+         (LaTeX-mode . sideline-mode))
   :custom
   (sideline-flymake-display-mode 'line) ;; Show errors on the current line
   (sideline-backends-right '(sideline-flymake)))
@@ -123,10 +131,64 @@ Uses:
   :ensure nil
   :defer t
   :hook
-  ((prog-mode . flyspell-prog-mode)
-   (text-mode . turn-on-flyspell))
+  ((LaTeX-mode . turn-on-flyspell)
+   (org-mode . turn-on-flyspell)))
+
+
+;; Hl-TODO
+(use-package hl-todo
+  :ensure t
+  :defer 
+  :hook ((prog-mode org-mode) . hl-todo-mode)
+  :bind (:map prog-mode-map
+         ("M-g t" . hl-todo-next)
+         ("M-g T" . hl-todo-previous))
   :config
-  (flyspell-mode +1))
+  (setq hl-todo-highlight-punctuation ":"
+        hl-todo-keyword-faces
+        '(("TODO" . warning)
+          ("FIXME" . error)
+          ("HACK" . font-lock-constant-face)
+          ("REVIEW" . font-lock-keyword-face)
+          ("NOTE" . success)
+          ("DEPRECATED" . font-lock-doc-face))
+        hl-todo-wrap-movement t)
+
+  (defvar-keymap hl-todo-repeat-map
+    :repeat t
+    "n" #'hl-todo-next
+    "p" #'hl-todo-previous))
+
+;; ----------------------------------------------------------------------------
+;; BREADCRUMB NAVIGATION FOR EMACS
+;; ----------------------------------------------------------------------------
+
+(use-package breadcrumb
+  :ensure t
+  :defer t
+  :hook ((org-mode . breadcrumb-mode)
+         (LaTeX-mode . breadcrumb-mode)
+         (prog-mode . breadcrumb-mode)
+         (text-mode . breadcrumb-mode))
+  :config
+  (setq breadcrumb-imenu-max-length 30
+        breadcrumb-project-max-length 30
+        breadcrumb-imenu-crumb-separator " » "
+        breadcrumb-project-crumb-separator " / "
+        header-line-format
+        '((:eval (concat (breadcrumb-project-crumbs) "  " (breadcrumb-imenu-crumbs))))))
+
+
+;; Colorize color names and parens in buffers
+(use-package rainbow-mode
+  :defer t
+  :commands rainbow-mode
+  :ensure t)
+
+(use-package rainbow-delimiters
+  :defer t
+  :commands rainbow-delimiters-mode
+  :ensure t)
 
 (provide 'editor)
 ;;; editor.el ends here
