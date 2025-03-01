@@ -93,6 +93,7 @@
     "d o" '(:ignore t :wk "Favorite Directories")
     "d o p" `((lambda () (interactive) (let ((default-directory "/mnt/Karna/Git/portfolio/")) (execute-extended-command nil "find-file"))) :wk "Open Portfolio")
     "d o P" `((lambda () (interactive) (let ((default-directory "/mnt/Karna/Git/Project-K/")) (execute-extended-command nil "find-file"))) :wk "Open Project-K")
+    "d o g" `((lambda () (interactive) (let ((default-directory "/mnt/Karna/Git/")) (execute-extended-command nil "find-file"))) :wk "Open Git Dir")
     "d o h" `((lambda () (interactive) (let ((default-directory "~/")) (execute-extended-command nil "find-file"))) :wk "Open Home")
     )
 
@@ -227,7 +228,7 @@
   ;; Define project command map under leader key
   (karna/leader-keys
     "p" '(project-prefix-map :wk "Project") ;; project.el's default keymap
-    "P a" '(project-remember-project :wk "Add root to known projects"))
+    "P a" '(project-remember-projects-under :wk "Add root to known projects"))
 
   (karna/leader-keys
     "P" '(:ignore t :wk "Custom Previews")
