@@ -11,6 +11,7 @@
   (setq evil-want-integration t  ;; Ensure Evil integrates properly with Emacs
 	evil-want-keybinding nil ;; Prevent conflicts with evil-collection
 	evil-vsplit-window-right t
+  evil-respect-visual-line-mode t
 	evil-split-window-below t
 	evil-undo-system 'undo-fu)  ;; To use Vim-like redo functionality use built in undo-redo
   :config
