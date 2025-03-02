@@ -53,6 +53,7 @@ Uses:
          (LaTeX-mode . puni-mode)
          (prog-mode . puni-mode)
          (text-mode . puni-mode)))
+
 ;; ----------------------------------------------------------------------------
 ;; 📌 EXPAND REGION (Quick Selection Expansion)
 ;; ----------------------------------------------------------------------------
