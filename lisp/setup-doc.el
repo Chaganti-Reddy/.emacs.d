@@ -28,8 +28,7 @@
   (pdf-loader-install)
   :hook (pdf-view-mode . (lambda ()
 			   (display-line-numbers-mode -1)
-			   (blink-cursor-mode -1)
-			   (setq mode-line-format nil)))  ;; Hide modeline
+			   (blink-cursor-mode -1))) 
   :config
   (add-to-list 'revert-without-query "\\.pdf\\'"))  ;; Proper regex for auto-revert
 
