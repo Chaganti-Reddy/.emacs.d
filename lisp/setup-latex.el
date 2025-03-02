@@ -94,6 +94,17 @@
   (setq TeX-view-program-selection '((output-pdf "Zathura"))
         TeX-source-correlate-method 'synctex))
 
+(defun karna/toggle-tex-pdf-viewer ()
+  "Toggle between PDF Tools and Zathura for TeX viewing in AUCTeX."
+  (interactive)
+  (let* ((current-viewer (cadr (assoc 'output-pdf TeX-view-program-selection)))
+         (new-viewer (if (equal current-viewer "PDF Tools")
+                         "Zathura"
+                       "PDF Tools")))
+    (setq TeX-view-program-selection
+          `((output-pdf ,new-viewer))) ;; Proper format
+    (message "TeX viewer set to: %s" new-viewer)))
+
 (add-hook 'TeX-after-compilation-finished-functions #'TeX-revert-document-buffer)
 
 (use-package preview
