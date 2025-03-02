@@ -641,6 +641,44 @@ Cancel the previous one if present."
       (call-interactively #'iedit-mode)
       (iedit-expand-up-to-occurrence))))
 
+;; Install avy if not already present
+(use-package avy
+  :ensure t
+  :defer t
+  :config
+  (setq avy-timeout-seconds 0.5)
+  
+  ;; Use home-row keys for labels (qwerty-compatible)
+  (setq avy-keys '(?a ?s ?d ?f ?j ?k ?l ?\; ?w ?e ?i ?o))
+  
+  ;; Cleaner overlay styling
+  (set-face-attribute 'avy-lead-face nil
+                      :background "#2d4f67"
+                      :foreground "white")
+  (set-face-attribute 'avy-lead-face-0 nil
+                      :background "#1a3b52"
+                      :foreground "white")
+
+  ;; Jump commands with leader key (SPC)
+  :bind (("C-;" . avy-goto-char-timer)        ; Quick char jump
+         ("C-'" . avy-goto-line)              ; Line navigation
+         ("C-c S" . avy-isearch)               ; Search then jump
+         ("C-S-." . avy-resume)                 ; Resume last jump session
+         
+         ;; Leader-based jumps (if using spacemacs/leader key)
+         ("C-c j" . avy-goto-char-2)
+         ("C-c l" . avy-goto-line)
+         ("C-c w" . avy-goto-word-1)))
+
+;; Optional: Jump backward with universal argument
+(defun avy-goto-char-timer-backward ()
+  "Jump backward using avy."
+  (interactive)
+  (let ((current-prefix-arg '(4)))
+    (call-interactively #'avy-goto-char-timer)))
+
+(global-set-key (kbd "C-c J") 'avy-goto-char-timer-backward)
+
 ;; IMENU
 
 (use-package imenu
