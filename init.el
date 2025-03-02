@@ -12,9 +12,9 @@
 (defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
 (defvar elpaca-repos-directory (expand-file-name "repos/" elpaca-directory))
 (defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
-                              :ref nil :depth 1 :inherit ignore
-                              :files (:defaults "elpaca-test.el" (:exclude "extensions"))
-                              :build (:not elpaca--activate-package)))
+			      :ref nil :depth 1 :inherit ignore
+			      :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+			      :build (:not elpaca--activate-package)))
 (let* ((repo  (expand-file-name "elpaca/" elpaca-repos-directory))
        (build (expand-file-name "elpaca/" elpaca-builds-directory))
        (order (cdr elpaca-order))
@@ -24,20 +24,20 @@
     (make-directory repo t)
     (when (<= emacs-major-version 28) (require 'subr-x))
     (condition-case-unless-debug err
-        (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
-                  ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
-                                                  ,@(when-let* ((depth (plist-get order :depth)))
-                                                      (list (format "--depth=%d" depth) "--no-single-branch"))
-                                                  ,(plist-get order :repo) ,repo))))
-                  ((zerop (call-process "git" nil buffer t "checkout"
-                                        (or (plist-get order :ref) "--"))))
-                  (emacs (concat invocation-directory invocation-name))
-                  ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
-                                        "--eval" "(byte-recompile-directory \".\" 0 'force)")))
-                  ((require 'elpaca))
-                  ((elpaca-generate-autoloads "elpaca" repo)))
-            (progn (message "%s" (buffer-string)) (kill-buffer buffer))
-          (error "%s" (with-current-buffer buffer (buffer-string))))
+	(if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+		  ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+						  ,@(when-let* ((depth (plist-get order :depth)))
+						      (list (format "--depth=%d" depth) "--no-single-branch"))
+						  ,(plist-get order :repo) ,repo))))
+		  ((zerop (call-process "git" nil buffer t "checkout"
+					(or (plist-get order :ref) "--"))))
+		  (emacs (concat invocation-directory invocation-name))
+		  ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+					"--eval" "(byte-recompile-directory \".\" 0 'force)")))
+		  ((require 'elpaca))
+		  ((elpaca-generate-autoloads "elpaca" repo)))
+	    (progn (message "%s" (buffer-string)) (kill-buffer buffer))
+	  (error "%s" (with-current-buffer buffer (buffer-string))))
       ((error) (warn "%s" err) (delete-directory repo 'recursive))))
   (unless (require 'elpaca-autoloads nil t)
     (require 'elpaca)
@@ -63,39 +63,39 @@
 (use-package elpaca-ui
   :ensure nil
   :bind (:map elpaca-ui-mode-map
-         ("p" . previous-line)
-         ("F" . elpaca-ui-mark-pull))
+	 ("p" . previous-line)
+	 ("F" . elpaca-ui-mark-pull))
   :after popper
   :init
   (add-to-list 'popper-reference-buffers
-               'elpaca-log-mode)
+	       'elpaca-log-mode)
   (setf (alist-get '(major-mode . elpaca-log-mode)
-                   display-buffer-alist
-                   nil nil #'equal)
-        '((display-buffer-at-bottom
-          display-buffer-in-side-window)
-          (side . bottom)
-          (slot . 49)
-          (window-height . 0.4)
-          (body-function . select-window))))
+		   display-buffer-alist
+		   nil nil #'equal)
+	'((display-buffer-at-bottom
+	  display-buffer-in-side-window)
+	  (side . bottom)
+	  (slot . 49)
+	  (window-height . 0.4)
+	  (body-function . select-window))))
 
 (eval-when-compile
   (eval-after-load 'advice
     `(setq ad-redefinition-action 'accept))
   (setq use-package-verbose nil
-        use-package-compute-statistics nil
-        ;use-package-ignore-unknown-keywords t
-        use-package-minimum-reported-time 0.01
-        use-package-expand-minimally t
-        use-package-enable-imenu-support t)
+	use-package-compute-statistics nil
+	;use-package-ignore-unknown-keywords t
+	use-package-minimum-reported-time 0.01
+	use-package-expand-minimally t
+	use-package-enable-imenu-support t)
   (when init-file-debug
     (setq use-package-expand-minimally nil
-          use-package-verbose t
-          use-package-compute-statistics t
-          debug-on-error t))
+	  use-package-verbose t
+	  use-package-compute-statistics t
+	  debug-on-error t))
   (require 'use-package))
 
-;; Note: Mostly copied from Karthinks Emacs Config 
+;; Note: Mostly copied from Karthinks Emacs Config
 
 ;; Avoid defining multiple paths and make it messy
 (use-package emacs
@@ -115,37 +115,37 @@
 (require 'setup-core)
 
 ;; Trying out [[https://gitlab.com/koral/gcmh][gcmh]] on an experimental basis.
-(condition-case-unless-debug nil 
+(condition-case-unless-debug nil
     (use-package gcmh
       :defer 2.5
       :ensure t
       ;; :hook (after-init . gcmh-mode)
       :config
       (defun gcmh-register-idle-gc ()
-        "Register a timer to run `gcmh-idle-garbage-collect'.
+	"Register a timer to run `gcmh-idle-garbage-collect'.
 Cancel the previous one if present."
-        (unless (eq this-command 'self-insert-command)
-          (let ((idle-t (if (eq gcmh-idle-delay 'auto)
-		            (* gcmh-auto-idle-delay-factor gcmh-last-gc-time)
-		          gcmh-idle-delay)))
-            (if (timerp gcmh-idle-timer)
-                (timer-set-time gcmh-idle-timer idle-t)
-              (setf gcmh-idle-timer
-	            (run-with-timer idle-t nil #'gcmh-idle-garbage-collect))))))
+	(unless (eq this-command 'self-insert-command)
+	  (let ((idle-t (if (eq gcmh-idle-delay 'auto)
+			    (* gcmh-auto-idle-delay-factor gcmh-last-gc-time)
+			  gcmh-idle-delay)))
+	    (if (timerp gcmh-idle-timer)
+		(timer-set-time gcmh-idle-timer idle-t)
+	      (setf gcmh-idle-timer
+		    (run-with-timer idle-t nil #'gcmh-idle-garbage-collect))))))
       (setq gcmh-idle-delay 'auto  ; default is 15s
-            gcmh-high-cons-threshold (* 256 1024 1024)
-            gcmh-verbose nil
-            gc-cons-percentage 0.2)
+	    gcmh-high-cons-threshold (* 256 1024 1024)
+	    gcmh-verbose nil
+	    gc-cons-percentage 0.2)
       (gcmh-mode 1))
   (error (setq gc-cons-threshold (* 32 1024 1024)
-               gc-cons-percentage 0.2)))
+	       gc-cons-percentage 0.2)))
 
 
 ;; * DAEMON
 ;;;################################################################
 
 ;; Hack: When starting a server, silently load all the "heavy" libraries and
-;; goodies you use. 
+;; goodies you use.
 
 (when (daemonp)
   (defvar pulse-flag t)
@@ -153,60 +153,60 @@ Cancel the previous one if present."
    'after-init-hook
    (defun my/load-packages-eagerly ()
      (add-hook 'server-visit-hook
-               (lambda () (when (and (equal default-directory
-                                       temporary-file-directory)
-                                (equal major-mode 'text-mode)
-                                (fboundp 'markdown-mode))
-                       (markdown-mode))))
+	       (lambda () (when (and (equal default-directory
+				       temporary-file-directory)
+				(equal major-mode 'text-mode)
+				(fboundp 'markdown-mode))
+		       (markdown-mode))))
      (run-at-time 1 nil
-                  (lambda () 
-                    (when (fboundp 'pdf-tools-install) (pdf-tools-install t))
-                    (load-library "pulse")
-                    (when (string-suffix-p "server" server-name)
-                      (let ((after-init-time (current-time)))
-                         (dolist (lib '("org" "ob" "ox" "ol" "org-roam"
-                                       "org-capture" "org-agenda" "latex" "reftex" "cdlatex"
-                                       "consult" "helpful" "elisp-mode"
-                                       "expand-region" "embrace"
-                                       "ace-window" "avy" "yasnippet"
-                                       "magit" "modus-themes" "diff-hl"
-                                       "dired" "ibuffer" "pdf-tools"
-                                       "emacs-wm"))
-                          (with-demoted-errors "Error: %S" (load-library lib)))
-                         (with-temp-buffer (org-mode))
-                        (let ((elapsed (float-time (time-subtract (current-time)
-                                                                  after-init-time))))
-                          (message "[Pre-loaded packages in %.3fs]" elapsed)))))))))
+		  (lambda ()
+		    (when (fboundp 'pdf-tools-install) (pdf-tools-install t))
+		    (load-library "pulse")
+		    (when (string-suffix-p "server" server-name)
+		      (let ((after-init-time (current-time)))
+			 (dolist (lib '("org" "ob" "ox" "ol" "org-roam"
+				       "org-capture" "org-agenda" "latex" "reftex" "cdlatex"
+				       "consult" "helpful" "elisp-mode"
+				       "expand-region" "embrace"
+				       "ace-window" "avy" "yasnippet"
+				       "magit" "modus-themes" "diff-hl"
+				       "dired" "ibuffer" "pdf-tools"
+				       "emacs-wm"))
+			  (with-demoted-errors "Error: %S" (load-library lib)))
+			 (with-temp-buffer (org-mode))
+			(let ((elapsed (float-time (time-subtract (current-time)
+								  after-init-time))))
+			  (message "[Pre-loaded packages in %.3fs]" elapsed)))))))))
 
 
 (use-package org
   :defer t
   :ensure `(org
-            :remotes ("tecosaur"
-                      :repo "https://git.tecosaur.net/tec/org-mode.git"
-                      :branch "dev")
-            :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi"))
-            :build t
-            :pre-build
-            (progn
-              (with-temp-file "org-version.el"
-               (require 'lisp-mnt)
-               (let ((version
-                      (with-temp-buffer
-                        (insert-file-contents "lisp/org.el")
-                        (lm-header "version")))
-                     (git-version
-                      (string-trim
-                       (with-temp-buffer
-                         (call-process "git" nil t nil "rev-parse" "--short" "HEAD")
-                         (buffer-string)))))
-                (insert
-                 (format "(defun org-release () \"The release version of Org.\" %S)\n" version)
-                 (format "(defun org-git-version () \"The truncate git commit hash of Org mode.\" %S)\n" git-version)
-                 "(provide 'org-version)\n")))
-              (require 'elpaca-menu-org)
-              (elpaca-menu-org--build))
-            :pin nil))
+	    :remotes ("tecosaur"
+		      :repo "https://git.tecosaur.net/tec/org-mode.git"
+		      :branch "dev")
+	    :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi"))
+	    :build t
+	    :pre-build
+	    (progn
+	      (with-temp-file "org-version.el"
+	       (require 'lisp-mnt)
+	       (let ((version
+		      (with-temp-buffer
+			(insert-file-contents "lisp/org.el")
+			(lm-header "version")))
+		     (git-version
+		      (string-trim
+		       (with-temp-buffer
+			 (call-process "git" nil t nil "rev-parse" "--short" "HEAD")
+			 (buffer-string)))))
+		(insert
+		 (format "(defun org-release () \"The release version of Org.\" %S)\n" version)
+		 (format "(defun org-git-version () \"The truncate git commit hash of Org mode.\" %S)\n" git-version)
+		 "(provide 'org-version)\n")))
+	      (require 'elpaca-menu-org)
+	      (elpaca-menu-org--build))
+	    :pin nil))
 
 ;;;################################################################
 ;; * UI
@@ -237,6 +237,22 @@ Cancel the previous one if present."
 ;;;################################################################
 ;; * MISCELLANEOUS PREFERENCES
 ;;;################################################################
+;; Reload emacs config
+(defun karna/reload-used-configs ()
+  "Reload only the Emacs Lisp files that have been explicitly required."
+  (interactive)
+  (message "Reloading Emacs configuration...")
+  (load-file user-init-file)
+  (dolist (feature features)
+    (let* ((feature-name (symbol-name feature))
+	   (file-path (locate-library (concat feature-name ".el"))))
+      (when (and file-path
+		 (string-prefix-p (expand-file-name "lisp/" user-emacs-directory) file-path))
+	(message "Reloading: %s" feature-name)
+	(unload-feature feature t)
+	(require feature))))
+  (message "Emacs configuration reloaded successfully!"))
+
 ;; For lazy typists
 (setq use-short-answers t)
 ;; Move the mouse away if the cursor gets close
@@ -264,13 +280,13 @@ Cancel the previous one if present."
 ;; Frame title
 (setq frame-title-format
       '(""
-        (:eval
-         (if (and (boundp 'org-roam-directory)
-              (string-match-p org-roam-directory (or buffer-file-name "")))
-             (replace-regexp-in-string
-              ".*/[0-9]*-?" "roam:"
-              (subst-char-in-string ?_ ?  buffer-file-name))
-           "%b"))))
+	(:eval
+	 (if (and (boundp 'org-roam-directory)
+	      (string-match-p org-roam-directory (or buffer-file-name "")))
+	     (replace-regexp-in-string
+	      ".*/[0-9]*-?" "roam:"
+	      (subst-char-in-string ?_ ?  buffer-file-name))
+	   "%b"))))
 
 ;; Byte-compile elisp files immediately after saving them if .elc exists:
 (defun auto-byte-recompile ()
@@ -279,9 +295,9 @@ Cancel the previous one if present."
   buffer file, then recompile the file."
   (interactive)
   (when (and (eq major-mode 'emacs-lisp-mode)
-             (not ;; (string= user-init-file (buffer-file-name))
-              (string-match-p "init\\.el$" (buffer-file-name)))
-             (file-exists-p (byte-compile-dest-file buffer-file-name)))
+	     (not ;; (string= user-init-file (buffer-file-name))
+	      (string-match-p "init\\.el$" (buffer-file-name)))
+	     (file-exists-p (byte-compile-dest-file buffer-file-name)))
     (byte-recompile-file buffer-file-name)))
 (add-hook 'after-save-hook 'auto-byte-recompile)
 (add-hook 'kill-emacs-hook (lambda () (byte-recompile-file user-init-file)))
@@ -304,24 +320,7 @@ Cancel the previous one if present."
 ;;;######################################################################
 ;; * LINE NUMBERS
 ;;;######################################################################
-(global-display-line-numbers-mode -1)
-
-(line-number-mode 1)
-
-(defvar my/addons-enabled-modes (list 'prog-mode-hook
-                                    'conf-unix-mode-hook
-                                    'conf-windows-mode-hook
-                                    'conf-javaprop-mode-hook
-                                    'tex-mode-hook
-                                    'text-mode-hook
-                                    'message-mode-hook)
-  "List of modes where special features (like line numbers)
-  should be enabled.")
-
-(dolist (mode-hook my/addons-enabled-modes)
-  (add-hook mode-hook (lambda () "Turn on line numbers for major-mode"
-                        (interactive)
-                        (display-line-numbers-mode))))
+(global-display-line-numbers-mode 1)
 
 (setq display-line-numbers-width-start t
       display-line-numbers-type t)
@@ -334,22 +333,22 @@ Cancel the previous one if present."
   :ensure nil
   :config
   (setq recentf-save-file (expand-file-name "recentf" user-cache-directory)
-        recentf-max-saved-items 200
-        recentf-auto-cleanup 300
-          recentf-exclude
-        '("~/.cache/emacs/"
-          "~/.emacs.d/snippets/"
-          "^/usr/share/emacs/"
-          "/mnt/Karna/Git/Project-K/Org/Journal/"
-          "/mnt/Karna/Git/Project-K/Org/Templates/"
-          "/mnt/Karna/Git/Project-K/Org/Tasks.org"
-          "_region_\\.tex$"
-          "<none>\\.tex$"
-          "^/tmp/"
-          "\\.gz$"))
+	recentf-max-saved-items 200
+	recentf-auto-cleanup 300
+	  recentf-exclude
+	'("~/.cache/emacs/"
+	  "~/.emacs.d/snippets/"
+	  "^/usr/share/emacs/"
+	  "/mnt/Karna/Git/Project-K/Org/Journal/"
+	  "/mnt/Karna/Git/Project-K/Org/Templates/"
+	  "/mnt/Karna/Git/Project-K/Org/Tasks.org"
+	  "_region_\\.tex$"
+	  "<none>\\.tex$"
+	  "^/tmp/"
+	  "\\.gz$"))
   (define-advice recentf-cleanup (:around (fun) silently)
     (let ((inhibit-message t)
-          (message-log-max nil))
+	  (message-log-max nil))
       (funcall fun)))
   (recentf-mode 1))
 
@@ -361,9 +360,9 @@ Cancel the previous one if present."
   :hook (after-init . savehist-mode)
   :config
   (setq savehist-file (dir-concat user-cache-directory "savehist")
-        history-length 1000
-        history-delete-duplicates t
-        savehist-save-minibuffer-history t)
+	history-length 1000
+	history-delete-duplicates t
+	savehist-save-minibuffer-history t)
   (add-to-list 'savehist-additional-variables 'global-mark-ring))
 
 
@@ -382,45 +381,49 @@ Cancel the previous one if present."
 (use-package popper
   :ensure t
   :bind (("C-`"   . popper-toggle)
-         ("M-`"   . popper-cycle)
-         ("C-M-`" . popper-toggle-type))
+	 ("M-`"   . popper-cycle)
+	 ("C-M-`" . popper-toggle-type)
+   ("C-~" . popper-cycle-backwards))
   :init
   (if (boundp 'elpaca-after-init-hook)
       (add-hook 'elpaca-after-init-hook #'popper-mode)
     (add-hook 'emacs-startup-hook #'popper-mode))
   (setq popper-reference-buffers
-        '("^\\*Messages\\*"
-          "[Oo]utput\\*$"
-          "\\*Async Shell Command\\*"
-          "^\\*Backtrace\\*"
-          "\\*Completions\\*"
-          "^\\*Compile-Log\\*"
-          "^\\*Warnings\\*"
-          "\\*Shell Command Output\\*"
-          "^\\*evil-registers\\*"
-          "^\\*gptel-ask\\*"
-          "^Calc:"
-          "^\\*ielm\\*"
-          "^\\*TeX Help\\*"
-          help-mode
-          Custom-mode 
-          messages-mode 
-          occur-mode
-          emacs-news-mode
-          compilation-mode))
+	'("^\\*Messages\\*"
+	  "[Oo]utput\\*$"
+	  "\\*Async Shell Command\\*"
+	  "^\\*Backtrace\\*"
+	  "\\*Completions\\*"
+	  "^\\*Compile-Log\\*"
+	  "^\\*Warnings\\*"
+	  "\\*Shell Command Output\\*"
+	  "^\\*evil-registers\\*"
+	  "^\\*gptel-ask\\*"
+	  "^Calc:"
+	  "^\\*ielm\\*"
+	  "^\\*TeX Help\\*"
+	  help-mode
+	  Custom-mode
+	  pdf-view-mode
+	  messages-mode
+	  occur-mode
+    inferior-emacs-lisp-mode
+	  emacs-news-view-mode
+	  compilation-mode))
   :config
   (setq popper-group-function #'popper-group-by-project)
+  (setq popper-display-control 'user)
   (setq popper-mode-line '(:eval (propertize " POP" 'face 'mode-line-emphasis)))
   (setq popper-reference-buffers
-        (append popper-reference-buffers
-                '("^\\*eshell.*\\*$" eshell-mode
-                  "^\\*shell.*\\*$"  shell-mode
-                  "^\\*term.*\\*$"   term-mode
-                  "^\\*vterm.*\\*$"  vterm-mode)))
+	(append popper-reference-buffers
+		'("^\\*eshell.*\\*$" eshell-mode
+		  "^\\*shell.*\\*$"  shell-mode
+		  "^\\*term.*\\*$"   term-mode
+		  "^\\*vterm.*\\*$"  vterm-mode)))
   (popper-mode +1)
-  (popper-echo-mode +1)) ;; For echo area hints
+  (popper-echo-mode -1)) ;; For echo area hints
 
-;; EVIL MODE 
+;; EVIL MODE
 (require 'setup-evil)
 (require 'setup-consult)
 
@@ -449,14 +452,14 @@ Cancel the previous one if present."
   :defer t
   :config
   (dolist (face '(line-number org-property-value org-drawer
-                  error org-cite corfu-current corfu-default
-                  org-meta-line org-tag))
+		  error org-cite corfu-current corfu-default
+		  org-meta-line org-tag))
     (add-to-list 'mixed-pitch-fixed-pitch-faces face))
   (setq mixed-pitch-set-height nil
-        mixed-pitch-variable-pitch-cursor nil)
+	mixed-pitch-variable-pitch-cursor nil)
   (defun my/mixed-pitch-spacing ()
     (if mixed-pitch-mode
-        (setq line-spacing 0.12)
+	(setq line-spacing 0.12)
       (setq line-spacing 0.0))))
 
 
@@ -467,31 +470,31 @@ Cancel the previous one if present."
   :ensure nil
   :config
   (pcase-dolist (`(,font           . ,scale)
-                 '(("Merriweather" . 0.88)
-                   ("IM FELL"      . 1.19)
-                   ;; ("Latin Modern$" . 1.05)
-                   ("Latin Modern Math" . 1.25)))
+		 '(("Merriweather" . 0.88)
+		   ("IM FELL"      . 1.19)
+		   ;; ("Latin Modern$" . 1.05)
+		   ("Latin Modern Math" . 1.25)))
     (setf (alist-get font face-font-rescale-alist nil nil #'equal)
-          scale))
-  
+	  scale))
+
   (cond (IS-LINUX
-         (set-fontset-font t 'unicode "Symbola" nil 'prepend)
-         (pcase-let ((`(,vp ,fp)
-                      (cond
-                       ((string= (getenv "XDG_SESSION_TYPE") "wayland")
-                        '(120 110))
-                       (t '(95 110)))))
-           (custom-set-faces
-            `(variable-pitch ((t (:family "Merriweather" ;; :height ,vp
-                                  :width semi-expanded))))
-            `(default ((t (:family "JetBrainsMono Nerd Font" :foundry "PfEd"
-                           :slant normal :weight normal
-                           :height ,fp :width normal)))))))
-        (IS-WINDOWS
-         (custom-set-faces
-          '(default ((t (:family "Consolas" :foundry "outline"
-                                 :slant normal :weight normal
-                                 :height 120 :width normal))))))))
+	 (set-fontset-font t 'unicode "Symbola" nil 'prepend)
+	 (pcase-let ((`(,vp ,fp)
+		      (cond
+		       ((string= (getenv "XDG_SESSION_TYPE") "wayland")
+			'(120 110))
+		       (t '(95 110)))))
+	   (custom-set-faces
+	    `(variable-pitch ((t (:family "Merriweather" ;; :height ,vp
+				  :width semi-expanded))))
+	    `(default ((t (:family "JetBrainsMono Nerd Font" :foundry "PfEd"
+			   :slant normal :weight normal
+			   :height ,fp :width normal)))))))
+	(IS-WINDOWS
+	 (custom-set-faces
+	  '(default ((t (:family "Consolas" :foundry "outline"
+				 :slant normal :weight normal
+				 :height 120 :width normal))))))))
 
 ;; Italics for comments & keywords
 (set-face-attribute 'font-lock-comment-face nil :slant 'italic)
@@ -516,26 +519,26 @@ Cancel the previous one if present."
 
   :config
   (setq ef-themes-headings
-        '((0 . (1.50))
-          (1 . (1.28))
-          (2 . (1.22))
-          (3 . (1.17))
-          (4 . (1.14))
-          (t . (1.1))))
+	'((0 . (1.50))
+	  (1 . (1.28))
+	  (2 . (1.22))
+	  (3 . (1.17))
+	  (4 . (1.14))
+	  (t . (1.1))))
 
   (defun my/ef-themes-extra-faces ()
     "Tweak the style of the mode lines."
     (ef-themes-with-colors
       (custom-set-faces
        `(aw-leading-char-face ((,c :foreground ,fg-mode-line
-                                :height 1.5 :weight semi-bold))))))
+				:height 1.5 :weight semi-bold))))))
 
   (defun karna/toggle-ef-theme ()
     "Cycle through `karna/ef-theme-list`."
     (interactive)
     (setq karna/current-ef-theme
-          (or (cadr (member karna/current-ef-theme karna/ef-theme-list))
-              (car karna/ef-theme-list)))
+	  (or (cadr (member karna/current-ef-theme karna/ef-theme-list))
+	      (car karna/ef-theme-list)))
     (ef-themes-select karna/current-ef-theme)
     (message "Switched to %s" karna/current-ef-theme))
 
@@ -553,55 +556,55 @@ Cancel the previous one if present."
   :defer
   :init
   (setq modus-themes-common-palette-overrides
-        `((date-common cyan)   ; default value (for timestamps and more)
-          (date-deadline red-warmer)
-          (date-event magenta-warmer)
-          (date-holiday blue) ; for M-x calendar
-          (date-now yellow-warmer)
-          (date-scheduled magenta-cooler)
-          (date-weekday cyan-cooler)
-          (date-weekend blue-faint)
-          (mail-recipient fg-main)
-          ;; (fg-heading-1 blue-warmer)
-          ;; (fg-heading-2 yellow-cooler)
-          ;; (fg-heading-3 cyan-cooler)
-          ;; (fg-line-number-inactive "gray50")
-          (fg-line-number-active fg-main)
-          (bg-line-number-inactive unspecified)
-          (bg-line-number-active unspecified)
-          (bg-region bg-sage)
-          (fg-region unspecified)
-          ;; (comment yellow-cooler)
-          ;; (string green-cooler)
-          (fringe unspecified) ;; bg-blue-nuanced
-          (border-mode-line-active unspecified)
-          (border-mode-line-inactive unspecified)))
+	`((date-common cyan)   ; default value (for timestamps and more)
+	  (date-deadline red-warmer)
+	  (date-event magenta-warmer)
+	  (date-holiday blue) ; for M-x calendar
+	  (date-now yellow-warmer)
+	  (date-scheduled magenta-cooler)
+	  (date-weekday cyan-cooler)
+	  (date-weekend blue-faint)
+	  (mail-recipient fg-main)
+	  ;; (fg-heading-1 blue-warmer)
+	  ;; (fg-heading-2 yellow-cooler)
+	  ;; (fg-heading-3 cyan-cooler)
+	  ;; (fg-line-number-inactive "gray50")
+	  (fg-line-number-active fg-main)
+	  (bg-line-number-inactive unspecified)
+	  (bg-line-number-active unspecified)
+	  (bg-region bg-sage)
+	  (fg-region unspecified)
+	  ;; (comment yellow-cooler)
+	  ;; (string green-cooler)
+	  (fringe unspecified) ;; bg-blue-nuanced
+	  (border-mode-line-active unspecified)
+	  (border-mode-line-inactive unspecified)))
   (setq modus-operandi-palette-overrides
-        '((bg-mode-line-active bg-blue-intense) ;
-          (fg-mode-line-active fg-main)
-          (fg-heading-1 "#a01f64")
-          (fg-heading-2 "#2f5f9f") ;;"#193668"
-          (fg-heading-3 "#1a8388")))
+	'((bg-mode-line-active bg-blue-intense) ;
+	  (fg-mode-line-active fg-main)
+	  (fg-heading-1 "#a01f64")
+	  (fg-heading-2 "#2f5f9f") ;;"#193668"
+	  (fg-heading-3 "#1a8388")))
   (setq modus-vivendi-palette-overrides
-        `((fg-main "#d6d6d4")
-          ;; (bg-main "#121212")
-          (bg-region bg-lavender)
-          (bg-main "#090909")
-          (fg-heading-1 magenta-faint)
-          ;; (bg-main "#181A1B")
-          (bg-mode-line-active bg-lavender) ;; bg-graph-magenta-1
-          (fg-mode-line-active "#ffffff")))
+	`((fg-main "#d6d6d4")
+	  ;; (bg-main "#121212")
+	  (bg-region bg-lavender)
+	  (bg-main "#090909")
+	  (fg-heading-1 magenta-faint)
+	  ;; (bg-main "#181A1B")
+	  (bg-mode-line-active bg-lavender) ;; bg-graph-magenta-1
+	  (fg-mode-line-active "#ffffff")))
   (setq modus-themes-org-blocks 'gray-background
-        modus-themes-bold-constructs t
-        modus-themes-prompts '(bold background)
-        modus-themes-variable-pitch-ui nil
-        modus-themes-headings
-        '((0 . (1.35))
-          (1 . (1.30))       ;variable-pitch
-          (2 . (1.24))       ;variable-pitch
-          (3 . (semibold 1.17))
-          (4 . (1.14))
-          (t . (monochrome)))))
+	modus-themes-bold-constructs t
+	modus-themes-prompts '(bold background)
+	modus-themes-variable-pitch-ui nil
+	modus-themes-headings
+	'((0 . (1.35))
+	  (1 . (1.30))       ;variable-pitch
+	  (2 . (1.24))       ;variable-pitch
+	  (3 . (semibold 1.17))
+	  (4 . (1.14))
+	  (t . (monochrome)))))
 
 ;;;################################################################
 ;; * KEYBIND SETUP
@@ -627,8 +630,8 @@ Cancel the previous one if present."
   :ensure t
   :defer
   :bind (("C-M-;" . iedit-mode)
-         ("M-s n" . my/iedit-1-down)
-         ("M-s p" . my/iedit-1-up))
+	 ("M-s n" . my/iedit-1-down)
+	 ("M-s p" . my/iedit-1-up))
   :config
   (defun my/iedit-1-down (arg)
     (interactive "p")
@@ -647,28 +650,28 @@ Cancel the previous one if present."
   :defer t
   :config
   (setq avy-timeout-seconds 0.5)
-  
+
   ;; Use home-row keys for labels (qwerty-compatible)
   (setq avy-keys '(?a ?s ?d ?f ?j ?k ?l ?\; ?w ?e ?i ?o))
-  
+
   ;; Cleaner overlay styling
   (set-face-attribute 'avy-lead-face nil
-                      :background "#2d4f67"
-                      :foreground "white")
+		      :background "#2d4f67"
+		      :foreground "white")
   (set-face-attribute 'avy-lead-face-0 nil
-                      :background "#1a3b52"
-                      :foreground "white")
+		      :background "#1a3b52"
+		      :foreground "white")
 
   ;; Jump commands with leader key (SPC)
   :bind (("C-;" . avy-goto-char-timer)        ; Quick char jump
-         ("C-'" . avy-goto-line)              ; Line navigation
-         ("C-c S" . avy-isearch)               ; Search then jump
-         ("C-S-." . avy-resume)                 ; Resume last jump session
-         
-         ;; Leader-based jumps (if using spacemacs/leader key)
-         ("C-c j" . avy-goto-char-2)
-         ("C-c l" . avy-goto-line)
-         ("C-c w" . avy-goto-word-1)))
+	 ("C-'" . avy-goto-line)              ; Line navigation
+	 ("C-c S" . avy-isearch)               ; Search then jump
+	 ("C-S-." . avy-resume)                 ; Resume last jump session
+
+	 ;; Leader-based jumps (if using spacemacs/leader key)
+	 ("C-c j" . avy-goto-char-2)
+	 ("C-c l" . avy-goto-line)
+	 ("C-c w" . avy-goto-word-1)))
 
 ;; Optional: Jump backward with universal argument
 (defun avy-goto-char-timer-backward ()
@@ -688,12 +691,12 @@ Cancel the previous one if present."
   :bind ("M-s i" . imenu)
   :config
   (setq imenu-use-markers t
-        imenu-auto-rescan t
-        imenu-max-item-length 100
-        imenu-use-popup-menu nil
-        imenu-eager-completion-buffer t
-        imenu-space-replacement " "
-        imenu-level-separator "/")
+	imenu-auto-rescan t
+	imenu-max-item-length 100
+	imenu-use-popup-menu nil
+	imenu-eager-completion-buffer t
+	imenu-space-replacement " "
+	imenu-level-separator "/")
 
   (declare-function org-at-heading-p "org")
   (declare-function org-show-entry "org")
@@ -705,13 +708,13 @@ Cancel the previous one if present."
 To be used with `imenu-after-jump-hook' or equivalent."
     (cond
      ((and (eq major-mode 'org-mode)
-           (org-at-heading-p))
+	   (org-at-heading-p))
       (org-show-entry)
       (org-reveal t))
      ((bound-and-true-p prot-outline-minor-mode)
       (outline-show-entry)))))
 
-;; Scratch 
+;; Scratch
 (use-package scratch
   :ensure t
   :defer t
@@ -722,7 +725,7 @@ If region is active, add its contents to the new buffer."
     (let* ((mode major-mode))
       (rename-buffer (format "*Scratch for %s*" mode) t)))
   (setf (alist-get "\\*Scratch for" display-buffer-alist nil nil #'equal)
-        '((display-buffer-same-window)))
+	'((display-buffer-same-window)))
   :hook (scratch-create-buffer . my/scratch-buffer-setup)
   :bind ("C-c s" . scratch))
 
@@ -745,7 +748,7 @@ If region is active, add its contents to the new buffer."
   show verbose descriptions with hyperlinks."
   (interactive "sDescribe word: \nP")
   (shell-command (concat "dict " word (cond ((null prefix) nil)
-                                            (t " -v")))))
+					    (t " -v")))))
 
 ;;;###autoload
 (defun describe-word-at-point (&optional prefix)
@@ -753,13 +756,13 @@ If region is active, add its contents to the new buffer."
   verbose descriptions with hyperlinks."
   (interactive "P")
   (let ( (word
-          (if (region-active-p)
-              (buffer-substring (region-beginning)
-                                (region-end))
-            (thing-at-point 'word))) )
+	  (if (region-active-p)
+	      (buffer-substring (region-beginning)
+				(region-end))
+	    (thing-at-point 'word))) )
     (shell-command (concat "dict " (cond ((null prefix) nil)
-                                         (t "-f "))
-                           word))))
+					 (t "-f "))
+			   word))))
 
 (use-package async
   :defer t
@@ -788,14 +791,14 @@ If region is active, add its contents to the new buffer."
   :defer t
   :config
   (setq undo-fu-allow-undo-in-region t  ;; Allow undo in active region
-        undo-fu-ignore-keyboard-quit t) ;; Prevent undo reset on `C-g`
-  
+	undo-fu-ignore-keyboard-quit t) ;; Prevent undo reset on `C-g`
+
   ;; Define simple undo/redo functions
   (defun karna/undo ()
     "Perform an undo using `undo-fu`."
     (interactive)
     (undo-fu-only-undo))
-  
+
   (defun karna/redo ()
     "Perform a redo using `undo-fu`."
     (interactive)
@@ -806,7 +809,7 @@ If region is active, add its contents to the new buffer."
   :defer t
   :config
   (setq undo-fu-session-incompatible-files '("/COMMIT_EDITMSG\\'" "/git-rebase-todo\\'")
-        undo-fu-session-directory (dir-concat user-cache-directory "undo-fu-session/")) ;; Store undo history in cache
+	undo-fu-session-directory (dir-concat user-cache-directory "undo-fu-session/")) ;; Store undo history in cache
   :hook ((prog-mode conf-mode text-mode tex-mode) . undo-fu-session-mode))
 
 ;;;----------------------------------------------------------------
@@ -815,11 +818,11 @@ If region is active, add its contents to the new buffer."
 
 (require 'setup-eglot)
 (require 'setup-treesit)
-(require 'setup-minibuffer) 
+(require 'setup-minibuffer)
 (require 'setup-orderless)
 
-;; LATEX 
-(require 'setup-doc) ;; PDF TOOLS 
+;; LATEX
+(require 'setup-doc) ;; PDF TOOLS
 (require 'setup-latex)
 
 (use-package quail
@@ -834,12 +837,12 @@ If region is active, add its contents to the new buffer."
     (unless (equal cim "TeX")
       (activate-input-method "TeX"))
     (cl-letf (((symbol-function 'texmathp)
-               (lambda () t))
-              ((symbol-function 'insert)
-               (lambda (symbol)
-                 (setq unread-input-method-events
-                       (nconc (quail-input-string-to-events symbol)
-                              (list 0))))))
+	       (lambda () t))
+	      ((symbol-function 'insert)
+	       (lambda (symbol)
+		 (setq unread-input-method-events
+		       (nconc (quail-input-string-to-events symbol)
+			      (list 0))))))
       (cdlatex-math-symbol))
     (unless (equal cim "TeX")
       (run-at-time 0 nil (lambda () (activate-input-method cim)))))))
@@ -858,6 +861,7 @@ If region is active, add its contents to the new buffer."
 (require 'setup-corfu)
 (require 'setup-cape)
 (require 'workspace)
+(require 'setup-windows)
 ;; (require 'setup-completions-default)
 
 (setq tab-always-indent 'complete)
@@ -886,17 +890,17 @@ becomes a blinking bar. Evil-mode (if bound) is disabled."
     :init-value nil
     :global nil
     (if my/olivetti-mode
-        (progn
-          (olivetti-mode 1)
-          (set-window-fringes (selected-window) 0 0)
-          (unless (derived-mode-p 'prog-mode)
-            ;; (my/mode-line-hidden-mode 1)
-            (mixed-pitch-mode 1))
-          (if (bound-and-true-p evil-mode)
-              (evil-emacs-state))
-          ;; (setq-local line-spacing 0.16)
-          ;; (setq-local cursor-type '(bar . 2))
-          )
+	(progn
+	  (olivetti-mode 1)
+	  (set-window-fringes (selected-window) 0 0)
+	  (unless (derived-mode-p 'prog-mode)
+	    ;; (my/mode-line-hidden-mode 1)
+	    (mixed-pitch-mode 1))
+	  (if (bound-and-true-p evil-mode)
+	      (evil-emacs-state))
+	  ;; (setq-local line-spacing 0.16)
+	  ;; (setq-local cursor-type '(bar . 2))
+	  )
       (olivetti-mode -1)
       (set-window-fringes (selected-window) nil) ; Use default width
       (mixed-pitch-mode -1)
@@ -904,8 +908,8 @@ becomes a blinking bar. Evil-mode (if bound) is disabled."
       ;; (unless (derived-mode-p 'prog-mode)
       ;;   (my/mode-line-hidden-mode -1))
       (when (and (bound-and-true-p evil-mode)
-                 (evil-emacs-state-p))
-        (evil-exit-emacs-state))
+		 (evil-emacs-state-p))
+	(evil-exit-emacs-state))
       (kill-local-variable 'cursor-type)))
 
   (define-minor-mode my/reader-mode
@@ -915,12 +919,12 @@ the mode-line and switches to `variable-pitch-mode'."
     :init-value
     :global-nil
     (if my/reader-mode
-        (progn
-          (make-frame '((name . "dropdown_reader")))
-          (my/olivetti-mode 1)
-          (view-mode 1)
-          (if (equal major-mode 'org-mode)
-              (org-show-all)))
+	(progn
+	  (make-frame '((name . "dropdown_reader")))
+	  (my/olivetti-mode 1)
+	  (view-mode 1)
+	  (if (equal major-mode 'org-mode)
+	      (org-show-all)))
       (view-mode -1)
       (my/olivetti-mode -1)
       (delete-frame)))
@@ -929,7 +933,7 @@ the mode-line and switches to `variable-pitch-mode'."
   ("C-c O" . my/olivetti-mode)
   ("C-c R" . my/reader-mode))
 
-;; ORG MODE 
+;; ORG MODE
 
 (require 'setup-org)
 (require 'setup-roam)
@@ -950,8 +954,8 @@ the mode-line and switches to `variable-pitch-mode'."
   :hook (compilation-filter . ansi-color-compilation-filter)
   :config
   (setq compilation-always-kill t
-        compilation-ask-about-save nil
-        compilation-scroll-output 'first-error)
+	compilation-ask-about-save nil
+	compilation-scroll-output 'first-error)
   (global-set-key [(f9)] 'compile))
 
 ;;;################################################################
@@ -970,7 +974,7 @@ the mode-line and switches to `variable-pitch-mode'."
   (defun my/cus-edit ()
     (let ((file my/custom-file))
       (unless (file-exists-p file)
-        (make-empty-file file))
+	(make-empty-file file))
       (load-file file)))
   :hook (after-init . my/cus-edit))
 
