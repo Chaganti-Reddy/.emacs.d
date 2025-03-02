@@ -7,6 +7,7 @@
 
 (use-package evil
   :ensure t
+  :demand t
   :init
   (setq evil-want-integration t  ;; Ensure Evil integrates properly with Emacs
 	evil-want-keybinding nil ;; Prevent conflicts with evil-collection
