@@ -64,6 +64,7 @@
 ;; -------------------------------------------------------------------------
 
 (use-package vterm-toggle
+  :disabled
   :after vterm
   :ensure t
   :defer t
