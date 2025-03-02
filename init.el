@@ -425,6 +425,48 @@ Cancel the previous one if present."
 
 ;; EVIL MODE
 (require 'setup-evil)
+
+(use-package evil-multiedit
+  :ensure t
+  :after (evil iedit)
+  :config
+  ;; Base keybindings
+  (evil-define-key 'normal 'global
+    (kbd "M-d")   #'evil-multiedit-match-symbol-and-next
+    (kbd "M-D")   #'evil-multiedit-match-symbol-and-prev)
+
+  (evil-define-key 'visual 'global
+    "R"           #'evil-multiedit-match-all
+    (kbd "M-d")   #'evil-multiedit-match-and-next
+    (kbd "M-D")   #'evil-multiedit-match-and-prev)
+
+  (evil-define-key '(normal visual) 'global
+    (kbd "C-M-d") #'evil-multiedit-restore)
+
+  ;; State-specific keymaps
+  (with-eval-after-load 'evil-multiedit
+    ;; Initialize state maps first
+    (evil-multiedit-default-keybinds)
+
+    ;; Define keys for multiedit states
+    (evil-define-key 'multiedit evil-multiedit-state-map
+      (kbd "M-d")   #'evil-multiedit-match-and-next
+      (kbd "M-S-d") #'evil-multiedit-match-and-prev
+      (kbd "RET")   #'evil-multiedit-toggle-or-restrict-region)
+
+    (evil-define-key 'multiedit-insert evil-multiedit-insert-state-map
+      (kbd "C-n")   #'evil-multiedit-next
+      (kbd "C-p")   #'evil-multiedit-prev))
+
+  ;; Recommended settings
+  (setq evil-multiedit-highlight-current-match t
+        evil-multiedit-highlight-other-matches t
+        evil-multiedit-follow-matches t
+        evil-multiedit-scope 'buffer))
+
+(with-eval-after-load 'evil
+  (require 'evil-multiedit))
+
 (require 'setup-consult)
 
 ;;----------------------------------------------------------------
