@@ -127,12 +127,16 @@ Uses:
   (sideline-flymake-display-mode 'line) ;; Show errors on the current line
   (sideline-backends-right '(sideline-flymake)))
 
-(use-package flyspell
-  :ensure nil
-  :defer t
-  :hook
-  ((LaTeX-mode . turn-on-flyspell)
-   (org-mode . turn-on-flyspell)))
+;; Jinx: Enchanted spell-checking
+(use-package jinx
+  :ensure t
+  :hook (((text-mode org-mode LaTeX-mode prog-mode) . jinx-mode))
+  :bind (("C-S-;" . jinx-correct)
+         ("C-M-$" . jinx-languages))
+  :custom
+  (jinx-camel-modes '(prog-mode))
+  (jinx-delay 0.01))
+
 
 
 ;; Hl-TODO
