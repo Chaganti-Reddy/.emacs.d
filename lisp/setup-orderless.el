@@ -28,6 +28,7 @@
 ;; CAPF AUTOSUGGEST: Inline Suggestions
 ;; ----------------------------
 (use-package capf-autosuggest
+  :disabled
   :ensure t
   :defer
   :hook (eshell-mode . capf-autosuggest-mode)
