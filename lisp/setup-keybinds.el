@@ -181,11 +181,7 @@
     "h L" '(describe-language-environment :wk "Describe language environment")
     "h m" '(describe-mode :wk "Describe mode")
     "h r" '(:ignore t :wk "Reload")
-    "h r r" '((lambda () (interactive)
-		(load-file "~/.emacs.d/init.el")
-		(ignore (elpaca-process-queues)))
-		 ;; (karna/org-colors-doom-one) ;; Reapply colors after reloading
-	    :wk "Reload emacs config"r)
+    "h r r" '(karna/reload-used-configs :wk "Reload Emacs Config")
     "h t" '(consult-theme :wk "Load theme")
     "h v" '(describe-variable :wk "Describe variable")
     "h w" '(where-is :wk "Prints keybinding for command if set")
