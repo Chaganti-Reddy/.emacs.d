@@ -40,7 +40,7 @@ SIZE: The height (if 'top or 'bottom) or width (if 'left or 'right) as a decimal
  'left 0.3)
 
 (karna/set-display-buffer-rule
- '(emacs-news-mode pdf-view-mode)
+ '(emacs-news-mode pdf-view-mode inferior-python-mode inferior-octave-mode)
  'right 0.5)
 
 
