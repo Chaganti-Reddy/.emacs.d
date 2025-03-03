@@ -164,29 +164,6 @@
  '((octave . t)))
 
 ;; --------------------------------------------------------------
-;; 🎛️ Toggle Octave REPL in a Right Split
-;; --------------------------------------------------------------
-(defun karna/open-octave-right-side ()
-  "Toggle an Octave REPL in a vertical split on the right side."
-  (interactive)
-  (let ((octave-buffer (get-buffer "*Inferior Octave*"))
-	(octave-window (get-buffer-window "*Inferior Octave*")))
-    (if octave-buffer
-	(if octave-window
-	    (delete-window octave-window)
-	  (progn
-	    (split-window-right)
-	    (other-window 1)
-	    (switch-to-buffer octave-buffer)
-	    (other-window 1)))
-      (progn
-	(split-window-right)
-	(other-window 1)
-	(run-octave)
-	(switch-to-buffer "*Inferior Octave*")
-	(other-window 1)))))
-
-;; --------------------------------------------------------------
 ;; 🐍 Conda Virtual Environment Management
 ;; --------------------------------------------------------------
 (use-package conda
@@ -260,30 +237,6 @@
       (pyvenv-activate venv-path))))
 
 (add-hook 'python-ts-mode-hook #'karna/pyvenv-autoload)
-
-;; --------------------------------------------------------------
-;; 🐍 Open Python REPL in a Right Split
-;; --------------------------------------------------------------
-(defun karna/open-python-right-side ()
-  "Toggle a Python REPL in a vertical split on the right side."
-  (interactive)
-  (let ((python-buffer (get-buffer "*Python*"))
-	(python-window (get-buffer-window "*Python*")))
-    (if python-buffer
-	(if python-window
-	    (delete-window python-window)
-	  (progn
-	    (split-window-right)
-	    (other-window 1)
-	    (switch-to-buffer python-buffer)
-	    (other-window 1)))
-      (progn
-	(split-window-right)
-	(other-window 1)
-	(run-python)
-	(when (get-buffer "*Python*")
-	  (switch-to-buffer "*Python*"))
-	(other-window 1)))))
 
 (provide 'setup-eglot)
 ;;; setup-eglot.el ends here
