@@ -132,7 +132,7 @@ Uses:
 (use-package jinx
   :ensure t
   :hook (((text-mode org-mode LaTeX-mode prog-mode) . jinx-mode))
-  :bind (("C-S-;" . jinx-correct)
+  :bind (("C-:" . jinx-correct)
          ("C-M-$" . jinx-languages))
   :custom
   (jinx-camel-modes '(prog-mode))
