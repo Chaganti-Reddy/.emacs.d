@@ -217,8 +217,6 @@
     "o d" '(dashboard-open :wk "Dashboard")
     "o e" '(elfeed :wk "Elfeed RSS")
     "o f" '(make-frame :wk "Open buffer in new frame")
-    "o p" '(karna/open-python-right-side :wk "Open Python REPL")
-    "o o" '(karna/open-octave-right-side :wk "Open Octave REPL")
     "o F" '(select-frame-by-name :wk "Select frame by name"))
 
   ;; Define project command map under leader key
