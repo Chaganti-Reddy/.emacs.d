@@ -372,6 +372,67 @@ Cancel the previous one if present."
 
 (require'buffer-move)
 
+;; ----------------------------------------------------------------------------
+;; DASHBOARD CONFIGURATION
+;; ----------------------------------------------------------------------------
+
+(use-package dashboard
+  :disabled
+  :ensure t
+  :init
+  (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))
+	dashboard-set-heading-icons t
+	dashboard-set-file-icons t
+	dashboard-display-icons-p t
+	dashboard-icon-type 'nerd-icons
+	dashboard-show-shortcuts nil
+	dashboard-projects-backend 'project-el
+	dashboard-banner-logo-title "I'll Walk My Own Path!"
+	dashboard-startup-banner "~/.emacs.d/assets/emacs.png"
+	dashboard-center-content t
+	dashboard-items '((vocabulary)
+			  (recents . 5)
+			  (agenda . 5)
+			  (bookmarks . 10)
+			  (projects . 5))
+	dashboard-startupify-list '(dashboard-insert-banner
+				    dashboard-insert-newline
+				    dashboard-insert-banner-title
+				    dashboard-insert-newline
+				    dashboard-insert-init-info
+				    dashboard-insert-items)
+	dashboard-item-generators '((vocabulary . karna/dashboard-insert-vocabulary)
+				    (recents . dashboard-insert-recents)
+				    (bookmarks . dashboard-insert-bookmarks)
+				    (agenda . dashboard-insert-agenda)
+				    (projects . dashboard-insert-projects)))
+
+  (defun karna/dashboard-insert-vocabulary (_list-size)
+    "Insert a 'Word of the Day' section in the dashboard."
+    (dashboard-insert-heading " Word of the Day:"
+			      nil
+			      (all-the-icons-faicon "newspaper-o"
+						    :height 1.2
+						    :v-adjust 0.0
+						    :face 'dashboard-heading))
+    (insert "\n")
+    (when (file-exists-p (concat user-emacs-directory "assets/words"))
+      (let* ((lines (with-temp-buffer
+		      (insert-file-contents (concat user-emacs-directory "assets/words"))
+		      (split-string (buffer-string) "\n" t)))
+	     (random-line (when lines (nth (random (length lines)) lines))))
+	(when random-line
+	  (insert "    " (string-join (split-string random-line) " "))))))
+
+  :config
+  (dashboard-setup-startup-hook)
+  (add-hook 'dashboard-mode-hook (lambda () (display-line-numbers-mode -1))))
+
+;; Dashboard Agenda Customizations
+(setq dashboard-agenda-tags-format 'ignore
+      dashboard-agenda-prefix-format "%i %s  "
+      dashboard-agenda-item-icon "󰸗") ;; Nerd Font calendar icon
+
 ;;;----------------------------------------------------------------
 ;; ** POPPER
 ;;;----------------------------------------------------------------
@@ -1040,64 +1101,3 @@ the mode-line and switches to `variable-pitch-mode'."
 	(make-empty-file file))
       (load-file file)))
   :hook (after-init . my/cus-edit))
-
-;; ----------------------------------------------------------------------------
-;; DASHBOARD CONFIGURATION
-;; ----------------------------------------------------------------------------
-
-(use-package dashboard
-  :disabled
-  :ensure t
-  :init
-  (setq initial-buffer-choice (lambda () (get-buffer-create "*dashboard*"))
-	dashboard-set-heading-icons t
-	dashboard-set-file-icons t
-	dashboard-display-icons-p t
-	dashboard-icon-type 'nerd-icons
-	dashboard-show-shortcuts nil
-	dashboard-projects-backend 'project-el
-	dashboard-banner-logo-title "I'll Walk My Own Path!"
-	dashboard-startup-banner "~/.emacs.d/assets/emacs.png"
-	dashboard-center-content t
-	dashboard-items '((vocabulary)
-			  (recents . 5)
-			  (agenda . 5)
-			  (bookmarks . 10)
-			  (projects . 5))
-	dashboard-startupify-list '(dashboard-insert-banner
-				    dashboard-insert-newline
-				    dashboard-insert-banner-title
-				    dashboard-insert-newline
-				    dashboard-insert-init-info
-				    dashboard-insert-items)
-	dashboard-item-generators '((vocabulary . karna/dashboard-insert-vocabulary)
-				    (recents . dashboard-insert-recents)
-				    (bookmarks . dashboard-insert-bookmarks)
-				    (agenda . dashboard-insert-agenda)
-				    (projects . dashboard-insert-projects)))
-
-  (defun karna/dashboard-insert-vocabulary (_list-size)
-    "Insert a 'Word of the Day' section in the dashboard."
-    (dashboard-insert-heading " Word of the Day:"
-			      nil
-			      (all-the-icons-faicon "newspaper-o"
-						    :height 1.2
-						    :v-adjust 0.0
-						    :face 'dashboard-heading))
-    (insert "\n")
-    (when (file-exists-p (concat user-emacs-directory "assets/words"))
-      (let* ((lines (with-temp-buffer
-		      (insert-file-contents (concat user-emacs-directory "assets/words"))
-		      (split-string (buffer-string) "\n" t)))
-	     (random-line (when lines (nth (random (length lines)) lines))))
-	(when random-line
-	  (insert "    " (string-join (split-string random-line) " "))))))
-
-  :config
-  (dashboard-setup-startup-hook)
-  (add-hook 'dashboard-mode-hook (lambda () (display-line-numbers-mode -1))))
-
-;; Dashboard Agenda Customizations
-(setq dashboard-agenda-tags-format 'ignore
-      dashboard-agenda-prefix-format "%i %s  "
-      dashboard-agenda-item-icon "󰸗") ;; Nerd Font calendar icon
