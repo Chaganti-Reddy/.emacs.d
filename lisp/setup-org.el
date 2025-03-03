@@ -132,7 +132,8 @@
       '(("auto-mode" . emacs)               ;; Open files in Emacs by default
         ("\\.mm\\'" . default)              ;; Use system default for .mm files
         ("\\.x?html?\\'" . "zen-browser %s") ;; Open HTML files in zen-browser
-        ("\\.pdf\\'" . "~/.local/bin/zathura %s"))) ;; Open PDFs in Zathura
+        ("\\.pdf\\'" . "~/.local/bin/zathura %s") ;; Open PDFs in Zathura
+        )) 
 
 ;; Workaround for xdg-open issue when opening files in Org mode
 (defun karna/org-open-file-wrapper (orig-fun &rest args)
