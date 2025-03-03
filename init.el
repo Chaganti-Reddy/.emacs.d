@@ -391,7 +391,8 @@ Cancel the previous one if present."
     (add-hook 'emacs-startup-hook #'popper-mode))
   (setq popper-reference-buffers
 	'("^\\*Messages\\*"
-	  "[Oo]utput\\*$"
+	  "[Oo]utput\\*$" TeX-output-mode
+    "*Preview-Ghostscript-Error*"
 	  "\\*Async Shell Command\\*"
 	  "\\*Inferior Octave\\*"
 	  "\\*Inferior Python\\*"
