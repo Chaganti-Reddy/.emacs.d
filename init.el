@@ -413,6 +413,7 @@ Cancel the previous one if present."
 	  messages-mode
 	  occur-mode
     inferior-emacs-lisp-mode
+    xref--xref-buffer-mode
     inferior-python-mode
     inferior-octave-mode
 	  emacs-news-view-mode
@@ -490,6 +491,19 @@ Cancel the previous one if present."
 ;;----------------------------------------------------------------
 (require 'setup-git)
 (require 'setup-gptel)
+(autoload #'gptel-manual-complete "gptel-manual-complete" t)
+
+(defvar my-xref-map
+  (let ((map (make-sparse-keymap)))
+    (define-key map (kbd "c") #'gptel-manual-complete)
+    (define-key map (kbd ".") #'xref-find-definitions)
+    (define-key map (kbd ",") #'xref-go-back)
+    (define-key map (kbd "/") #'xref-find-references)
+    map)
+  "My key customizations for AI and xref.")
+
+(global-set-key (kbd "C-c .") my-xref-map)
+
 (require 'projects)
 (require 'setup-dired)
 
