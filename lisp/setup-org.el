@@ -392,14 +392,14 @@
 
 (use-package org-super-agenda
   :ensure t
-  :defer t
+  :hook (org-agenda-mode . org-super-agenda-mode)
   :config
   (setq org-super-agenda-groups
 	'((:name "📚 Study" :tag "study" :order 1)
 	  (:name "🏡 Home" :tag "home" :order 2)
 	  (:name "🔔 Reminders" :tag "remainder" :order 3)
 	  (:name "💪 Gym / Habits" :tag "gym" :order 4)
-	  (:name "📖 Literature Review" :tag "litreview" :order 5)
+	  (:name "📖 Review" :tag "litreview" :order 5)
 	  (:name "🧪 Experiments" :tag "experiment" :order 6)
 	  (:name "✍️ Writing" :tag "writing" :order 7)
 	  (:name "💡 Research" :tag "research" :order 8)
@@ -422,6 +422,8 @@
 
 (advice-add 'org-agenda-todo :after #'org-save-all-org-buffers)
 
+
+(setq org-agenda-hide-tags-regexp ".") ;; alternative --  (setq org-agenda-hide-tags-regexp "\\(work\\|personal\\)")
 (setq org-agenda-files (directory-files-recursively org-directory "\\.org$") )
 (setq org-agenda-start-on-weekday nil) ; - to see from current day instead of from Monday
 (setq org-agenda-start-day "-1d") ; - that's only for seeing week from yesterday, not from today
