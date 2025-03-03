@@ -390,16 +390,17 @@ Cancel the previous one if present."
       (add-hook 'elpaca-after-init-hook #'popper-mode)
     (add-hook 'emacs-startup-hook #'popper-mode))
   (setq popper-reference-buffers
-	'("^\\*Messages\\*"
-	  "[Oo]utput\\*$" TeX-output-mode
+	'(("^\\*Messages\\*" . hide)
+	  ("[Oo]utput\\*$" .hide) 
+    (TeX-output-mode . hide)
     "*Preview-Ghostscript-Error*"
 	  "\\*Async Shell Command\\*"
 	  "\\*Inferior Octave\\*"
 	  "\\*Inferior Python\\*"
-	  "^\\*Backtrace\\*"
-	  "\\*Completions\\*"
-	  "^\\*Compile-Log\\*"
-	  "^\\*Warnings\\*"
+	  ("^\\*Backtrace\\*" . hide)
+	  ("\\*Completions\\*" . hide)
+	  ("^\\*Compile-Log\\*" . hide)
+	  ("^\\*Warnings\\*" . hide)
 	  "\\*Shell Command Output\\*"
 	  "^\\*evil-registers\\*"
 	  "^\\*gptel-ask\\*"
