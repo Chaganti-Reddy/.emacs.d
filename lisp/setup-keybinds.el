@@ -324,12 +324,10 @@
 (global-set-key (kbd "<C-wheel-down>") nil)
 (global-set-key (kbd "C-a") 'mark-whole-buffer) ;; Selects whole buffer to copy/delete
 
-;; Kill that dired buffer
-(with-eval-after-load 'dired
-  (define-key dired-mode-map (kbd "C-q") (lambda ()
-                                         (interactive)
-                                         (kill-buffer (current-buffer)))))
-
+;; Kill this buffer with C-q
+(global-set-key (kbd "C-q") (lambda ()
+                              (interactive)
+                              (kill-buffer (current-buffer))))
 
 ;; Binds `C-s` to compile and view the latex preview document.
 (add-hook 'LaTeX-mode-hook
