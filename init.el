@@ -383,7 +383,8 @@ Cancel the previous one if present."
   :bind (("C-`"   . popper-toggle)
 	 ("M-`"   . popper-cycle)
 	 ("C-M-`" . popper-toggle-type)
-   ("C-~" . popper-cycle-backwards))
+   ("C-~" . popper-cycle-backwards)
+   ("M-~" . popper-kill-latest-popup))
   :init
   (if (boundp 'elpaca-after-init-hook)
       (add-hook 'elpaca-after-init-hook #'popper-mode)
@@ -392,6 +393,8 @@ Cancel the previous one if present."
 	'("^\\*Messages\\*"
 	  "[Oo]utput\\*$"
 	  "\\*Async Shell Command\\*"
+	  "\\*Inferior Octave\\*"
+	  "\\*Inferior Python\\*"
 	  "^\\*Backtrace\\*"
 	  "\\*Completions\\*"
 	  "^\\*Compile-Log\\*"
@@ -408,6 +411,8 @@ Cancel the previous one if present."
 	  messages-mode
 	  occur-mode
     inferior-emacs-lisp-mode
+    inferior-python-mode
+    inferior-octave-mode
 	  emacs-news-view-mode
 	  compilation-mode))
   :config
@@ -421,7 +426,7 @@ Cancel the previous one if present."
 		  "^\\*term.*\\*$"   term-mode
 		  "^\\*vterm.*\\*$"  vterm-mode)))
   (popper-mode +1)
-  (popper-echo-mode -1)) ;; For echo area hints
+  (popper-echo-mode +1)) ;; For echo area hints
 
 ;; EVIL MODE
 (require 'setup-evil)
