@@ -676,9 +676,9 @@ Cancel the previous one if present."
 (use-package iedit
   :ensure t
   :defer
-  :bind (("C-M-;" . iedit-mode)
-	 ("M-s n" . my/iedit-1-down)
-	 ("M-s p" . my/iedit-1-up))
+  ;:bind (("C-M-;" . iedit-mode)
+  ;("M-s n" . my/iedit-1-down)
+  ;("M-s p" . my/iedit-1-up))
   :config
   (defun my/iedit-1-down (arg)
     (interactive "p")
