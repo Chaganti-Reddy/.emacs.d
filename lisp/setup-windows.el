@@ -28,7 +28,7 @@ SIZE: The height (if 'top or 'bottom) or width (if 'left or 'right) as a decimal
  'bottom 0.3)
 
 (karna/set-display-buffer-rule
- '(Custom-mode messages-mode compilation-mode messages-buffer-mode TeX-output-mode)
+ '(Custom-mode compilation-mode messages-buffer-mode TeX-output-mode)
  'bottom 0.3)
 
 (karna/set-display-buffer-rule
