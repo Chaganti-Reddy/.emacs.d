@@ -30,10 +30,11 @@
   :ensure t)
 
 ;; Make RETURN follow links in Org mode while in Evil mode
-;; (with-eval-after-load 'evil-maps
-;;   (define-key evil-motion-state-map (kbd "SPC") nil)
-;;   (define-key evil-motion-state-map (kbd "RET") nil)
-;;  (define-key evil-motion-state-map (kbd "TAB") nil))
+(with-eval-after-load 'evil-maps
+;;  (define-key evil-motion-state-map (kbd "SPC") nil)
+  (define-key evil-motion-state-map (kbd "RET") nil)
+;;  (define-key evil-motion-state-map (kbd "TAB") nil)
+ )
 
 (setq org-return-follows-link t)
 
