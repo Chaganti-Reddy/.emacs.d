@@ -38,11 +38,6 @@
 
 (setq org-return-follows-link t)
 
-(use-package evil-tex
-  :after evil
-  :ensure t
-  :hook (LaTeX-mode . evil-tex-mode))
-
 ;; ----------------------------------------------------------------------------
 ;; WHICH-KEY - Display available keybindings
 ;; ----------------------------------------------------------------------------
