@@ -1062,7 +1062,7 @@ the mode-line and switches to `variable-pitch-mode'."
 (require 'setup-org)
 (require 'setup-roam)
 (require 'org-latex-check-health)
-(require 'setup-calendar)
+;; (require 'setup-calendar)
 (require 'setup-md)
 
 ;;;----------------------------------------------------------------
