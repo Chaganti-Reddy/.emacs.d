@@ -8,7 +8,6 @@
 
 (use-package gptel
   :ensure t
-  :defer t
   :custom
   (gptel-default-mode 'org-mode)   ;; Use Org mode for responses
   (gptel-expert-commands t)        ;; Enable advanced GPTel commands
@@ -204,6 +203,11 @@ Rewrite the following message."))
           (visual-fill-column-mode 1))
         (unless (equal popper-popup-status 'user-popup)
           (popper-toggle-type)))))
+
+(use-package gptel-ask 
+  :ensure nil
+  :load-path "~/.emacs.d/plugins/gptel-ask.el"
+  :after gptel)
 
 
 (provide 'setup-gptel)
