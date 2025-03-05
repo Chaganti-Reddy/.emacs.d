@@ -9,7 +9,7 @@
   :ensure t
   :defer t
   :hook ((prog-mode . corfu-mode)
-         (org-mode . corfu-mode)
+         ;; (org-mode . corfu-mode)
          (latex-mode . corfu-mode))
   :custom
   (corfu-cycle t)                  ;; Enable cycling through candidates
