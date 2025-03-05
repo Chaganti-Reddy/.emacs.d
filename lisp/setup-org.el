@@ -30,6 +30,9 @@
   :hook (
 	 (org-mode . toc-org-enable)
 	 (org-mode . org-modern-mode)
+   (org-mode . turn-on-org-cdlatex)
+   (org-cdlatex-mode . my/org-cdlatex-settings)
+   (org-mode . er/add-latex-in-org-mode-expansions)
    (org-mode . visual-line-mode)
 	 (org-mode . karna/org-mode-visual-fill))
   :config
@@ -113,6 +116,45 @@
           (insert "+")
           (org-end-of-line)
           (insert "+")))))
+
+  (defun org-cdlatex-pbb (&rest _arg)
+    "Execute `cdlatex-pbb' in LaTeX fragments.
+  Revert to the normal definition outside of these fragments."
+    (interactive "P")
+    (if (org-inside-LaTeX-fragment-p)
+        (call-interactively 'cdlatex-pbb)
+      (let (org-cdlatex-mode)
+        (call-interactively (key-binding (vector last-input-event))))))
+
+  (define-key org-cdlatex-mode-map (kbd "(") #'org-cdlatex-pbb)
+  (define-key org-cdlatex-mode-map (kbd "[") #'org-cdlatex-pbb)
+  (define-key org-cdlatex-mode-map (kbd "{") #'org-cdlatex-pbb)
+
+  (defun my/org-cdlatex-settings ()
+      (define-key org-cdlatex-mode-map (kbd "$") 'cdlatex-dollar)
+      ;; (ad-unadvise #'texmathp)
+      (advice-remove 'texmathp #'org--math-always-on))
+
+  (defun er/add-latex-in-org-mode-expansions ()
+    ;; Make Emacs recognize \ as an escape character in org
+    (modify-syntax-entry ?\\ "\\" org-mode-syntax-table)
+    ;; Paragraph end at end of math environment
+    (setq paragraph-start (concat paragraph-start "\\|\\\\end{\\([A-Za-z0-9*]+\\)}"))
+    ;; (setq paragraph-separate (concat paragraph-separate "\\|\\\\end{\\([A-Za-z0-9*]+\\)}"))
+    ;; Better forward/backward defun in Org
+    (setq-local beginning-of-defun-function 'my/org-beginning-of-defun)
+    ;; Latex mode expansions
+    (with-eval-after-load 'expand-region
+      (set (make-local-variable 'er/try-expand-list)
+           (append (cl-set-difference er/try-expand-list
+                                      '(er/mark-method-call
+                                        er/mark-inside-pairs
+                                        er/mark-outside-pairs))
+                   '(LaTeX-mark-environment 
+                     er/mark-LaTeX-inside-math
+                     er/mark-latex-inside-pairs
+                     er/mark-latex-outside-pairs
+                     er/mark-LaTeX-math)))))
 
   ;; From the Org manual
   (defun org-summary-todo (n-done n-not-done)
@@ -507,6 +549,7 @@
   ;; Turn on auto-mode, it's built into Org and much faster/more featured than
   ;; org-fragtog. (Remember to turn off/uninstall org-fragtog.)
   (add-hook 'org-mode-hook 'org-latex-preview-auto-mode)
+  (setq org-latex-preview-center-mode t)
 
   ;; Block C-n, C-p etc from opening up previews when using auto-mode
   (setq org-latex-preview-auto-ignored-commands
@@ -619,8 +662,7 @@
 (use-package org-latex-preview
   :ensure nil
   :after org
-  :hook ((org-mode . org-latex-preview-auto-mode)
-         (org-mode . my/org-latex-preview-precompile-idle))
+  :hook ((org-mode . my/org-latex-preview-precompile-idle))
   :bind (:map org-mode-map
          ("C-c C-x SPC" . org-latex-preview-clear-cache)
          ("C-c i" . my/org-latex-preview-image-at-point)
@@ -655,12 +697,9 @@
           (plist-put org-latex-preview-appearance-options :zoom
                      (- (/ (face-attribute 'default :height) 100.0) 0.025)))
 
-   org-latex-preview-numbered nil
-   org-latex-preview-live-debounce 0.3
    ;; org-latex-preview-live-throttle 0.5
    org-latex-preview-auto-track-inserts t
-   org-latex-preview-live '(block edit-special)
-   org-latex-preview-process-active-indicator nil)
+   org-latex-preview-process-active-indicator 'fringe)
 
   ;; Get the image at point
   (defun my/org-latex-preview-image-at-point (&optional arg)
@@ -772,7 +811,7 @@
                             (file-name-base dump-file)))))))))))
 
   ;; org-html-format-latex from Org 9.6 - this is needed because the new version does not work with ox-hugo
-  ;; (defun org-html-format-latex (latex-frag processing-type info)
+;; (defun org-html-format-latex (latex-frag processing-type info)
 ;;     "Format a LaTeX fragment LATEX-FRAG into HTML.
 ;; PROCESSING-TYPE designates the tool used for conversion.  It can
 ;; be `mathjax', `verbatim', `html', nil, t or symbols in
@@ -892,6 +931,9 @@
           (unless (eq major-mode 'org-mode)
             (user-error "Not in an Org buffer"))
           (setq-local org-hide-emphasis-markers t)
+          (visual-fill-column-mode -1)
+          (text-scale-mode 1)
+          (display-line-numbers-mode -1)
           (org-tree-slide-mode 1)
           (setq olivetti-style nil)
           (setq line-spacing 0.12)
@@ -904,6 +946,7 @@
       (my/olivetti-mode -1)
       (text-scale-decrease 3)
       (text-scale-mode -1)
+      (display-line-numbers-mode 1)
       (visual-fill-column-mode 1)))
 
   :bind (("C-c P"      . my/org-presentation-mode)
