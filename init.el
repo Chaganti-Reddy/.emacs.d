@@ -586,32 +586,43 @@ Cancel the previous one if present."
 
   (cond (IS-LINUX
 	 (set-fontset-font t 'unicode "Symbola" nil 'prepend)
-	 (pcase-let ((`(,vp ,fp)
-		      (cond
-		       ((string= (getenv "XDG_SESSION_TYPE") "wayland")
-			'(120 110))
-		       (t '(95 110)))))
-	   (custom-set-faces
-	    `(variable-pitch ((t (:family "Merriweather" ;; :height ,vp
-				  :width semi-expanded))))
-	    `(default ((t (:family "JetBrainsMono Nerd Font" :foundry "PfEd"
-			   :slant normal :weight medium
-			   :height ,fp :width normal)))))))
+	 
+  (set-face-attribute 'default nil
+          :family "Iosevka Comfy Motion"
+          :height 130 
+          :width 'semi-expanded
+          :weight 'semibold)
+
+  (set-face-attribute 'variable-pitch nil
+          :family "Iosevka Comfy Motion Duo"
+          :height 130 
+          :width 'semi-expanded
+          :weight 'semibold)
+
+  (set-face-attribute 'fixed-pitch nil
+          :family "Iosevka Comfy Motion"
+          :height 130 
+          :width 'semi-expanded
+          :weight 'semibold)
+  )
 	(IS-WINDOWS
 	 (custom-set-faces
 	  '(default ((t (:family "Consolas" :foundry "outline"
 				 :slant normal :weight normal
-				 :height 120 :width normal))))))))
+				 :height 130 :width normal))))))))
 
-(let ((italic '( :slant italic))
-      (bold '( :weight bold)))
+(let ((italic '(:slant italic :weight semibold))
+      (bold '(:weight extrabold)))
   (custom-set-faces
-   `(font-lock-comment-face ((t ,italic)))
-   `(font-lock-keyword-face ((t ,italic)))
-   `(font-lock-type-face ((t ,bold)))
-   `(font-lock-function-name-face ((t ,bold)))))
+   `(font-lock-comment-face ((t ,@italic)))
+   `(font-lock-keyword-face ((t ,@italic)))
+   `(font-lock-type-face ((t ,@bold)))
+   `(font-lock-function-name-face ((t ,@bold)))))
+
 (set-display-table-slot standard-display-table 'truncation (make-glyph-code ?…))
 (set-display-table-slot standard-display-table 'wrap (make-glyph-code ?–))
+
+(add-hook 'text-mode-hook #'variable-pitch-mode)
 
 ;;----------------------------------------------------------------
 ;; ** MODUS THEMES
@@ -621,7 +632,6 @@ Cancel the previous one if present."
   :ensure t
   :defer
   :init
-  :config
   (setq ef-themes-headings
 	'((0 . (1.50))
 	  (1 . (1.28))
@@ -629,6 +639,7 @@ Cancel the previous one if present."
 	  (3 . (1.17))
 	  (4 . (1.14))
 	  (t . (1.1))))
+  (setq ef-themes-mixed-fonts t)
 
   (defun my/ef-themes-extra-faces ()
     "Tweak the style of the mode lines."
@@ -643,6 +654,7 @@ Cancel the previous one if present."
 ;; Protesilaos Stavrou's excellent high contrast themes, perfect for working in
 ;; bright sunlight (especially on my laptop's dim screen).
 (use-package modus-themes
+  :disabled
   :ensure t
   :defer 
   :init
@@ -689,6 +701,7 @@ Cancel the previous one if present."
 	modus-themes-bold-constructs t
 	modus-themes-prompts '(bold background)
 	modus-themes-variable-pitch-ui nil
+  modus-themes-mixed-fonts t
 	modus-themes-headings
 	'((0 . (1.35))
 	  (1 . (1.30))       ;variable-pitch
