@@ -18,7 +18,7 @@
     :global-prefix "M-SPC") ;; access leader in insert mode
 
   (karna/leader-keys
-    "SPC" '(counsel-M-x :wk "Counsel M-x")
+    "SPC" '(execute-extended-command :wk "Counsel M-x")
     "." '(find-file :wk "Find file")
     "," '(scratch-buffer :wk "Scratch buffer")
     "=" '(perspective-map :wk "Perspective") ;; Lists all the perspective keybindings
@@ -266,11 +266,10 @@
 
   (karna/leader-keys
     "t" '(:ignore t :wk "Toggle")
-    "t c" '(company-mode :wk "Toggle Company Mode")
     "t e" '(eshell-toggle :wk "Toggle eshell")
     "t f" '(flycheck-mode :wk "Toggle flycheck")
     "t l" '(display-line-numbers-mode :wk "Toggle line numbers")
-    "t h" '(karna/toggle-ef-theme :wk "Toggle ef-themes")
+    "t h" '(karna/toggle-theme :wk "Toggle fav themes")
     ;; "t n" '(treemacs :wk "Toggle Treemacs")
     ;;"t n" '(neotree-toggle :wk "Toggle neotree file viewer")
     "t P" '(karna/toggle-tex-pdf-viewer :wk "Toggle TeX PDF viewer")
@@ -323,6 +322,7 @@
 (global-set-key (kbd "<C-wheel-up>") nil)
 (global-set-key (kbd "<C-wheel-down>") nil)
 (global-set-key (kbd "C-a") 'mark-whole-buffer) ;; Selects whole buffer to copy/delete
+(global-set-key (kbd "C-c A") 'gptel-ask) 
 
 ;; Kill this buffer with C-q
 (global-set-key (kbd "C-q") (lambda ()
