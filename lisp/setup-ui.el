@@ -104,6 +104,7 @@
 (delete-selection-mode 1)
 (electric-indent-mode -1)
 (electric-pair-mode 1)
+(column-number-mode 1)
 (global-visual-line-mode 1)
 (global-hl-line-mode -1)
 (set-terminal-coding-system 'utf-8)
@@ -176,8 +177,6 @@
   :ensure t
   :defer t
   :if (display-graphic-p)
-  :config
-  (setq nerd-icons-font-family "Symbols Nerd Font")
   :custom
   (nerd-icons-color-icons t))
 
