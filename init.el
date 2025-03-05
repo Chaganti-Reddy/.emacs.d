@@ -322,6 +322,8 @@ Cancel the previous one if present."
 ;;;######################################################################
 (global-display-line-numbers-mode 1)
 
+(add-hook 'calc-mode-hook (lambda () (display-line-numbers-mode -1)))
+
 (setq display-line-numbers-width-start t
       display-line-numbers-type t)
 
@@ -451,7 +453,7 @@ Cancel the previous one if present."
       (add-hook 'elpaca-after-init-hook #'popper-mode)
     (add-hook 'emacs-startup-hook #'popper-mode))
   (setq popper-reference-buffers
-	'(("^\\*Messages\\*" . hide)
+	'("^\\*Messages\\*"
 	  ("[Oo]utput\\*$" .hide) 
     (TeX-output-mode . hide)
     "*Preview-Ghostscript-Error*"
@@ -459,7 +461,7 @@ Cancel the previous one if present."
 	  "\\*Inferior Octave\\*"
 	  "\\*Inferior Python\\*"
 	  ("^\\*Backtrace\\*" . hide)
-	  ("\\*Completions\\*" . hide)
+	  ("\\*Completions\\*")
 	  ("^\\*Compile-Log\\*" . hide)
 	  ("^\\*Warnings\\*" . hide)
 	  "\\*Shell Command Output\\*"
@@ -568,25 +570,6 @@ Cancel the previous one if present."
 (require 'projects)
 (require 'setup-dired)
 
-;;----------------------------------------------------------------
-;; ** MIXED-PITCH-MODE
-;;;----------------------------------------------------------------
-(use-package mixed-pitch
-  :ensure t
-  :defer t
-  :config
-  (dolist (face '(line-number org-property-value org-drawer
-		  error org-cite corfu-current corfu-default
-		  org-meta-line org-tag))
-    (add-to-list 'mixed-pitch-fixed-pitch-faces face))
-  (setq mixed-pitch-set-height nil
-	mixed-pitch-variable-pitch-cursor nil)
-  (defun my/mixed-pitch-spacing ()
-    (if mixed-pitch-mode
-	(setq line-spacing 0.12)
-      (setq line-spacing 0.0))))
-
-
 ;;;################################################################I
 ;; * FONTS AND COLORS
 ;;;################################################################
@@ -612,7 +595,7 @@ Cancel the previous one if present."
 	    `(variable-pitch ((t (:family "Merriweather" ;; :height ,vp
 				  :width semi-expanded))))
 	    `(default ((t (:family "JetBrainsMono Nerd Font" :foundry "PfEd"
-			   :slant normal :weight normal
+			   :slant normal :weight medium
 			   :height ,fp :width normal)))))))
 	(IS-WINDOWS
 	 (custom-set-faces
@@ -620,9 +603,13 @@ Cancel the previous one if present."
 				 :slant normal :weight normal
 				 :height 120 :width normal))))))))
 
-;; Italics for comments & keywords
-(set-face-attribute 'font-lock-comment-face nil :slant 'italic)
-(set-face-attribute 'font-lock-keyword-face nil :slant 'italic)
+(let ((italic '( :slant italic))
+      (bold '( :weight bold)))
+  (custom-set-faces
+   `(font-lock-comment-face ((t ,italic)))
+   `(font-lock-keyword-face ((t ,italic)))
+   `(font-lock-type-face ((t ,bold)))
+   `(font-lock-function-name-face ((t ,bold)))))
 (set-display-table-slot standard-display-table 'truncation (make-glyph-code ?…))
 (set-display-table-slot standard-display-table 'wrap (make-glyph-code ?–))
 
@@ -632,15 +619,8 @@ Cancel the previous one if present."
 
 (use-package ef-themes
   :ensure t
+  :defer
   :init
-  ;; Define available themes
-  (defvar karna/ef-theme-list '(ef-cyprus ef-winter ef-light)
-    "List of EF themes to cycle through.")
-
-  ;; Ensure we have a default theme at startup
-  (defvar karna/current-ef-theme 'ef-light
-    "Current EF theme in use.")
-
   :config
   (setq ef-themes-headings
 	'((0 . (1.50))
@@ -657,27 +637,14 @@ Cancel the previous one if present."
        `(aw-leading-char-face ((,c :foreground ,fg-mode-line
 				:height 1.5 :weight semi-bold))))))
 
-  (defun karna/toggle-ef-theme ()
-    "Cycle through `karna/ef-theme-list`."
-    (interactive)
-    (setq karna/current-ef-theme
-	  (or (cadr (member karna/current-ef-theme karna/ef-theme-list))
-	      (car karna/ef-theme-list)))
-    (ef-themes-select karna/current-ef-theme)
-    (message "Switched to %s" karna/current-ef-theme))
-
-  ;; Explicitly load the default theme on startup
-  (ef-themes-select karna/current-ef-theme)
-
   ;; Apply extra face settings after theme load
   (add-hook 'ef-themes-post-load-hook #'my/ef-themes-extra-faces))
-
 
 ;; Protesilaos Stavrou's excellent high contrast themes, perfect for working in
 ;; bright sunlight (especially on my laptop's dim screen).
 (use-package modus-themes
   :ensure t
-  :defer
+  :defer 
   :init
   (setq modus-themes-common-palette-overrides
 	`((date-common cyan)   ; default value (for timestamps and more)
@@ -730,10 +697,93 @@ Cancel the previous one if present."
 	  (4 . (1.14))
 	  (t . (monochrome)))))
 
+;;----------------------------------------------------------------
+;; ** DOOM THEMES
+;;----------------------------------------------------------------
+;; Henrik Lissner's Doom themes are a mainstay, mostly doom-rouge:
+;;
+;; [[file:/img/dotemacs/doom-rouge-demo.png]]
+(use-package doom-themes
+  :ensure t
+  :defer
+  :custom
+  (doom-gruvbox-dark-variant "hard")
+  :config
+  (add-hook 'enable-theme-functions #'my/doom-theme-settings)
+  (defun my/doom-theme-settings (theme &rest args)
+    "Additional face settings for doom themes"
+    (if (eq theme 'doom-rouge)
+        (progn
+          (setq window-divider-default-right-width 2
+                window-divider-default-bottom-width 2
+                window-divider-default-places t)
+          (message "Turned on window dividers")
+          (window-divider-mode 1))
+      (window-divider-mode -1)
+      (message "Turned off window dividers"))
+    (when (string-match-p "^doom-" (symbol-name theme))
+      ;; (when (eq theme 'doom-rouge)
+      ;;   (custom-set-faces `(hl-line ((,class :background "#1f2a3f")))))
+      ;; Window dividers
+      (let ((class '((class color) (min-colors 256))))
+        (dolist (face-spec
+                 '((aw-leading-char-face (:height 2.0 :foreground unspecified :inherit mode-line-emphasis)
+                    ace-window)
+                   (aw-background-face (:inherit default :weight normal) ace-window)
+                   (outline-1        (:height 1.25) outline)
+                   (outline-2        (:height 1.20) outline)
+                   (outline-3        (:height 1.16) outline)
+                   (outline-4        (:height 1.12) outline)
+                   ;; (tab-bar            (:background "black" :height 1.0 :foreground "white")
+                   ;;  tab-bar)
+                   ;; (tab-bar-tab
+                   ;;  (:bold t :height 1.10 :foreground nil :inherit mode-line-emphasis)
+                   ;;  tab-bar)
+                   ;; (tab-bar-tab-inactive
+                   ;;  (:inherit 'mode-line-inactive :height 1.10 :background "black")
+                   ;;  tab-bar)
+                   ))
+          (cl-destructuring-bind (face spec library) face-spec
+            (if (featurep library)
+                (custom-set-faces `(,face ((,class ,@spec))))
+              (with-eval-after-load library
+                (when (string-match-p "^doom-" (symbol-name theme))
+                  (custom-set-faces `(,face ((,class ,@spec))))))))))))
+  (doom-themes-org-config)
+  (use-package doom-rouge-theme
+    :ensure nil
+    :config
+    (setq doom-rouge-padded-modeline nil
+          doom-rouge-brighter-comments t
+          doom-rouge-brighter-tabs t)))
+
+
+(defvar karna/theme-list '(doom-rouge ef-light ef-winter)
+  "List of themes to cycle through.")
+
+(defvar karna/current-theme (car karna/theme-list)
+  "Current theme in use.")
+
+(defun karna/toggle-theme ()
+  "Cycle through `karna/theme-list`."
+  (interactive)
+  (setq karna/current-theme
+        (or (cadr (member karna/current-theme karna/theme-list))
+            (car karna/theme-list)))
+  (load-theme karna/current-theme t)
+  (message "Switched to theme: %s" karna/current-theme))
+
+;; Ensure theme is loaded only after Elpaca has initialized
+(add-hook 'elpaca-after-init-hook
+          (lambda ()
+            (load-theme karna/current-theme t)))
+
+
 ;;;################################################################
 ;; * KEYBIND SETUP
 ;;;################################################################
 (require 'setup-keybinds)
+(require 'keycast)
 
 ;;;################################################################
 ;; * MODELINE
@@ -986,7 +1036,7 @@ If region is active, add its contents to the new buffer."
 (require 'setup-cape)
 (require 'workspace)
 (require 'setup-windows)
-;; (require 'setup-completions-default)
+(require 'setup-completions-default)
 
 (setq tab-always-indent 'complete)
 
@@ -996,10 +1046,9 @@ If region is active, add its contents to the new buffer."
 (use-package olivetti
   :commands (my/olivetti-mode)
   :ensure t
-  :defer
   :config
   (setq-default
-   olivetti-body-width 180
+   olivetti-body-width 90
    olivetti-minimum-body-width 76
    olivetti-recall-visual-line-mode-entry-state t)
 
@@ -1014,26 +1063,25 @@ becomes a blinking bar. Evil-mode (if bound) is disabled."
     :init-value nil
     :global nil
     (if my/olivetti-mode
-	(progn
-	  (olivetti-mode 1)
-	  (set-window-fringes (selected-window) 0 0)
-	  (unless (derived-mode-p 'prog-mode)
-	    ;; (my/mode-line-hidden-mode 1)
-	    (mixed-pitch-mode 1))
-	  (if (bound-and-true-p evil-mode)
-	      (evil-emacs-state))
-	  ;; (setq-local line-spacing 0.16)
-	  ;; (setq-local cursor-type '(bar . 2))
-	  )
+        (progn
+          (olivetti-mode 1)
+          (set-window-fringes (selected-window) 0 0)
+          (unless (derived-mode-p 'prog-mode)
+            ;; (my/mode-line-hidden-mode 1)
+            )
+          (if (bound-and-true-p evil-mode)
+              (evil-emacs-state))
+          ;; (setq-local line-spacing 0.16)
+          ;; (setq-local cursor-type '(bar . 2))
+          )
       (olivetti-mode -1)
       (set-window-fringes (selected-window) nil) ; Use default width
-      (mixed-pitch-mode -1)
       (kill-local-variable 'line-spacing)
       ;; (unless (derived-mode-p 'prog-mode)
       ;;   (my/mode-line-hidden-mode -1))
       (when (and (bound-and-true-p evil-mode)
-		 (evil-emacs-state-p))
-	(evil-exit-emacs-state))
+                 (evil-emacs-state-p))
+        (evil-exit-emacs-state))
       (kill-local-variable 'cursor-type)))
 
   (define-minor-mode my/reader-mode
@@ -1043,12 +1091,12 @@ the mode-line and switches to `variable-pitch-mode'."
     :init-value
     :global-nil
     (if my/reader-mode
-	(progn
-	  (make-frame '((name . "dropdown_reader")))
-	  (my/olivetti-mode 1)
-	  (view-mode 1)
-	  (if (equal major-mode 'org-mode)
-	      (org-show-all)))
+        (progn
+          (make-frame '((name . "dropdown_reader")))
+          (my/olivetti-mode 1)
+          (view-mode 1)
+          (if (equal major-mode 'org-mode)
+              (org-show-all)))
       (view-mode -1)
       (my/olivetti-mode -1)
       (delete-frame)))
