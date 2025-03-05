@@ -176,6 +176,8 @@
   :ensure t
   :defer t
   :if (display-graphic-p)
+  :config
+  (setq nerd-icons-font-family "Symbols Nerd Font")
   :custom
   (nerd-icons-color-icons t))
 
