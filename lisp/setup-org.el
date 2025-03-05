@@ -293,7 +293,7 @@
 
 (defun karna/org-mode-visual-fill ()
   "Enable centered text layout in Org mode."
-  (setq visual-fill-column-width 180
+  (setq visual-fill-column-width 160
 	visual-fill-column-center-text t)
   (visual-fill-column-mode 1))
 
