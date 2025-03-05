@@ -594,7 +594,7 @@ Cancel the previous one if present."
           :weight 'semibold)
 
   (set-face-attribute 'variable-pitch nil
-          :family "Iosevka Comfy Motion Duo"
+          :family "Iosevka Comfy Motion"
           :height 130 
           :width 'semi-expanded
           :weight 'semibold)
