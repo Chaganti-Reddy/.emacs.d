@@ -11,7 +11,8 @@
   :defer t
   :bind (("C-x c" . calc)
          ("C-S-e" . latex-math-from-calc)
-         ("C-c e" . calc-embedded))
+         ("C-c e" . calc-embedded)
+         )
   :config
   (use-package calc-embed
     :ensure nil
@@ -65,6 +66,40 @@
   :ensure t
   :defer t
   :hook (org-mode . literate-calc-minor-mode))
+
+;; Window pop to show entries when using calc embedded
+(defvar calc-embedded-trail-window nil)
+(defvar calc-embedded-calculator-window nil)
+
+(defun karna/calc-embedded-with-side-panel (&rest _)
+  "Manage Calc embedded mode windows dynamically."
+  (when calc-embedded-trail-window
+    (ignore-errors
+      (delete-window calc-embedded-trail-window))
+    (setq calc-embedded-trail-window nil))
+  (when calc-embedded-calculator-window
+    (ignore-errors
+      (delete-window calc-embedded-calculator-window))
+    (setq calc-embedded-calculator-window nil))
+  (when (and calc-embedded-info
+             (> (* (window-width) (window-height)) 1200))
+    (let ((main-window (selected-window))
+          (vertical-p (> (window-width) 80)))
+      (select-window
+       (setq calc-embedded-trail-window
+             (if vertical-p
+                 (split-window-horizontally (- (max 30 (/ (window-width) 3))))
+               (split-window-vertically (- (max 8 (/ (window-height) 4)))))))
+      (switch-to-buffer "*Calc Trail*")
+      (select-window
+       (setq calc-embedded-calculator-window
+             (if vertical-p
+                 (split-window-vertically -6)
+               (split-window-horizontally (- (/ (window-width) 2))))))
+      (switch-to-buffer "*Calculator*")
+      (select-window main-window))))
+
+(advice-add 'calc-do-embedded :after #'karna/calc-embedded-with-side-panel)
 
 
 (provide 'setup-calc)
