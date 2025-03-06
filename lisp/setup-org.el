@@ -276,7 +276,7 @@
   :defer t
   :hook (org-mode . org-appear-mode)
   :config
-  (setq-default org-hide-emphasis-markers t)
+  (setq-default org-hide-emphasis-markers nil)
   (setq org-hidden-keywords t)
   (setq org-appear-autoemphasis t
         org-appear-autosubmarkers nil
@@ -355,7 +355,7 @@
 (setq org-directory "/mnt/Karna/Git/Project-K/Org/"
       org-default-notes-file (expand-file-name "notes.org" org-directory)
       org-ellipsis " ⬎ "
-      org-hide-emphasis-markers nil
+      org-hide-emphasis-markers t
       ;; ex. of org-link-abbrev-alist in action
       ;; [[arch-wiki:Name_of_Page][Description]]
       org-link-abbrev-alist
@@ -365,6 +365,33 @@
 	("wiki" . "https://en.wikipedia.org/wiki/"))
       org-table-convert-region-max-lines 20000)
 
+;; Load org-faces to make sure we can set appropriate faces
+(require 'org-faces)
+
+;; Resize Org headings
+(dolist (face '((org-level-1 . 1.10)
+                (org-level-2 . 1.07)
+                (org-level-3 . 1.04)
+                (org-level-4 . 1.01)
+                (org-level-5 . 1.0)
+                (org-level-6 . 1.0)
+                (org-level-7 . 1.0)
+                (org-level-8 . 1.0)))
+  (set-face-attribute (car face) nil :font my/variable-width-font :weight 'medium :height (cdr face)))
+
+(set-face-attribute 'org-document-title nil :font my/variable-width-font :weight 'bold :height 1.3)
+
+;; Make sure certain org faces use the fixed-pitch face when variable-pitch-mode is on
+(set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+(set-face-attribute 'org-table nil :inherit 'fixed-pitch)
+(set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
+(set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+(set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+(set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+(set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+(set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+
+(add-hook 'org-mode-hook #'variable-pitch-mode)
 
 (setq org-todo-keywords
       '((sequence "IDEA(i)"      ; Generate research ideas
@@ -607,7 +634,6 @@
    org-fontify-quote-and-verse-blocks t
    org-fontify-whole-heading-line t
    org-hidden-keywords nil
-   org-hide-emphasis-markers nil
    org-hide-leading-stars t
    org-startup-folded nil
    org-startup-indented nil
@@ -889,74 +915,7 @@
       (remove-hook 'org-latex-preview-overlay-open-functions
                     #'my/org-latex-preview-uncenter))))
 
-;;;----------------------------------------------------------------
-;; ** ORG-TREE-SLIDE
-;;;----------------------------------------------------------------
-;; Presentations from within org-mode.
-(use-package org-tree-slide
-  :ensure t
-  :defer
-  :after org
-  :commands my/org-presentation-mode
-  ;; :hook (org-tree-slide-after-narrow . my/org-tree-slide-enlarge-latex-preview)
-  :config
-  (setq org-tree-slide-never-touch-face nil
-        org-tree-slide-skip-outline-level 8
-        org-tree-slide-heading-emphasis nil
-        org-tree-slide-cursor-init nil
-        org-tree-slide-slide-in-effect nil
-        org-tree-slide-activate-message
-        (propertize "ORG PRESENTATION STARTED" 'face 'success)
-        org-tree-slide-deactivate-message
-        (propertize "ORG PRESENTATION STOPPED" 'face 'error))
-  
-  ;; (defun my/org-tree-slide-enlarge-latex-preview ()
-  ;;   (dolist (ov (overlays-in (point-min) (point-max)))
-  ;;     (if (eq (overlay-get ov 'org-overlay-type)
-  ;;             'org-latex-overlay)
-  ;;         (overlay-put
-  ;;          ov 'display
-  ;;          (cons 'image 
-  ;;                (plist-put
-  ;;                 (cdr (overlay-get ov 'display))
-  ;;                 :scale (+ 1.0 (* 0.2 text-scale-mode-amount))))))))
 
-  (defvar olivetti-style)
-  (define-minor-mode my/org-presentation-mode
-    "Parameters for plain text presentations with `org-mode'."
-    :init-value nil
-    :global nil
-    (if my/org-presentation-mode
-        (progn
-          (unless (eq major-mode 'org-mode)
-            (user-error "Not in an Org buffer"))
-          (setq-local org-hide-emphasis-markers t)
-          (visual-fill-column-mode -1)
-          (text-scale-mode 1)
-          (display-line-numbers-mode -1)
-          (org-tree-slide-mode 1)
-          (setq olivetti-style nil)
-          (setq line-spacing 0.12)
-          ;; (setq olivetti-margin-width 14)
-          ;; (setq olivetti-body-width 0.7)
-          (text-scale-increase 3)
-          (my/olivetti-mode 1))
-      (org-tree-slide-mode -1)
-      ;; (kill-local-variable 'org-hide-emphasis-markers)
-      (my/olivetti-mode -1)
-      (text-scale-decrease 3)
-      (text-scale-mode -1)
-      (display-line-numbers-mode 1)
-      (visual-fill-column-mode 1)))
-
-  :bind (("C-c P"      . my/org-presentation-mode)
-         :map org-tree-slide-mode-map
-         ("<next>" . org-tree-slide-move-next-tree)
-         ("<prior>" . org-tree-slide-move-previous-tree)
-         ("<home>" . 'org-tree-slide-display-header-toggle)
-         ("<C-down>"  . org-tree-slide-display-header-toggle)
-         ("<C-right>" . org-tree-slide-move-next-tree)
-         ("<C-left>"  . org-tree-slide-move-previous-tree)))
 
 ;; From alphapapa's unpackaged: https://github.com/alphapapa/unpackaged.el#org-return-dwim
 (use-package org
@@ -1099,6 +1058,72 @@ appropriate.  In tables, insert a new row or end the table."
   (preview-LaTeX-command-replacements
    '(preview-LaTeX-disable-pdfoutput))
   )
+
+;;;----------------------------------------------------------------
+;; ** ORG-TREE-SLIDE
+;;;----------------------------------------------------------------
+;; Presentations from within org-mode.
+(use-package org-tree-slide
+  :ensure t
+  :after org
+  :commands my/org-presentation-mode
+  ;; :hook (org-tree-slide-after-narrow . my/org-tree-slide-enlarge-latex-preview)
+  :config
+  (setq org-tree-slide-never-touch-face nil
+        org-tree-slide-skip-outline-level 8
+        org-tree-slide-heading-emphasis nil
+        org-tree-slide-cursor-init nil
+        org-tree-slide-slide-in-effect nil
+        org-tree-slide-activate-message
+        (propertize "ORG PRESENTATION STARTED" 'face 'success)
+        org-tree-slide-deactivate-message
+        (propertize "ORG PRESENTATION STOPPED" 'face 'error))
+  
+  ;; (defun my/org-tree-slide-enlarge-latex-preview ()
+  ;;   (dolist (ov (overlays-in (point-min) (point-max)))
+  ;;     (if (eq (overlay-get ov 'org-overlay-type)
+  ;;             'org-latex-overlay)
+  ;;         (overlay-put
+  ;;          ov 'display
+  ;;          (cons 'image 
+  ;;                (plist-put
+  ;;                 (cdr (overlay-get ov 'display))
+  ;;                 :scale (+ 1.0 (* 0.2 text-scale-mode-amount))))))))
+
+  (defvar olivetti-style)
+  (define-minor-mode my/org-presentation-mode
+    "Parameters for plain text presentations with `org-mode'."
+    :init-value nil
+    :global nil
+    (if my/org-presentation-mode
+        (progn
+          (unless (eq major-mode 'org-mode)
+            (user-error "Not in an Org buffer"))
+          (setq-local org-hide-emphasis-markers t)
+          (visual-fill-column-mode -1)
+          (org-tree-slide-mode 1)
+          (setq olivetti-style nil)
+          (setq line-spacing 0.12)
+          ;; (setq olivetti-margin-width 14)
+          ;; (setq olivetti-body-width 0.7)
+          (text-scale-increase 3)
+          (my/olivetti-mode 1))
+      (org-tree-slide-mode -1)
+      ;; (kill-local-variable 'org-hide-emphasis-markers)
+      (my/olivetti-mode -1)
+      (visual-fill-column-mode 1)
+      (text-scale-decrease 3)
+      (org-fold-show-all)
+      (text-scale-mode -1)))
+
+  :bind (("C-c P"      . my/org-presentation-mode)
+         :map org-tree-slide-mode-map
+         ("<next>" . org-tree-slide-move-next-tree)
+         ("<prior>" . org-tree-slide-move-previous-tree)
+         ("<home>" . 'org-tree-slide-display-header-toggle)
+         ("<C-down>"  . org-tree-slide-display-header-toggle)
+         ("<C-right>" . org-tree-slide-move-next-tree)
+         ("<C-left>"  . org-tree-slide-move-previous-tree)))
 
 (provide 'setup-org)
 ;;; setup-org.el ends here 
