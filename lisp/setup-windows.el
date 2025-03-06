@@ -6,6 +6,18 @@
 
 ;;; Code:
 
+(setq window-combination-resize t
+      even-window-sizes 'height-only
+      window-sides-vertical nil
+      fit-window-to-buffer-horizontally t
+      window-resize-pixelwise t
+      fit-frame-to-buffer t
+      )
+
+(setq display-buffer-base-action
+      '((display-buffer-reuse-window
+         display-buffer-in-previous-window)))
+
 (defun karna/set-display-buffer-rule (buffers side size)
   "Dynamically add rules to `display-buffer-alist`.
 BUFFERS: A list of buffer names (strings) or major modes (symbols).
