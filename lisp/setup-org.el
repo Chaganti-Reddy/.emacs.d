@@ -356,6 +356,7 @@
       org-default-notes-file (expand-file-name "notes.org" org-directory)
       org-ellipsis " ⬎ "
       org-hide-emphasis-markers t
+      org-hide-leading-stars t
       ;; ex. of org-link-abbrev-alist in action
       ;; [[arch-wiki:Name_of_Page][Description]]
       org-link-abbrev-alist
@@ -364,34 +365,6 @@
 	("ddg" . "https://duckduckgo.com/?q=")
 	("wiki" . "https://en.wikipedia.org/wiki/"))
       org-table-convert-region-max-lines 20000)
-
-;; Load org-faces to make sure we can set appropriate faces
-(require 'org-faces)
-
-;; Resize Org headings
-(dolist (face '((org-level-1 . 1.10)
-                (org-level-2 . 1.07)
-                (org-level-3 . 1.04)
-                (org-level-4 . 1.01)
-                (org-level-5 . 1.0)
-                (org-level-6 . 1.0)
-                (org-level-7 . 1.0)
-                (org-level-8 . 1.0)))
-  (set-face-attribute (car face) nil :font my/variable-width-font :weight 'medium :height (cdr face)))
-
-(set-face-attribute 'org-document-title nil :font my/variable-width-font :weight 'bold :height 1.3)
-
-;; Make sure certain org faces use the fixed-pitch face when variable-pitch-mode is on
-(set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
-(set-face-attribute 'org-table nil :inherit 'fixed-pitch)
-(set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
-(set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
-(set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
-(set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
-(set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-(set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
-
-(add-hook 'org-mode-hook #'variable-pitch-mode)
 
 (setq org-todo-keywords
       '((sequence "IDEA(i)"      ; Generate research ideas
