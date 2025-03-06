@@ -121,7 +121,7 @@
 	      (dired "~/.emacs.d/"))
 	    :wk "Open user-emacs-directory in dired")
     "f d" '(find-grep-dired :wk "Search for string in files in DIR")
-    "f m" '(ian/format-code :wk "Format Buffer")
+    "f m" '(karna/format-code :wk "Format Buffer")
     "f g" '(consult-ripgrep :wk "Search for string current file")
     "f i" '((lambda () (interactive)
 	      (find-file "~/dotfiles/install.sh"))
