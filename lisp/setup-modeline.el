@@ -170,8 +170,18 @@
 
 ;; Disable help mouse-overs for mode-line segments (i.e. :help-echo text).
 ;; They're generally unhelpful and only add confusing visual clutter.
-;(setq mode-line-default-help-echo nil
-;      show-help-function nil)
+(setq mode-line-default-help-echo nil
+      show-help-function nil)
+
+(defun global-unset-key (key)
+  "Remove global binding of KEY.
+KEY is a string or vector representing a sequence of keystrokes."
+  (interactive "kUnset key globally: ")
+  (global-set-key key nil))
+
+(global-unset-key [mode-line mouse-3])
+(global-unset-key [mode-line mouse-2])
+
 ;
 ;(defvar mode-line-cleaner-alist
 ;  `((company-mode . " ⇝")
