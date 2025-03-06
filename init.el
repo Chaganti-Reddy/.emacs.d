@@ -225,6 +225,35 @@ Cancel the previous one if present."
 
 (elpaca-wait)
 
+;; ----------------------------------------------------------------------------
+;; ICONS
+;; ----------------------------------------------------------------------------
+(use-package all-the-icons
+  :ensure t
+  :defer t
+  :if (display-graphic-p))
+
+(use-package all-the-icons-dired
+  :ensure t
+  :defer t
+  :if (display-graphic-p)
+  :hook (dired-mode . all-the-icons-dired-mode))
+
+(use-package all-the-icons-completion
+  :ensure t
+  :defer t
+  :if (display-graphic-p)
+  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
+  :init
+  (all-the-icons-completion-mode))
+
+(use-package nerd-icons
+  :ensure t
+  :defer t
+  :if (display-graphic-p)
+  :custom
+  (nerd-icons-color-icons t))
+
 ;;;################################################################
 ;; * SAVE AND BACKUP
 ;;;################################################################
@@ -589,9 +618,9 @@ Cancel the previous one if present."
   "The font to use for variable-pitch (document) text.")
 
 ;; NOTE: These settings might not be ideal for your machine, tweak them as needed!
-(set-face-attribute 'default nil :font my/fixed-width-font :weight 'semibold :height 125)
-(set-face-attribute 'fixed-pitch nil :font my/fixed-width-font :weight 'semibold :height 125)
-(set-face-attribute 'variable-pitch nil :font my/variable-width-font :weight 'semibold :height 1.1)
+(set-face-attribute 'default nil :font my/fixed-width-font :weight 'semibold :height 125 :width 'normal)
+(set-face-attribute 'fixed-pitch nil :font my/fixed-width-font :weight 'semibold :height 125 :width 'normal)
+(set-face-attribute 'variable-pitch nil :font my/variable-width-font :weight 'semibold :height 1.1 :width 'semi-expanded)
 
 (let ((italic '(:slant italic :weight semibold))
       (bold '(:weight bold)))
@@ -865,6 +894,7 @@ Cancel the previous one if present."
 	 ;; Leader-based jumps (if using spacemacs/leader key)
 	 ("C-c j" . avy-goto-char-2)
 	 ("C-c l" . avy-goto-line)
+	 ("C-c L" . avy-move-line)
 	 ("C-c w" . avy-goto-word-1)))
 
 ;; Optional: Jump backward with universal argument
