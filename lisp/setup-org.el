@@ -276,7 +276,7 @@
   :defer t
   :hook (org-mode . org-appear-mode)
   :config
-  (setq-default org-hide-emphasis-markers nil)
+  (setq-default org-hide-emphasis-markers t)
   (setq org-hidden-keywords t)
   (setq org-appear-autoemphasis t
         org-appear-autosubmarkers nil
@@ -1099,7 +1099,6 @@ appropriate.  In tables, insert a new row or end the table."
         (progn
           (unless (eq major-mode 'org-mode)
             (user-error "Not in an Org buffer"))
-          (setq-local org-hide-emphasis-markers t)
           (visual-fill-column-mode -1)
           (org-tree-slide-mode 1)
           (setq olivetti-style nil)
@@ -1109,7 +1108,6 @@ appropriate.  In tables, insert a new row or end the table."
           (text-scale-increase 3)
           (my/olivetti-mode 1))
       (org-tree-slide-mode -1)
-      ;; (kill-local-variable 'org-hide-emphasis-markers)
       (my/olivetti-mode -1)
       (visual-fill-column-mode 1)
       (text-scale-decrease 3)
