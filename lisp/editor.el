@@ -22,7 +22,7 @@ Uses:
     (cond
      ((derived-mode-p 'prolog-mode) (prolog-indent-buffer))
      ((and (bound-and-true-p eglot-managed-mode)
-           (eglot--server-capable :documentFormattingProvider))
+	   (eglot--server-capable :documentFormattingProvider))
       (eglot-format-buffer))
      ((fboundp 'format-all-buffer) (format-all-buffer))
      (t (message "No formatter available for %s" major-mode))))
@@ -36,9 +36,9 @@ Uses:
   :ensure t
   :defer t
   :hook ((org-mode . drag-stuff-mode)
-         (LaTeX-mode . drag-stuff-mode)
-         (prog-mode . drag-stuff-mode)
-         (text-mode . drag-stuff-mode))
+	 (LaTeX-mode . drag-stuff-mode)
+	 (prog-mode . drag-stuff-mode)
+	 (text-mode . drag-stuff-mode))
   :config
   (drag-stuff-define-keys))
 
@@ -50,9 +50,9 @@ Uses:
   :ensure t
   :defer t
   :hook ((org-mode . puni-mode)
-         (LaTeX-mode . puni-mode)
-         (prog-mode . puni-mode)
-         (text-mode . puni-mode)))
+	 (LaTeX-mode . puni-mode)
+	 (prog-mode . puni-mode)
+	 (text-mode . puni-mode)))
 
 ;; ----------------------------------------------------------------------------
 ;; 📌 EXPAND REGION (Quick Selection Expansion)
@@ -61,7 +61,7 @@ Uses:
 (use-package expand-region
   :ensure t
   :defer t
-  :bind ("C-=" . er/expand-region))
+  :bind ("C-+" . er/expand-region))
 
 ;; ----------------------------------------------------------------------------
 ;; 📌 WS-BUTLER (Remove Trailing Whitespace)
@@ -71,9 +71,9 @@ Uses:
   :ensure t
   :defer t
   :hook ((org-mode . ws-butler-mode)
-         (LaTeX-mode . ws-butler-mode)
-         (prog-mode . ws-butler-mode)
-         (text-mode . ws-butler-mode)))
+	 (LaTeX-mode . ws-butler-mode)
+	 (prog-mode . ws-butler-mode)
+	 (text-mode . ws-butler-mode)))
 
 ;; ----------------------------------------------------------------------------
 ;; HIGHLIGHT INDENTATION GUIDES
@@ -108,12 +108,12 @@ Uses:
   :ensure t
   :defer t
   :hook ((prog-mode . flycheck-mode)
-         (LaTeX-mode . flycheck-mode))
+	 (LaTeX-mode . flycheck-mode))
   :config
   ;; Adjust when Flycheck runs syntax checks.
   (setq flycheck-check-syntax-automatically '(save idle-change mode-enabled)
-        ;; Increase the error threshold to avoid disabling checkers on too many errors.
-        flycheck-checker-error-threshold 1000))
+	;; Increase the error threshold to avoid disabling checkers on too many errors.
+	flycheck-checker-error-threshold 1000))
 
 ;; ----------------------------------------------------------------------------
 ;; SIDELINE FLYMAKE
@@ -123,7 +123,7 @@ Uses:
   :ensure t
   :defer t
   :hook ((prog-mode . sideline-mode)
-         (LaTeX-mode . sideline-mode))
+	 (LaTeX-mode . sideline-mode))
   :custom
   (sideline-flymake-display-mode 'line) ;; Show errors on the current line
   (sideline-backends-right '(sideline-flymake)))
@@ -133,7 +133,7 @@ Uses:
   :ensure t
   :hook (((text-mode org-mode LaTeX-mode prog-mode) . jinx-mode))
   :bind (("C-:" . jinx-correct)
-         ("C-M-$" . jinx-languages))
+	 ("C-M-$" . jinx-languages))
   :custom
   (jinx-camel-modes '(prog-mode))
   (jinx-delay 0.01))
@@ -143,21 +143,21 @@ Uses:
 ;; Hl-TODO
 (use-package hl-todo
   :ensure t
-  :defer 
+  :defer
   :hook ((prog-mode org-mode) . hl-todo-mode)
   :bind (:map prog-mode-map
-         ("M-g t" . hl-todo-next)
-         ("M-g T" . hl-todo-previous))
+	 ("M-g t" . hl-todo-next)
+	 ("M-g T" . hl-todo-previous))
   :config
   (setq hl-todo-highlight-punctuation ":"
-        hl-todo-keyword-faces
-        '(("TODO" . warning)
-          ("FIXME" . error)
-          ("HACK" . font-lock-constant-face)
-          ("REVIEW" . font-lock-keyword-face)
-          ("NOTE" . success)
-          ("DEPRECATED" . font-lock-doc-face))
-        hl-todo-wrap-movement t)
+	hl-todo-keyword-faces
+	'(("TODO" . warning)
+	  ("FIXME" . error)
+	  ("HACK" . font-lock-constant-face)
+	  ("REVIEW" . font-lock-keyword-face)
+	  ("NOTE" . success)
+	  ("DEPRECATED" . font-lock-doc-face))
+	hl-todo-wrap-movement t)
 
   (defvar-keymap hl-todo-repeat-map
     :repeat t
@@ -173,9 +173,9 @@ Uses:
   :ensure t
   :config
   (setq breadcrumb-imenu-max-length 30
-        breadcrumb-project-max-length 30
-        breadcrumb-imenu-crumb-separator " » "
-        breadcrumb-project-crumb-separator " / ")
+	breadcrumb-project-max-length 30
+	breadcrumb-imenu-crumb-separator " » "
+	breadcrumb-project-crumb-separator " / ")
   (breadcrumb-mode 1))  ;; Enable globally
 
 
