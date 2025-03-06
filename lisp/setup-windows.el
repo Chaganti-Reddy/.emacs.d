@@ -24,7 +24,7 @@ SIZE: The height (if 'top or 'bottom) or width (if 'left or 'right) as a decimal
 
 ;; Example Usage: Just define variables with your preferences
 (karna/set-display-buffer-rule
- '("*Warnings*" "*Compile-Log*" "*Async Shell Command*" "*Org PDF LaTeX Output*" "*Preview-Ghostscript-Error*" "*Org LaTeX Precompilation*" "*Backtrace*" "*Completions*" "*Shell Command Output*" "*evil-registers*" "*gptel-ask*" "*TeX Help*" "^Calc:" "[Oo]utput\\*$")
+ '("*Warnings*" "*Compile-Log*" "*Async Shell Command*" "*Org PDF LaTeX Output*" "*Org Preview LaTeX Output*" "*Preview-Ghostscript-Error*" "*Org LaTeX Precompilation*" "*Backtrace*" "*Completions*" "*Shell Command Output*" "*evil-registers*" "*gptel-ask*" "*TeX Help*" "^Calc:" "[Oo]utput\\*$")
  'bottom 0.3)
 
 (karna/set-display-buffer-rule
