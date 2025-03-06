@@ -616,7 +616,7 @@
 ;      org-latex-listings t
 ;      org-preview-latex-image-directory "~/.cache/emacs/lxtimg/")
 
-(define-key org-mode-map (kbd "M-p") 'org-latex-export-to-pdf)
+(define-key org-mode-map (kbd "C-M-p") 'org-latex-export-to-pdf)
 
 ;;;----------------------------------------------------------------
 ;; ** ORG-APPEARANCE
