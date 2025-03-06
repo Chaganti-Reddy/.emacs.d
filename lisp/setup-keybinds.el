@@ -64,8 +64,8 @@
 
     ;; Search commands
     "c l" '(consult-line           :wk "Search Lines")
-    "c g" '(consult-grep           :wk "Grep Search")
-    "c p" '(consult-ripgrep        :wk "Ripgrep Search")
+    ;; "c g" '(consult-grep           :wk "Grep Search")
+    "c g" '(consult-ripgrep        :wk "Ripgrep Search")
 
     ;; Navigation commands
     "c i" '(consult-imenu          :wk "Imenu")
@@ -74,7 +74,8 @@
     ;; Other commands
     "c m" '(consult-man            :wk "Man Pages")
     "c k" '(consult-bookmark       :wk "Bookmarks")
-    "c P" '(consult-project-extra-find :wk "Consult Project")
+    "c p" '(consult-project-extra-find :wk "Consult Project")
+    "c P" '(consult-project-extra-find-other-window :wk "Consult Project")
     "c y" '(karna/year-calendar    :wk "Show year calendar")
     "c <right>" '(karna/scroll-year-calendar-forward :wk "Scroll year calendar forward")
     "c <left>" '(karna/scroll-year-calendar-backward :wk "Scroll year calendar backward"))
@@ -219,14 +220,10 @@
     "o f" '(make-frame :wk "Open buffer in new frame")
     "o F" '(select-frame-by-name :wk "Select frame by name"))
 
-  ;; Define project command map under leader key
   (karna/leader-keys
-    "p" '(project-prefix-map :wk "Project") ;; project.el's default keymap
-    "P a" '(project-remember-projects-under :wk "Add root to known projects"))
-
-  (karna/leader-keys
-    "P" '(:ignore t :wk "Custom Previews")
-    "P m" '(markdown-preview-mode :wk "Preview Markdown Document"))
+    "p" '(:ignore t :wk "Custom Previews")
+    "p m" '(markdown-preview-mode :wk "Preview Markdown")
+    "p l" '(preview-document :wk "Preview LaTeX"))
 
   (karna/leader-keys
     "r" '(:ignore t :wk "Org-roam")
