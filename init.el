@@ -573,46 +573,20 @@ Cancel the previous one if present."
 ;;;################################################################I
 ;; * FONTS AND COLORS
 ;;;################################################################
-(use-package cus-face
-  :ensure nil
-  :config
-  (pcase-dolist (`(,font           . ,scale)
-		 '(("Merriweather" . 0.88)
-		   ("IM FELL"      . 1.19)
-		   ;; ("Latin Modern$" . 1.05)
-		   ("Latin Modern Math" . 1.25)))
-    (setf (alist-get font face-font-rescale-alist nil nil #'equal)
-	  scale))
+;; Set reusable font name variables
+(defvar my/fixed-width-font "JetBrains Mono Nerd Font"
+  "The font to use for monospaced (fixed width) text.")
 
-  (cond (IS-LINUX
-	 (set-fontset-font t 'unicode "Symbola" nil 'prepend)
-	 
-  (set-face-attribute 'default nil
-          :family "Iosevka Comfy Motion"
-          :height 130 
-          :width 'semi-expanded
-          :weight 'semibold)
+(defvar my/variable-width-font "Iosevka Aile"
+  "The font to use for variable-pitch (document) text.")
 
-  (set-face-attribute 'variable-pitch nil
-          :family "Iosevka Comfy Motion"
-          :height 130 
-          :width 'semi-expanded
-          :weight 'semibold)
-
-  (set-face-attribute 'fixed-pitch nil
-          :family "Iosevka Comfy Motion"
-          :height 130 
-          :width 'semi-expanded
-          :weight 'semibold)
-  )
-	(IS-WINDOWS
-	 (custom-set-faces
-	  '(default ((t (:family "Consolas" :foundry "outline"
-				 :slant normal :weight normal
-				 :height 130 :width normal))))))))
+;; NOTE: These settings might not be ideal for your machine, tweak them as needed!
+(set-face-attribute 'default nil :font my/fixed-width-font :weight 'semi-bold :height 120 :width 'normal)
+(set-face-attribute 'fixed-pitch nil :font my/fixed-width-font :weight 'semi-bold :height 120 :width 'normal)
+(set-face-attribute 'variable-pitch nil :font my/variable-width-font :weight 'semi-bold :height 1.18 :width 'normal)
 
 (let ((italic '(:slant italic :weight semibold))
-      (bold '(:weight extrabold)))
+      (bold '(:weight extra-bold)))
   (custom-set-faces
    `(font-lock-comment-face ((t ,@italic)))
    `(font-lock-keyword-face ((t ,@italic)))
@@ -621,8 +595,6 @@ Cancel the previous one if present."
 
 (set-display-table-slot standard-display-table 'truncation (make-glyph-code ?…))
 (set-display-table-slot standard-display-table 'wrap (make-glyph-code ?–))
-
-(add-hook 'text-mode-hook #'variable-pitch-mode)
 
 ;;----------------------------------------------------------------
 ;; ** MODUS THEMES
@@ -1120,6 +1092,7 @@ the mode-line and switches to `variable-pitch-mode'."
 
 ;; ORG MODE
 
+(autoload 'org-present "org-present" nil t)
 (require 'setup-org)
 (require 'setup-roam)
 (require 'org-latex-check-health)
