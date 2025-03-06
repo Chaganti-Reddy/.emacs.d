@@ -10,7 +10,8 @@
   :defer t
   :hook ((prog-mode . corfu-mode)
          ;; (org-mode . corfu-mode)
-         (latex-mode . corfu-mode))
+         ;; (LaTeX-mode . corfu-mode)
+         )
   :custom
   (corfu-cycle t)                  ;; Enable cycling through candidates
   (corfu-auto t)                   ;; Auto-show completions
