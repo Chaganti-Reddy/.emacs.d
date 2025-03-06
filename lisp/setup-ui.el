@@ -151,34 +151,5 @@
 ;;; (add-hook! '(completion-list-mode-hook Man-mode-hook)
 ;;;            #'hide-mode-line-mode)
 
-;; ----------------------------------------------------------------------------
-;; ICONS
-;; ----------------------------------------------------------------------------
-(use-package all-the-icons
-  :ensure t
-  :defer t
-  :if (display-graphic-p))
-
-(use-package all-the-icons-dired
-  :ensure t
-  :defer t
-  :if (display-graphic-p)
-  :hook (dired-mode . all-the-icons-dired-mode))
-
-(use-package all-the-icons-completion
-  :ensure t
-  :defer t
-  :if (display-graphic-p)
-  :hook (marginalia-mode . all-the-icons-completion-marginalia-setup)
-  :init
-  (all-the-icons-completion-mode))
-
-(use-package nerd-icons
-  :ensure t
-  :defer t
-  :if (display-graphic-p)
-  :custom
-  (nerd-icons-color-icons t))
-
 (provide 'setup-ui)
 ;; setup-ui ends here
