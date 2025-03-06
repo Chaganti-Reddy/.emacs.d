@@ -215,6 +215,14 @@ Cancel the previous one if present."
 ;; Miscellaneous UI preferences.
 (require 'setup-ui)
 
+(setq          evil-default-cursor       '(box)
+              evil-normal-state-cursor  '(box)
+              ;; evil-emacs-state-cursor   '("orange" box)
+              evil-motion-state-cursor  '(box)
+              evil-insert-state-cursor  '(bar)
+              evil-visual-state-cursor  '(hbar)
+              evil-replace-state-cursor '(hbar))
+
 (elpaca-wait)
 
 ;;;################################################################
@@ -574,19 +582,19 @@ Cancel the previous one if present."
 ;; * FONTS AND COLORS
 ;;;################################################################
 ;; Set reusable font name variables
-(defvar my/fixed-width-font "JetBrains Mono Nerd Font"
+(defvar my/fixed-width-font "Aporetic Sans Mono"
   "The font to use for monospaced (fixed width) text.")
 
-(defvar my/variable-width-font "Iosevka Aile"
+(defvar my/variable-width-font "Aporetic Serif"
   "The font to use for variable-pitch (document) text.")
 
 ;; NOTE: These settings might not be ideal for your machine, tweak them as needed!
-(set-face-attribute 'default nil :font my/fixed-width-font :weight 'semi-bold :height 120 :width 'normal)
-(set-face-attribute 'fixed-pitch nil :font my/fixed-width-font :weight 'semi-bold :height 120 :width 'normal)
-(set-face-attribute 'variable-pitch nil :font my/variable-width-font :weight 'semi-bold :height 1.18 :width 'normal)
+(set-face-attribute 'default nil :font my/fixed-width-font :weight 'semibold :height 125)
+(set-face-attribute 'fixed-pitch nil :font my/fixed-width-font :weight 'semibold :height 125)
+(set-face-attribute 'variable-pitch nil :font my/variable-width-font :weight 'semibold :height 1.1)
 
 (let ((italic '(:slant italic :weight semibold))
-      (bold '(:weight extra-bold)))
+      (bold '(:weight bold)))
   (custom-set-faces
    `(font-lock-comment-face ((t ,@italic)))
    `(font-lock-keyword-face ((t ,@italic)))
@@ -595,6 +603,32 @@ Cancel the previous one if present."
 
 (set-display-table-slot standard-display-table 'truncation (make-glyph-code ?…))
 (set-display-table-slot standard-display-table 'wrap (make-glyph-code ?–))
+
+;; Load org-faces to make sure we can set appropriate faces
+(require 'org-faces)
+
+;; Resize Org headings
+(dolist (face '((org-level-1 . 1.10)
+                (org-level-2 . 1.07)
+                (org-level-3 . 1.04)
+                (org-level-4 . 1.01)
+                (org-level-5 . 1.0)
+                (org-level-6 . 1.0)
+                (org-level-7 . 1.0)
+                (org-level-8 . 1.0)))
+  (set-face-attribute (car face) nil :font my/variable-width-font :weight 'bold :height (cdr face)))
+
+(set-face-attribute 'org-document-title nil :font my/variable-width-font :weight 'bold :height 3.0)
+(set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+(set-face-attribute 'org-table nil :inherit 'fixed-pitch)
+(set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
+(set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
+(set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
+(set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
+(set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
+(set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+
+(add-hook 'org-mode-hook #'variable-pitch-mode)
 
 ;;----------------------------------------------------------------
 ;; ** MODUS THEMES
@@ -612,6 +646,7 @@ Cancel the previous one if present."
 	  (4 . (1.14))
 	  (t . (1.1))))
   (setq ef-themes-mixed-fonts t)
+  (setq ef-themes-variable-pitch-ui nil)
 
   (defun my/ef-themes-extra-faces ()
     "Tweak the style of the mode lines."
@@ -1051,23 +1086,14 @@ becomes a blinking bar. Evil-mode (if bound) is disabled."
         (progn
           (olivetti-mode 1)
           (set-window-fringes (selected-window) 0 0)
-          (unless (derived-mode-p 'prog-mode)
-            ;; (my/mode-line-hidden-mode 1)
-            )
-          (if (bound-and-true-p evil-mode)
-              (evil-emacs-state))
           ;; (setq-local line-spacing 0.16)
           ;; (setq-local cursor-type '(bar . 2))
           )
       (olivetti-mode -1)
       (set-window-fringes (selected-window) nil) ; Use default width
       (kill-local-variable 'line-spacing)
-      ;; (unless (derived-mode-p 'prog-mode)
-      ;;   (my/mode-line-hidden-mode -1))
-      (when (and (bound-and-true-p evil-mode)
-                 (evil-emacs-state-p))
-        (evil-exit-emacs-state))
-      (kill-local-variable 'cursor-type)))
+      ;; (kill-local-variable 'cursor-type)
+      ))
 
   (define-minor-mode my/reader-mode
     "Mode to read a buffer in style. Pop it out into a frame,
