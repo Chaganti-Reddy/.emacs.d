@@ -409,7 +409,7 @@ Cancel the previous one if present."
 ;; * WINDOW MANAGEMENT
 ;;;################################################################
 
-(require'buffer-move)
+(require 'buffer-move)
 
 ;; ----------------------------------------------------------------------------
 ;; DASHBOARD CONFIGURATION
