@@ -2,7 +2,8 @@
 
 ;;; Commentary:
 
-;; Editor Settings for Windows and their placements 
+;; This configuration defines rules for displaying buffers in specific windows.
+;; It uses a combination of regex patterns and derived mode checks to determine buffer placement.
 
 ;;; Code:
 
@@ -18,42 +19,469 @@
       '((display-buffer-reuse-window
          display-buffer-in-previous-window)))
 
-(defun karna/set-display-buffer-rule (buffers side size)
-  "Dynamically add rules to `display-buffer-alist`.
-BUFFERS: A list of buffer names (strings) or major modes (symbols).
-SIDE: The window side to display the buffer ('bottom, 'top, 'left, or 'right).
-SIZE: The height (if 'top or 'bottom) or width (if 'left or 'right) as a decimal fraction (e.g., 0.3 for 30%)."
-  (let ((buffer-patterns (mapcar (lambda (b) (if (symbolp b) b (regexp-quote b))) buffers)))
-    (add-to-list 'display-buffer-alist
-                 `(,(if (seq-some #'symbolp buffers)
-                        (lambda (buffer-name _action)
-                          (with-current-buffer buffer-name
-                            (apply #'derived-mode-p buffer-patterns)))
-                      (regexp-opt buffers))
-                   (display-buffer-in-side-window)
-                   (side . ,side)
-                   (,(if (memq side '(top bottom)) 'window-height 'window-width) . ,size)))))
+(defun my/display-buffer-reuse-minor-mode-window (buffer alist)
+    (let* ((alist-entry (assq 'reusable-frames alist))
+           (alist-mode-entry (assq 'minor-mode alist))
+	   (frames (cond (alist-entry (cdr alist-entry))
+		         ((if (eq pop-up-frames 'graphic-only)
+			      (display-graphic-p)
+			    pop-up-frames)
+			  0)
+		         (display-buffer-reuse-frames 0)
+		         (t (last-nonminibuffer-frame))))
+           (inhibit-same-window-p (cdr (assq 'inhibit-same-window alist)))
+	   (windows (window-list-1 nil 'nomini frames))
+           (allowed-modes (if alist-mode-entry
+                              (cdr alist-mode-entry)))
+           (curwin (selected-window))
+           (curframe (selected-frame)))
+      (unless (listp allowed-modes)
+        (setq allowed-modes (list allowed-modes)))
+      (let ((same-mode-same-frame)
+            (same-mode-other-frame))
+        (dolist (window windows)
+          (let ((mode?
+                 (with-current-buffer (window-buffer window)
+                   (cl-some (lambda (m) (and (boundp m) (symbol-value m) 'same))
+                            allowed-modes))))
+            (when (and mode? (not (and inhibit-same-window-p (eq window curwin))))
+              (push window (if (eq curframe (window-frame window))
+                               same-mode-same-frame
+                             same-mode-other-frame)))))
+        (let ((window (car (nconc same-mode-same-frame
+                                  same-mode-other-frame))))
+          (when (window-live-p window)
+            (prog1 (window--display-buffer buffer window 'reuse alist)
+              (unless (cdr (assq 'inhibit-switch-frame alist))
+                (window--maybe-raise-frame (window-frame window)))))))))
 
-;; Example Usage: Just define variables with your preferences
-(karna/set-display-buffer-rule
- '("*Warnings*" "*Compile-Log*" "*Async Shell Command*" "*Org PDF LaTeX Output*" "*Org Preview LaTeX Output*" "*Preview-Ghostscript-Error*" "*Org LaTeX Precompilation*" "*Backtrace*" "*Completions*" "*Shell Command Output*" "*evil-registers*" "*gptel-ask*" "*TeX Help*" "^Calc:" "[Oo]utput\\*$")
- 'bottom 0.3)
+(defun karna/mode-matcher (mode)
+  "Return a function to match buffers with major mode derived from MODE.
+This function is used in `display-buffer-alist` to match buffers dynamically
+based on their major mode rather than just their names."
+  (lambda (buffer-name _action)
+    (with-current-buffer buffer-name
+      (derived-mode-p mode))))
 
-(karna/set-display-buffer-rule
- '(Custom-mode compilation-mode messages-buffer-mode TeX-output-mode xref--xref-buffer-mode calendar-mode)
- 'bottom 0.3)
+(defvar my/help-modes-list '(helpful-mode
+                           help-mode
+                           pydoc-mode
+                           TeX-special-mode)
+  "List of major-modes used in documentation buffers")
 
-(karna/set-display-buffer-rule
- '("*eshell*" "*vterm*")
- 'right 0.5)
+;;;###autoload
+(defun buffer-mode (&optional buffer-or-name)
+  "Returns the major mode associated with a buffer.
+If buffer-or-name is nil return current buffer's mode."
+  (buffer-local-value 'major-mode
+                      (if buffer-or-name
+                          (get-buffer buffer-or-name)
+                        (current-buffer))))
 
-(karna/set-display-buffer-rule
- '(help-mode occur-mode inferior-emacs-lisp-mode)
- 'left 0.3)
+(defvar my/man-modes-list '(Man-mode woman-mode)
+  "List of major-modes used in Man-type buffers")
 
-(karna/set-display-buffer-rule
- '(emacs-news-mode pdf-view-mode inferior-python-mode inferior-octave-mode)
- 'right 0.5)
+(defvar my/message-modes-list '(compilation-mode
+                                edebug-eval-mode)
+  "List of major-modes used in message buffers")
+
+(defvar my/occur-grep-modes-list '(occur-mode
+                                 grep-mode
+                                 xref--xref-buffer-mode
+                                 ivy-occur-grep-mode
+                                 ivy-occur-mode
+                                 locate-mode
+                                 flymake-diagnostics-buffer-mode
+                                 rg-mode)
+  "List of major-modes used in occur-type buffers")
+
+(defvar my/repl-modes-list '(matlab-shell-mode
+                           eshell-mode
+                           geiser-repl-mode
+                           shell-mode
+                           eat-mode
+                           vterm-mode
+                           inferior-python-mode
+                           inferior-octave-mode
+                           cider-repl-mode
+                           fennel-repl-mode
+                           jupyter-repl-mode
+                           inferior-ess-julia-mode)
+  "List of major-modes used in REPL buffers")
+
+(defvar my/repl-names-list
+  '("^\\*\\(?:.*?-\\)\\{0,1\\}e*shell[^z-a]*\\(?:\\*\\|<[[:digit:]]+>\\)$"
+    "\\*.*REPL.*\\*"
+    "\\*MATLAB\\*"
+    "\\*Python\\*"
+    "^\\*jupyter-repl.*?\\(\\*\\|<[[:digit:]]>\\)$"
+    "\\*Inferior .*\\*$"
+    "^\\*julia.*\\*$"
+    "^\\*cider-repl.*\\*$"
+    "\\*ielm\\*"
+    "\\*edebug\\*")
+  "List of buffer names used in REPL buffers")
+
+(defun my/helper-window-mode-line-format ()
+    "Mode-line format for helper (popup) windows"
+  ;; (list " "
+  ;;       (when (bound-and-true-p winum-format)
+  ;;           winum--mode-line-segment)
+  ;;       " POP "
+  ;;       mode-line-buffer-identification)
+    mode-line-format
+  )
+
+
+;; display-buffer-action-functions are:
+;;  `display-buffer-same-window' -- Use the selected window.
+;;  `display-buffer-reuse-window' -- Use a window already showing the buffer.
+;;  `display-buffer-in-previous-window' -- Use a window that did show the buffer before.
+;;  `display-buffer-use-some-window' -- Use some existing window.
+;;  `display-buffer-pop-up-window' -- Pop up a new window.
+;;  `display-buffer-below-selected' -- Use or pop up a window below the selected one.
+;;  `display-buffer-at-bottom' -- Use or pop up a window at the bottom of the selected frame.
+;;  `display-buffer-pop-up-frame' -- Show the buffer on a new frame.
+;;  `display-buffer-in-child-frame' -- Show the buffer in a child frame.
+;;  `display-buffer-no-window' -- Do not display the buffer and have `display-buffer' return nil immediately.
+
+;; Action alist entries are:
+;;  `inhibit-same-window' -- A non-nil value prevents the same
+;;     window from being used for display.
+;;  `inhibit-switch-frame' -- A non-nil value prevents any frame
+;;     used for showing the buffer from being raised or selected.
+;;  `reusable-frames' -- The value specifies the set of frames to
+;;     search for a window that already displays the buffer.
+;;     Possible values are nil (the selected frame), t (any live
+;;     frame), visible (any visible frame), 0 (any visible or
+;;     iconified frame) or an existing live frame.
+;;  `pop-up-frame-parameters' -- The value specifies an alist of
+;;     frame parameters to give a new frame, if one is created.
+;;  `window-height' -- The value specifies the desired height of the
+;;     window chosen and is either an integer (the total height of
+;;     the window), a floating point number (the fraction of its
+;;     total height with respect to the total height of the frame's
+;;     root window) or a function to be called with one argument -
+;;     the chosen window.  The function is supposed to adjust the
+;;     height of the window; its return value is ignored.  Suitable
+;;     functions are `shrink-window-if-larger-than-buffer' and
+;;     `fit-window-to-buffer'.
+;;  `window-width' -- The value specifies the desired width of the
+;;     window chosen and is either an integer (the total width of
+;;     the window), a floating point number (the fraction of its
+;;     total width with respect to the width of the frame's root
+;;     window) or a function to be called with one argument - the
+;;     chosen window.  The function is supposed to adjust the width
+;;     of the window; its return value is ignored.
+;;  `preserve-size' -- The value should be either (t . nil) to
+;;     preserve the width of the chosen window, (nil . t) to
+;;     preserve its height or (t . t) to preserve its height and
+;;     width in future changes of the window configuration.
+;;  `window-parameters' -- The value specifies an alist of window
+;;     parameters to give the chosen window.
+;;  `allow-no-window' -- A non-nil value means that `display-buffer'
+;;     may not display the buffer and return nil immediately.
+
+
+(setq display-buffer-alist
+      `(
+        ("\\*Async Shell Command\\*" display-buffer-in-side-window
+         (window-height . 0.20)
+         (side . bottom)
+         (slot . -4)
+         ;; (preserve-size . (nil . t))
+         (window-parameters . ((no-other-window . t)
+                               ;; (mode-line-format . (:eval (my/helper-window-mode-line-format)))
+                               )))
+
+        ("^\\*Org PDF LaTeX Output\\*$"
+         (display-buffer-in-side-window)
+         (side . bottom)
+         (window-height . 0.2))
+
+        ("^\\*Org Preview LaTeX Output\\*$"
+         (display-buffer-in-side-window)
+         (side . bottom)
+         (window-height . 0.2))
+
+        ("^\\*Preview-Ghostscript-Error\\*$"
+         (display-buffer-in-side-window)
+         (side . bottom)
+         (window-height . 0.2))
+
+        ("^\\*Org LaTeX Precompilation\\*$"
+         (display-buffer-in-side-window)
+         (side . bottom)
+         (window-height . 0.2))
+
+        ("\\*Backtrace\\*" (display-buffer-in-side-window)
+         (window-height . 0.20)
+         (side . bottom)
+         (slot . -9)
+         ;; (preserve-size . (nil . t))
+         ;; (window-parameters . (;; (mode-line-format . (:eval (my/helper-window-mode-line-format)))
+         ;;                       ))
+         )
+
+        ("\\*\\(Register Preview\\).*" (display-buffer-in-side-window)
+         (window-height . 0.20)       ; See the :hook
+         (side . bottom)
+         (slot . -3)
+         (window-parameters . ((no-other-window . t)
+                               ;; (mode-line-format . (:eval (my/helper-window-mode-line-format)))
+                               )))
+
+        ("\\*Completions\\*" (display-buffer-in-side-window)
+         (window-height . 0.20)
+         (side . bottom)
+         (slot . -2)
+         ;; (window-parameters . ((no-other-window . t)
+         ;;                       ;; (mode-line-format . (:eval (my/helper-window-mode-line-format)))
+         ;;                       ))
+         )
+
+        ("\\*Apropos\\*" (display-buffer-in-side-window)
+         ;; (window-height . 0.40)
+         (window-width . 65)
+         (side . right)
+         (slot . -2)
+         (dedicated . t)
+         (body-function . select-window)
+         ;; (window-parameters . (;; (no-other-window . t)
+         ;;                       ;; (mode-line-format . (:eval (my/helper-window-mode-line-format)))
+         ;;                       ))
+         )
+
+        ("^\\*Shell Command Output\\*$"
+         (display-buffer-in-side-window)
+         (side . bottom)
+         (window-height . 0.3))
+
+        ("^\\*evil-registers\\*$"
+         (display-buffer-in-side-window)
+         (side . bottom)
+         (window-height . 0.3))
+
+        ("^\\*gptel-ask\\*$"
+         (display-buffer-in-side-window)
+         (side . bottom)
+         (window-height . 0.3))
+
+        ("^Calc:\\*$"
+         (display-buffer-in-side-window)
+         (side . bottom)
+         (window-height . 0.3))
+
+        ("[Oo]utput\\*" display-buffer-in-side-window
+         (window-height . (lambda (win)
+                            (fit-window-to-buffer win (floor (frame-height) 2.5))))
+         (side . bottom)
+         (slot . -4)
+         ;; (preserve-size . (nil . t))
+         ;; (window-parameters . ((no-other-window . t)
+         ;;                       ;; (mode-line-format . (:eval (my/helper-window-mode-line-format)))
+         ;;                       ))
+         )
+
+        ((lambda (buf act) (or (equal (buffer-mode buf) 'Custom-mode)
+                          (string-match-p "^\\*Customize" (buffer-name))))
+         (display-buffer-in-side-window)
+         (body-function . select-window)
+         (window-width . 74)
+         (side . right)
+         (slot . 5))
+
+        ((lambda (buf act) (member (buffer-mode buf) my/message-modes-list))
+         (display-buffer-at-bottom display-buffer-in-side-window)
+         (window-height . 0.25)
+         (side . bottom)
+         (slot . -6)
+         ;; (preserve-size . (nil . t))
+         ;; (window-parameters . ((no-other-window . #'ignore)
+         ;;                       ;; (mode-line-format . (:eval (my/helper-window-mode-line-format)))
+         ;;                       ))
+         )
+        
+        ((lambda (buf act) (member (buffer-mode buf) my/man-modes-list))
+         nil (body-function . select-window))
+
+        ("\\*Faces\\*" (display-buffer-in-side-window)
+         (window-width . 0.30)
+         (side . right)
+         (slot . -2)
+         (window-parameters . ((no-other-window . t)
+                               ;; (mode-line-format . (:eval (my/helper-window-mode-line-format)))
+                               )))
+
+        (, (karna/mode-matcher 'TeX-output-mode)
+         (display-buffer-in-side-window)
+         (side . bottom)
+         (window-height . 0.3))
+
+        ("\\*RefTex" (display-buffer-in-side-window)
+         (window-height . 0.25)
+         (side . bottom)
+         (slot . -9)
+         ;; (preserve-size . (nil . t))
+         ;; (window-parameters . (;; (mode-line-format . (:eval (my/helper-window-mode-line-format)))
+         ;;                       ))
+         )
+
+        (, (karna/mode-matcher 'calendar-mode)
+         (display-buffer-in-side-window)
+         (side . bottom)
+         (window-height . 0.3))
+
+        ;; Help and Occur buffers on the left
+
+        ((lambda (buf act) (member (buffer-mode buf) my/help-modes-list))
+         (display-buffer-reuse-window
+          display-buffer-in-side-window
+          display-buffer-in-direction)
+         (body-function . select-window)
+         (window-width . 77)
+         ;; (lambda (win) (fit-window-to-buffer win nil nil 75 65))
+         (direction . below)
+         (side . right)
+         (slot . 2)
+         (window-parameters . ((split-window . #'ignore))))
+
+        (;; (lambda (buf act) (equal (buffer-mode buf) 'matlab-shell-help-mode))
+         "\\*Matlab Help\\*"
+         (display-buffer-reuse-window
+          display-buffer-in-side-window
+          display-buffer-in-direction)
+         (body-function . select-window)
+         ;; (direction . bottom)
+         ;; (window-height . (lambda (win) (fit-window-to-buffer win 25 14)))
+         (window-width . 86 ;; (lambda (win) (fit-window-to-buffer win nil nil 75 65))
+                       )
+         (direction . right)
+         (side . right)
+         (slot . 2)
+         (window-parameters . ((split-window . #'ignore)
+                               ;; (no-other-window . t)
+                               ;; (mode-line-format . (:eval (my/helper-window-mode-line-format)))
+                               )))
+
+        ("^\\*eldoc.*\\*$"
+         (display-buffer-reuse-window
+          display-buffer-in-direction
+          display-buffer-in-side-window)
+         ;; (body-function . select-window)
+         ;; (direction . bottom)
+         ;; (window-height . (lambda (win) (fit-window-to-buffer win 25 14)))
+         (window-width . 82 ;; (lambda (win) (fit-window-to-buffer win nil nil 75 65))
+                       )
+         (direction . below)
+         (side . below)
+         (slot . 2)
+         (window-parameters . ((dedicated . t)
+                               (split-window . #'ignore)
+                               (no-other-window . t)
+                               (mode-line-format . none))))
+
+        ((lambda (buf act) (member (buffer-mode buf) '(ibuffer-mode bookmark-bmenu-mode)))
+         (;; display-buffer-reuse-window
+          ;; display-buffer-in-side-window
+          ;;display-buffer-at-bottom
+          display-buffer-below-selected)
+         (body-function . select-window)
+         (direction . below)
+         (window-height . (lambda (win) (fit-window-to-buffer win 30 7)))
+         ;; (dedicated . t)
+         ;; (window-width . (lambda (win) (fit-window-to-buffer win nil nil 85 55)))
+         ;; (direction . right)
+         (side . bottom)
+         (slot . 2))
+
+        ((lambda (buf act) (member (buffer-mode buf) my/occur-grep-modes-list))
+         (display-buffer-reuse-mode-window
+          display-buffer-in-direction
+          display-buffer-in-side-window)
+         (side . top)
+         (slot . 5)
+         (window-height . (lambda (win) (fit-window-to-buffer win 20 10)))
+         (direction . above)
+         (body-function . select-window))
+
+        ;; Special modes on the right
+        (, (karna/mode-matcher 'emacs-news-mode)
+         (display-buffer-in-side-window)
+         (side . right)
+         (window-width . 77))
+
+        (, (karna/mode-matcher 'pdf-view-mode)
+         (display-buffer-in-side-window)
+         (side . right)
+         (window-width . 0.5))
+
+        ((lambda (buf act) (or (seq-some (lambda (regex) (string-match-p regex buf))
+                                    my/repl-names-list)
+                          (seq-some (lambda (mode)
+                                      (equal
+                                       (buffer-mode buf)
+                                       mode))
+                                    my/repl-modes-list)))
+         (display-buffer-reuse-window
+          display-buffer-in-direction
+          display-buffer-in-side-window)
+         (body-function . select-window)
+         ;; display-buffer-at-bottom
+         (window-height . .35)
+         (window-width .  .40)
+         ;; (preserve-size . (nil . t))
+         (direction . below)
+         (side . bottom)
+         (slot . 1))
+
+        ;; Buffer List at the top
+        ("\\*Buffer List\\*"
+         (display-buffer-in-side-window)
+         (side . top)
+         (slot . 0)
+         (window-height . shrink-window-if-larger-than-buffer))
+
+        ("\\*\\(?:Warnings\\|Compile-Log\\)\\*" ;\\|Tex Help\\|TeX errors
+         (display-buffer-at-bottom display-buffer-in-side-window display-buffer-in-direction)
+         (window-height . (lambda (win) (fit-window-to-buffer
+                                         win
+                                         (floor (frame-height) 5))))
+         (side . bottom)
+         (direction . below)
+         (slot . -5)
+         (window-parameters . ((split-window . #'ignore))))
+
+        ;; Messages buffer at the bottom
+        ("\\*Messages\\*"
+         (display-buffer-at-bottom
+          display-buffer-in-side-window
+          display-buffer-in-direction)
+         (window-height . (lambda (win) (fit-window-to-buffer
+                                         win
+                                         (floor (frame-height) 5))))
+         (side . bottom)
+         (direction . below)
+         (slot . -6)
+         (body-function . select-window)
+         (window-parameters . ((split-window . #'ignore))))
+      ))
+
+;;;###autoload
+(defun my/display-buffer-at-bottom ()
+  "Move the current buffer to the bottom of the frame.  This is
+useful to take a buffer out of a side window.
+
+The window parameters of this function are provided mostly for
+didactic purposes."
+  (interactive)
+  (let ((buffer (current-buffer)))
+    (with-current-buffer buffer
+      (delete-window)
+      (display-buffer-at-bottom
+       buffer '((window-height . (lambda (win)
+                                   (fit-window-to-buffer
+                                    win (/ (frame-height) 3)))))))))
 
 
 (provide 'setup-windows)
