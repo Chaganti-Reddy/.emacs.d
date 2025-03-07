@@ -515,6 +515,7 @@ Cancel the previous one if present."
     inferior-emacs-lisp-mode
     xref--xref-buffer-mode
     inferior-python-mode
+    calendar-mode
     inferior-octave-mode
 	  emacs-news-view-mode
 	  compilation-mode))
