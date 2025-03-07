@@ -463,10 +463,10 @@
   )
 
 (advice-add 'org-agenda-todo :after #'org-save-all-org-buffers)
-
+(setq org-agenda-window-setup 'current-window) 
 
 (setq org-agenda-hide-tags-regexp ".") ;; alternative --  (setq org-agenda-hide-tags-regexp "\\(work\\|personal\\)")
-(setq org-agenda-files (directory-files-recursively org-directory "\\.org$") )
+(setq org-agenda-files (directory-files-recursively "/mnt/Karna/" "\\.org$") )
 (setq org-agenda-start-on-weekday nil) ; - to see from current day instead of from Monday
 (setq org-agenda-start-day "-1d") ; - that's only for seeing week from yesterday, not from today
 
