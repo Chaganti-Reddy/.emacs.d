@@ -4,6 +4,7 @@
 
 ;; This configuration defines rules for displaying buffers in specific windows.
 ;; It uses a combination of regex patterns and derived mode checks to determine buffer placement.
+;; Note: Some Functions and methods are copied from Karthink's emacs config
 
 ;;; Code:
 
