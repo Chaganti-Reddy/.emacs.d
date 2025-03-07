@@ -83,6 +83,10 @@ Custom and third-party extensions:
 - [[https://github.com/yourusername/Emacs-TeQ][Emacs-TeQ]] :: Mathematical notation toolkit
 - ~consult-project-extra.el~ :: Enhanced project search
 - ~repeat-help.el~ :: Interactive command repetition
+- ~consult-yasnippet~ :: Consult integration for ~yasnippet.el~
+- ~keycast~ :: Key sequence visualization
+- ~lazytab~ :: Differentiate how TAB works on different modes
+- ~project-x~ :: Additional features and commands for project management
 
 * Snippets
 YASnippet templates for rapid content creation:
