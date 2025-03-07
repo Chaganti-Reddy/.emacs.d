@@ -468,8 +468,9 @@
 (setq org-agenda-hide-tags-regexp ".") ;; alternative --  (setq org-agenda-hide-tags-regexp "\\(work\\|personal\\)")
 
 (setq org-agenda-files
-      (append (directory-files-recursively "/mnt/Karna/Git" "\\.org$")
-              (directory-files-recursively "/mnt/Karna/Projects/" "\\.org$")))
+      (append (directory-files-recursively org-directory "\\.org$")
+              ;; (directory-files-recursively "/mnt/Karna/Projects/" "\\.org$")
+              ))
 
 (setq org-agenda-start-on-weekday nil) ; - to see from current day instead of from Monday
 (setq org-agenda-start-day "-1d") ; - that's only for seeing week from yesterday, not from today
