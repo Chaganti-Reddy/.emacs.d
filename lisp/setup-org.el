@@ -386,6 +386,8 @@
 ;; ORG EXPORT
 ;; --------------------------------------------------
 
+(use-package htmlize :ensure t :defer t)
+
 (setq org-export-backends '(md org ascii html icalendar latex odt)
       org-export-with-toc nil)
 
