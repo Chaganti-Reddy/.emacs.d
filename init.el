@@ -494,7 +494,7 @@ Cancel the previous one if present."
 	  ("[Oo]utput\\*$" .hide) 
     (TeX-output-mode . hide)
     "*Preview-Ghostscript-Error*"
-	  "\\*Async Shell Command\\*"
+	  ("\\*Async Shell Command\\*" . hide)
 	  "\\*Inferior Octave\\*"
 	  "\\*Inferior Python\\*"
 	  ("^\\*Backtrace\\*" . hide)
@@ -502,8 +502,11 @@ Cancel the previous one if present."
 	  ("^\\*Compile-Log\\*" . hide)
 	  ("^\\*Warnings\\*" . hide)
 	  "\\*Shell Command Output\\*"
+    ("\\*Detached Shell Command\\*" . hide)
 	  "^\\*evil-registers\\*"
+    "^\\*Apropos"
 	  "^\\*gptel-ask\\*"
+	  "^\\*Buffer List\\*"
 	  "^Calc:"
 	  "^\\*ielm\\*"
 	  "^\\*TeX Help\\*"
@@ -513,6 +516,8 @@ Cancel the previous one if present."
 	  messages-mode
 	  occur-mode
     inferior-emacs-lisp-mode
+    ibuffer-mode
+    bookmark-bmenu-mode
     xref--xref-buffer-mode
     inferior-python-mode
     calendar-mode
