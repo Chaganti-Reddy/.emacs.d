@@ -101,12 +101,9 @@ YASnippet templates for rapid content creation:
 - Eshell scripting helpers
 
 * Tree-Sitter Support
-Pre-built parsers included:
-- Bash (~libtree-sitter-bash.so~)
-- JSON (~libtree-sitter-json.so~)
-- Python (~libtree-sitter-python.so~)
 
-Add new grammars via ~M-x treesit-install-language-grammar~
+- Add new grammars via ~M-x treesit-install-language-grammar~
+- ~treesit-auto~ :: Automatically install missing grammars
 
 * License
 [[file:LICENSE][GNU General Public License v3.0]]
