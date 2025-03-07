@@ -40,7 +40,7 @@ SIZE: The height (if 'top or 'bottom) or width (if 'left or 'right) as a decimal
  'bottom 0.3)
 
 (karna/set-display-buffer-rule
- '(Custom-mode compilation-mode messages-buffer-mode TeX-output-mode xref--xref-buffer-mode)
+ '(Custom-mode compilation-mode messages-buffer-mode TeX-output-mode xref--xref-buffer-mode calendar-mode)
  'bottom 0.3)
 
 (karna/set-display-buffer-rule
