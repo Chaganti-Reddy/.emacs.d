@@ -414,6 +414,7 @@
 
 (use-package org-tempo
   :ensure nil
+  :defer t
   :config
   (pcase-dolist (`(,key ,expansion)
                  '(("n" "name")
