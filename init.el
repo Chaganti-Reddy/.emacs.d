@@ -642,6 +642,7 @@ Cancel the previous one if present."
 ;; Load org-faces to make sure we can set appropriate faces
 (require 'org-faces)
 
+(with-eval-after-load 'org-faces
 ;; Resize Org headings
 (dolist (face '((org-level-1 . 1.10)
                 (org-level-2 . 1.07)
@@ -652,8 +653,7 @@ Cancel the previous one if present."
                 (org-level-7 . 1.0)
                 (org-level-8 . 1.0)))
   (set-face-attribute (car face) nil :font my/variable-width-font :weight 'bold :height (cdr face)))
-
-(set-face-attribute 'org-document-title nil :font my/variable-width-font :weight 'bold :height 3.0)
+(set-face-attribute 'org-document-title nil :font my/variable-width-font :weight 'bold :height 1.5)
 (set-face-attribute 'org-block nil :foreground 'unspecified :inherit 'fixed-pitch)
 (set-face-attribute 'org-table nil :inherit 'fixed-pitch)
 (set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
@@ -661,7 +661,7 @@ Cancel the previous one if present."
 (set-face-attribute 'org-verbatim nil :inherit '(shadow fixed-pitch))
 (set-face-attribute 'org-special-keyword nil :inherit '(font-lock-comment-face fixed-pitch))
 (set-face-attribute 'org-meta-line nil :inherit '(font-lock-comment-face fixed-pitch))
-(set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch)
+(set-face-attribute 'org-checkbox nil :inherit 'fixed-pitch))
 
 (add-hook 'org-mode-hook #'variable-pitch-mode)
 
