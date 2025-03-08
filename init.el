@@ -117,7 +117,7 @@
 ;; Trying out [[https://gitlab.com/koral/gcmh][gcmh]] on an experimental basis.
 (condition-case-unless-debug nil
     (use-package gcmh
-      :defer 2.5
+      :defer 2.0
       :ensure t
       ;; :hook (after-init . gcmh-mode)
       :config
@@ -654,7 +654,7 @@ Cancel the previous one if present."
   (set-face-attribute (car face) nil :font my/variable-width-font :weight 'bold :height (cdr face)))
 
 (set-face-attribute 'org-document-title nil :font my/variable-width-font :weight 'bold :height 3.0)
-(set-face-attribute 'org-block nil :foreground nil :inherit 'fixed-pitch)
+(set-face-attribute 'org-block nil :foreground 'unspecified :inherit 'fixed-pitch)
 (set-face-attribute 'org-table nil :inherit 'fixed-pitch)
 (set-face-attribute 'org-formula nil :inherit 'fixed-pitch)
 (set-face-attribute 'org-code nil :inherit '(shadow fixed-pitch))
