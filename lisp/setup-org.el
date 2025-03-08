@@ -264,7 +264,7 @@
                     0.1 0.0)))
   :custom
   (org-modern-todo t)
-  (org-modern-table nil)
+  (org-modern-table t)
   (org-modern-variable-pitch t)
   (org-modern-block-fringe t)
   (org-modern-star '("◉" "○" "◆" "◇" "▶"))
