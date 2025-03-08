@@ -23,7 +23,6 @@
 				     "deepseek-coder:6.7b"
 				     "mistral"
 				     "zephyr"
-				     "llama3:8b-instruct-q6_K"
 				     "deepseek-r1:8b"
              (llava:7b :description "Llava 1.6: Vision capable model"
                    :capabilities (media)
