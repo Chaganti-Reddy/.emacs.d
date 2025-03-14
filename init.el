@@ -164,14 +164,19 @@ Cancel the previous one if present."
 		    (load-library "pulse")
 		    (when (string-suffix-p "server" server-name)
 		      (let ((after-init-time (current-time)))
-			 (dolist (lib '("org" "ob" "ox" "ol" "org-roam"
-				       "org-capture" "org-agenda" "latex" "reftex" "cdlatex"
-				       "consult" "helpful" "elisp-mode"
-				       "expand-region" "embrace"
-				       "ace-window" "avy" "yasnippet"
-				       "magit" "modus-themes" "diff-hl"
-				       "dired" "ibuffer" "pdf-tools"
-				       "emacs-wm"))
+			 (dolist (lib '("org" "ob" "ox" "ol" "org-roam" "ox-hugo"
+				       "org-capture" "org-modern" "visual-fill-column" "org-agenda" "org-super-agenda"  "latex" "reftex" "cdlatex"
+				       "consult" "consult-dir" "elisp-mode"
+				       "expand-region"
+               "format-all" "drag-stuff" "puni" "ws-butler"
+               "highlight-indent-guides" "flycheck" "sideline-flymake" "jinx"
+               "hl-todo" "breadcrumb" "evil" "evil-multiedit" "evil-nerd-commenter" "general"
+               "rainbow-mode" "rainbow-delimiters" "project" "project-x" "calc" 
+               "cape" "corfu" "eglot" "eldoc" 
+				       "avy" "yasnippet" "gptel"
+				       "magit" "doom-themes" 
+				       "dired" "dired-preview" "ibuffer" "pdf-tools" "nov"
+				       ))
 			  (with-demoted-errors "Error: %S" (load-library lib)))
 			 (with-temp-buffer (org-mode))
 			(let ((elapsed (float-time (time-subtract (current-time)
@@ -758,6 +763,7 @@ Cancel the previous one if present."
 ;; Henrik Lissner's Doom themes are a mainstay, mostly doom-rouge:
 ;;
 ;; [[file:/img/dotemacs/doom-rouge-demo.png]]
+
 (use-package doom-themes
   :ensure t
   :defer
@@ -767,7 +773,7 @@ Cancel the previous one if present."
   (add-hook 'enable-theme-functions #'my/doom-theme-settings)
   (defun my/doom-theme-settings (theme &rest args)
     "Additional face settings for doom themes"
-    (if (eq theme 'doom-rouge)
+    (if (member theme '(doom-Iosvkem doom-rouge))
         (progn
           (setq window-divider-default-right-width 2
                 window-divider-default-bottom-width 2
@@ -777,8 +783,6 @@ Cancel the previous one if present."
       (window-divider-mode -1)
       (message "Turned off window dividers"))
     (when (string-match-p "^doom-" (symbol-name theme))
-      ;; (when (eq theme 'doom-rouge)
-      ;;   (custom-set-faces `(hl-line ((,class :background "#1f2a3f")))))
       ;; Window dividers
       (let ((class '((class color) (min-colors 256))))
         (dolist (face-spec
@@ -788,16 +792,7 @@ Cancel the previous one if present."
                    (outline-1        (:height 1.25) outline)
                    (outline-2        (:height 1.20) outline)
                    (outline-3        (:height 1.16) outline)
-                   (outline-4        (:height 1.12) outline)
-                   ;; (tab-bar            (:background "black" :height 1.0 :foreground "white")
-                   ;;  tab-bar)
-                   ;; (tab-bar-tab
-                   ;;  (:bold t :height 1.10 :foreground nil :inherit mode-line-emphasis)
-                   ;;  tab-bar)
-                   ;; (tab-bar-tab-inactive
-                   ;;  (:inherit 'mode-line-inactive :height 1.10 :background "black")
-                   ;;  tab-bar)
-                   ))
+                   (outline-4        (:height 1.12) outline)))
           (cl-destructuring-bind (face spec library) face-spec
             (if (featurep library)
                 (custom-set-faces `(,face ((,class ,@spec))))
@@ -810,10 +805,15 @@ Cancel the previous one if present."
     :config
     (setq doom-rouge-padded-modeline nil
           doom-rouge-brighter-comments t
-          doom-rouge-brighter-tabs t)))
+          doom-rouge-brighter-tabs t))
+  (use-package doom-Iosvkem-theme
+    :ensure nil
+    :config
+    (setq doom-iosevkem-padded-modeline nil
+          doom-iosevkem-brighter-comments t
+          doom-iosevkem-brighter-tabs t)))
 
-
-(defvar karna/theme-list '(doom-rouge ef-light ef-winter)
+(defvar karna/theme-list '(doom-Iosvkem doom-rouge ef-light ef-winter)
   "List of themes to cycle through.")
 
 (defvar karna/current-theme (car karna/theme-list)
