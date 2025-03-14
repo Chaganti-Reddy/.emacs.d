@@ -55,7 +55,7 @@
   ;; Pinched from https://tecosaur.github.io/emacs-config/config.html
   (defun my/nov-display-setup ()
     (face-remap-add-relative 'variable-pitch
-                             :family "Merriweather"
+                             :family "Aporetic Serif"
                              :height 1.0
                              :width 'semi-expanded)
     ;; (face-remap-add-relative 'default :height 1.1)
