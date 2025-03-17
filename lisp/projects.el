@@ -66,5 +66,19 @@
 ;; (add-hook 'emacs-startup-hook #'karna/clean-project-known-projects)
     
 
+(defun karna/agenda-for-project-or-org-dir ()
+  "Show agenda for the current project if in a project, otherwise use `org-directory`."
+  (interactive)
+  (let* ((project-root (when (project-current)
+                         (project-root (project-current))))
+         (org-agenda-files
+          (if project-root
+              (directory-files-recursively project-root "\\.org$")
+            (directory-files-recursively org-directory "\\.org$"))))
+    (org-agenda nil "t")))  ;; Show TODOs
+
+(global-set-key (kbd "C-x p a") #'karna/agenda-for-project-or-org-dir)
+
+
 (provide 'projects)
 ;;; projects.el ends here
