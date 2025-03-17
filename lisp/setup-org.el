@@ -472,7 +472,7 @@
 
 (setq org-agenda-files
       (append (directory-files-recursively org-directory "\\.org$")
-              ;; (directory-files-recursively "/mnt/Karna/Projects/" "\\.org$")
+              ;;(directory-files-recursively "/mnt/Karna/Git/" "\\.org$")
               ))
 
 (setq org-agenda-start-on-weekday nil) ; - to see from current day instead of from Monday
