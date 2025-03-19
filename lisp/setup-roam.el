@@ -2,7 +2,7 @@
 
 ;;; Commentary:
 
-;; My ORG Roam configuration 
+;; My ORG Roam configuration
 
 ;;; Code:
 
@@ -16,7 +16,7 @@
   (org-roam-completion-everywhere t)    ; Enable completion everywhere
   (org-roam-directory "/mnt/Karna/Git/Project-K/Org/Roam/")
   (org-roam-dailies-directory "/mnt/Karna/Git/Project-K/Org/Journal/")
-  (org-roam-graph-viewer "/usr/bin/zen-browser")
+  (org-roam-graph-viewer "/usr/bin/brave")
 
   (org-roam-capture-templates
    '(("d" "default" plain "%?"
@@ -39,27 +39,27 @@
 			 "#+title: ${title}\n#+filetags: Project")
       :unnarrowed t)
      ("r" "reference" plain "%?"
-               :if-new
-               (file+head "reference/${title}.org" "#+title: ${title}\n")
-               :immediate-finish t
-               :unnarrowed t)))
+	       :if-new
+	       (file+head "reference/${title}.org" "#+title: ${title}\n")
+	       :immediate-finish t
+	       :unnarrowed t)))
   :config
   (setf (alist-get "^\\*org-roam\\*$" display-buffer-alist
-                         nil nil #'equal)
-              '((display-buffer-reuse-window
-                 display-buffer-reuse-mode-window
-                 display-buffer-below-selected)
-                (window-height . 0.4 
-                 ;; (lambda (win)
-                 ;;   (fit-window-to-buffer
-                 ;;    win 30))
-                 )))
+			 nil nil #'equal)
+	      '((display-buffer-reuse-window
+		 display-buffer-reuse-mode-window
+		 display-buffer-below-selected)
+		(window-height . 0.4
+		 ;; (lambda (win)
+		 ;;   (fit-window-to-buffer
+		 ;;    win 30))
+		 )))
     (defun my/org-roam-node-latex-preview (&rest _)
       (let ((major-mode 'org-mode))
-        (org-latex-preview 'buffer)))
+	(org-latex-preview 'buffer)))
 
     (advice-add 'org-roam-node-insert-section :after
-                #'my/org-roam-node-latex-preview)
+		#'my/org-roam-node-latex-preview)
   (org-roam-setup))
 
 ;; ─────────────────────────────────────────────────────
@@ -82,7 +82,7 @@
 ;; ─────────────────────────────────────────────────────
 (use-package org-journal
   :ensure t
-  :defer 
+  :defer
   :custom
   (org-journal-dir "/mnt/Karna/Git/Project-K/Org/Journal/")
   (org-journal-date-prefix "* ")
