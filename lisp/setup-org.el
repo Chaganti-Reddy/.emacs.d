@@ -818,41 +818,41 @@
                             (file-name-base dump-file)))))))))))
 
   ;; org-html-format-latex from Org 9.6 - this is needed because the new version does not work with ox-hugo
-;; (defun org-html-format-latex (latex-frag processing-type info)
-;;     "Format a LaTeX fragment LATEX-FRAG into HTML.
-;; PROCESSING-TYPE designates the tool used for conversion.  It can
-;; be `mathjax', `verbatim', `html', nil, t or symbols in
-;; `org-preview-latex-process-alist', e.g., `dvipng', `dvisvgm' or
-;; `imagemagick'.  See `org-html-with-latex' for more information.
-;; INFO is a plist containing export properties."
-;;     (let ((cache-relpath "") (cache-dir ""))
-;;       (unless (or (eq processing-type 'mathjax)
-;;                   (eq processing-type 'html))
-;;         (let ((bfn (or (buffer-file-name)
-;;                        (make-temp-name
-;;                         (expand-file-name "latex" temporary-file-directory))))
-;;               (latex-header
-;;                (let ((header (plist-get info :latex-header)))
-;;                  (and header
-;;                       (concat (mapconcat
-;;                                (lambda (line) (concat "#+LATEX_HEADER: " line))
-;;                                (org-split-string header "\n")
-;;                                "\n")
-;;                               "\n")))))
-;;           (setq cache-relpath
-;;                 (concat (file-name-as-directory org-preview-latex-image-directory)
-;;                         (file-name-sans-extension
-;;                          (file-name-nondirectory bfn)))
-;;                 cache-dir (file-name-directory bfn))
-;;           ;; Re-create LaTeX environment from original buffer in
-;;           ;; temporary buffer so that dvipng/imagemagick can properly
-;;           ;; turn the fragment into an image.
-;;           (setq latex-frag (concat latex-header latex-frag))))
-;;       (with-temp-buffer
-;;         (insert latex-frag)
-;;         (org-format-latex cache-relpath nil nil cache-dir nil
-;;                           "Creating LaTeX Image..." nil processing-type)
-;;         (buffer-string))))
+ (defun org-html-format-latex (latex-frag processing-type info)
+     "Format a LaTeX fragment LATEX-FRAG into HTML.
+ PROCESSING-TYPE designates the tool used for conversion.  It can
+ be `mathjax', `verbatim', `html', nil, t or symbols in
+ `org-preview-latex-process-alist', e.g., `dvipng', `dvisvgm' or
+ `imagemagick'.  See `org-html-with-latex' for more information.
+ INFO is a plist containing export properties."
+     (let ((cache-relpath "") (cache-dir ""))
+       (unless (or (eq processing-type 'mathjax)
+                   (eq processing-type 'html))
+         (let ((bfn (or (buffer-file-name)
+                        (make-temp-name
+                         (expand-file-name "latex" temporary-file-directory))))
+               (latex-header
+               (let ((header (plist-get info :latex-header)))
+                  (and header
+                       (concat (mapconcat
+                                (lambda (line) (concat "#+LATEX_HEADER: " line))
+                                (org-split-string header "\n")
+                                "\n")
+                               "\n")))))
+           (setq cache-relpath
+                 (concat (file-name-as-directory org-preview-latex-image-directory)
+                         (file-name-sans-extension
+                          (file-name-nondirectory bfn)))
+                 cache-dir (file-name-directory bfn))
+           ;; Re-create LaTeX environment from original buffer in
+           ;; temporary buffer so that dvipng/imagemagick can properly
+           ;; turn the fragment into an image.
+           (setq latex-frag (concat latex-header latex-frag))))
+       (with-temp-buffer
+         (insert latex-frag)
+         (org-format-latex cache-relpath nil nil cache-dir nil
+                           "Creating LaTeX Image..." nil processing-type)
+         (buffer-string))))
   )
 
 ;; code for centering LaTeX previews -- a terrible idea
