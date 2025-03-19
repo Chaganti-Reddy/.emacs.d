@@ -168,13 +168,13 @@ Cancel the previous one if present."
 				       "org-capture" "org-modern" "visual-fill-column" "org-agenda" "org-super-agenda"  "latex" "reftex" "cdlatex"
 				       "consult" "consult-dir" "elisp-mode"
 				       "expand-region"
-               "format-all" "puni" "ws-butler"
-               "highlight-indent-guides" "flycheck" "sideline-flymake" "jinx"
-               "hl-todo" "breadcrumb" "evil" "evil-multiedit" "evil-nerd-commenter" "general"
-               "rainbow-mode" "rainbow-delimiters" "project" 
-               "cape" "corfu" "eglot"
+	       "format-all" "puni" "ws-butler"
+	       "highlight-indent-guides" "flycheck" "sideline-flymake" "jinx"
+	       "hl-todo" "breadcrumb" "evil" "evil-multiedit" "evil-nerd-commenter" "general"
+	       "rainbow-mode" "rainbow-delimiters" "project"
+	       "cape" "corfu" "eglot"
 				       "avy" "yasnippet" "yasnippet-snippets" "gptel"
-				       "magit" "doom-themes" 
+				       "magit" "doom-themes"
 				       "dired" "dired-preview" "ibuffer" "pdf-tools" "nov"
 				       ))
 			  (with-demoted-errors "Error: %S" (load-library lib)))
@@ -221,12 +221,12 @@ Cancel the previous one if present."
 (require 'setup-ui)
 
 (setq          evil-default-cursor       '(box)
-              evil-normal-state-cursor  '(box)
-              ;; evil-emacs-state-cursor   '("orange" box)
-              evil-motion-state-cursor  '(box)
-              evil-insert-state-cursor  '(bar)
-              evil-visual-state-cursor  '(hbar)
-              evil-replace-state-cursor '(hbar))
+	      evil-normal-state-cursor  '(box)
+	      ;; evil-emacs-state-cursor   '("orange" box)
+	      evil-motion-state-cursor  '(box)
+	      evil-insert-state-cursor  '(bar)
+	      evil-visual-state-cursor  '(hbar)
+	      evil-replace-state-cursor '(hbar))
 
 (elpaca-wait)
 
@@ -346,10 +346,10 @@ Cancel the previous one if present."
 (add-hook 'after-save-hook 'executable-make-buffer-file-executable-if-script-p)
 
 (setq browse-url-browser-function 'browse-url-generic
-      browse-url-generic-program "zen-browser"
-      browse-url-default-program "zen-browser"
+      browse-url-generic-program "brave"
+      browse-url-default-program "brave"
       org-html-htmlize-output-type 'inline-css
-      org-html-htmlize-browser "zen-browser")
+      org-html-htmlize-browser "brave")
 
 ;;;######################################################################
 ;; * INTERFACING WITH THE OS
@@ -496,7 +496,7 @@ Cancel the previous one if present."
     (add-hook 'emacs-startup-hook #'popper-mode))
   (setq popper-reference-buffers
 	'("^\\*Messages\\*"
-	  ("[Oo]utput\\*$" .hide) 
+	  ("[Oo]utput\\*$" .hide)
     (TeX-output-mode . hide)
     "*Preview-Ghostscript-Error*"
 	  ("\\*Async Shell Command\\*" . hide)
@@ -508,6 +508,7 @@ Cancel the previous one if present."
 	  ("^\\*Warnings\\*" . hide)
 	  "\\*Shell Command Output\\*"
     ("\\*Detached Shell Command\\*" . hide)
+    ("\\*Org LaTeX Precompilation\\*" . hide)
 	  "^\\*evil-registers\\*"
     "^\\*Apropos"
 	  "^\\*gptel-ask\\*"
@@ -579,9 +580,9 @@ Cancel the previous one if present."
 
   ;; Recommended settings
   (setq evil-multiedit-highlight-current-match t
-        evil-multiedit-highlight-other-matches t
-        evil-multiedit-follow-matches t
-        evil-multiedit-scope 'buffer))
+	evil-multiedit-highlight-other-matches t
+	evil-multiedit-follow-matches t
+	evil-multiedit-scope 'buffer))
 
 (with-eval-after-load 'evil
   (require 'evil-multiedit))
@@ -650,13 +651,13 @@ Cancel the previous one if present."
 (with-eval-after-load 'org-faces
 ;; Resize Org headings
 (dolist (face '((org-level-1 . 1.10)
-                (org-level-2 . 1.07)
-                (org-level-3 . 1.04)
-                (org-level-4 . 1.01)
-                (org-level-5 . 1.0)
-                (org-level-6 . 1.0)
-                (org-level-7 . 1.0)
-                (org-level-8 . 1.0)))
+		(org-level-2 . 1.07)
+		(org-level-3 . 1.04)
+		(org-level-4 . 1.01)
+		(org-level-5 . 1.0)
+		(org-level-6 . 1.0)
+		(org-level-7 . 1.0)
+		(org-level-8 . 1.0)))
   (set-face-attribute (car face) nil :font my/variable-width-font :weight 'bold :height (cdr face)))
 (set-face-attribute 'org-document-title nil :font my/variable-width-font :weight 'bold :height 1.5)
 (set-face-attribute 'org-block nil :foreground 'unspecified :inherit 'fixed-pitch)
@@ -703,7 +704,7 @@ Cancel the previous one if present."
 (use-package modus-themes
   :disabled
   :ensure t
-  :defer 
+  :defer
   :init
   (setq modus-themes-common-palette-overrides
 	`((date-common cyan)   ; default value (for timestamps and more)
@@ -774,44 +775,44 @@ Cancel the previous one if present."
   (defun my/doom-theme-settings (theme &rest args)
     "Additional face settings for doom themes"
     (if (member theme '(doom-Iosvkem doom-rouge))
-        (progn
-          (setq window-divider-default-right-width 2
-                window-divider-default-bottom-width 2
-                window-divider-default-places t)
-          (message "Turned on window dividers")
-          (window-divider-mode 1))
+	(progn
+	  (setq window-divider-default-right-width 2
+		window-divider-default-bottom-width 2
+		window-divider-default-places t)
+	  (message "Turned on window dividers")
+	  (window-divider-mode 1))
       (window-divider-mode -1)
       (message "Turned off window dividers"))
     (when (string-match-p "^doom-" (symbol-name theme))
       ;; Window dividers
       (let ((class '((class color) (min-colors 256))))
-        (dolist (face-spec
-                 '((aw-leading-char-face (:height 2.0 :foreground unspecified :inherit mode-line-emphasis)
-                    ace-window)
-                   (aw-background-face (:inherit default :weight normal) ace-window)
-                   (outline-1        (:height 1.25) outline)
-                   (outline-2        (:height 1.20) outline)
-                   (outline-3        (:height 1.16) outline)
-                   (outline-4        (:height 1.12) outline)))
-          (cl-destructuring-bind (face spec library) face-spec
-            (if (featurep library)
-                (custom-set-faces `(,face ((,class ,@spec))))
-              (with-eval-after-load library
-                (when (string-match-p "^doom-" (symbol-name theme))
-                  (custom-set-faces `(,face ((,class ,@spec))))))))))))
+	(dolist (face-spec
+		 '((aw-leading-char-face (:height 2.0 :foreground unspecified :inherit mode-line-emphasis)
+		    ace-window)
+		   (aw-background-face (:inherit default :weight normal) ace-window)
+		   (outline-1        (:height 1.25) outline)
+		   (outline-2        (:height 1.20) outline)
+		   (outline-3        (:height 1.16) outline)
+		   (outline-4        (:height 1.12) outline)))
+	  (cl-destructuring-bind (face spec library) face-spec
+	    (if (featurep library)
+		(custom-set-faces `(,face ((,class ,@spec))))
+	      (with-eval-after-load library
+		(when (string-match-p "^doom-" (symbol-name theme))
+		  (custom-set-faces `(,face ((,class ,@spec))))))))))))
   (doom-themes-org-config)
   (use-package doom-rouge-theme
     :ensure nil
     :config
     (setq doom-rouge-padded-modeline nil
-          doom-rouge-brighter-comments t
-          doom-rouge-brighter-tabs t))
+	  doom-rouge-brighter-comments t
+	  doom-rouge-brighter-tabs t))
   (use-package doom-Iosvkem-theme
     :ensure nil
     :config
     (setq doom-iosevkem-padded-modeline nil
-          doom-iosevkem-brighter-comments t
-          doom-iosevkem-brighter-tabs t)))
+	  doom-iosevkem-brighter-comments t
+	  doom-iosevkem-brighter-tabs t)))
 
 (defvar karna/theme-list '(doom-Iosvkem doom-rouge ef-light ef-winter)
   "List of themes to cycle through.")
@@ -823,15 +824,15 @@ Cancel the previous one if present."
   "Cycle through `karna/theme-list`."
   (interactive)
   (setq karna/current-theme
-        (or (cadr (member karna/current-theme karna/theme-list))
-            (car karna/theme-list)))
+	(or (cadr (member karna/current-theme karna/theme-list))
+	    (car karna/theme-list)))
   (load-theme karna/current-theme t)
   (message "Switched to theme: %s" karna/current-theme))
 
 ;; Ensure theme is loaded only after Elpaca has initialized
 (add-hook 'elpaca-after-init-hook
-          (lambda ()
-            (load-theme karna/current-theme t)))
+	  (lambda ()
+	    (load-theme karna/current-theme t)))
 
 
 ;;;################################################################
@@ -1119,12 +1120,12 @@ becomes a blinking bar. Evil-mode (if bound) is disabled."
     :init-value nil
     :global nil
     (if my/olivetti-mode
-        (progn
-          (olivetti-mode 1)
-          (set-window-fringes (selected-window) 0 0)
-          ;; (setq-local line-spacing 0.16)
-          ;; (setq-local cursor-type '(bar . 2))
-          )
+	(progn
+	  (olivetti-mode 1)
+	  (set-window-fringes (selected-window) 0 0)
+	  ;; (setq-local line-spacing 0.16)
+	  ;; (setq-local cursor-type '(bar . 2))
+	  )
       (olivetti-mode -1)
       (set-window-fringes (selected-window) nil) ; Use default width
       (kill-local-variable 'line-spacing)
@@ -1138,12 +1139,12 @@ the mode-line and switches to `variable-pitch-mode'."
     :init-value
     :global-nil
     (if my/reader-mode
-        (progn
-          (make-frame '((name . "dropdown_reader")))
-          (my/olivetti-mode 1)
-          (view-mode 1)
-          (if (equal major-mode 'org-mode)
-              (org-show-all)))
+	(progn
+	  (make-frame '((name . "dropdown_reader")))
+	  (my/olivetti-mode 1)
+	  (view-mode 1)
+	  (if (equal major-mode 'org-mode)
+	      (org-show-all)))
       (view-mode -1)
       (my/olivetti-mode -1)
       (delete-frame)))
