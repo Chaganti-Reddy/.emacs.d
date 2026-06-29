@@ -40,6 +40,7 @@ With DIR-P, PATH itself is the directory."
       url-configuration-directory (my/var "url/" t)
       url-cache-directory     (my/var "url/cache/" t)
       nsm-settings-file       (my/var "network-security.data")
+      server-auth-dir         (my/var "server/" t)
       transient-history-file  (my/var "transient/history.el")
       transient-levels-file   (my/var "transient/levels.el")
       transient-values-file   (my/var "transient/values.el"))
@@ -105,7 +106,8 @@ With DIR-P, PATH itself is the directory."
       package-archive-priorities '(("gnu" . 10) ("nongnu" . 8) ("melpa" . 5))
       package-quickstart t
       package-quickstart-file (my/emacs-path "var/package-quickstart.el")
-      package-native-compile t)
+      package-native-compile t
+      package-install-upgrade-built-in t)
 
 ;; Windows GPG frequently lacks the ELPA signing keys, causing "Failed to
 ;; verify signature / no public key" on install. Package downloads still go
@@ -162,7 +164,21 @@ With DIR-P, PATH itself is the directory."
                        (file-in-directory-p buffer-file-name my/lisp-dir))
               (byte-compile-file buffer-file-name))))
 
+(setq help-window-select t)
+
 (my/load 'my-commands)            ; custom utility commands
+(my/load 'setup-windows)          ; display-buffer placement rules
+(my/load 'my-coding)              ; tree-sitter + eglot + diagnostics
+(my/load 'my-writing)             ; org (research/latex) + markdown
+
+;; Run a server so `emacsclient' (git EDITOR, "open in Emacs") reuses this
+;; session. Start it once Emacs is idle -- keeps it off the startup path.
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (run-with-idle-timer
+             1.0 nil
+             (lambda () (require 'server)
+               (unless (server-running-p) (server-start))))))
 
 ;;; ===========================================================================
 ;;; 7. Editing mechanics & built-in UX
@@ -233,6 +249,31 @@ With DIR-P, PATH itself is the directory."
 (global-set-key (kbd "C-S-z") #'undo-redo)
 (global-set-key (kbd "C-/")   #'comment-line)
 
+;; Visual undo tree (like neovim's undotree). Lazy: loads on first `C-x u'.
+(use-package vundo
+  :bind ("C-x u" . vundo)
+  :config
+  (setq vundo-glyph-alist vundo-unicode-symbols
+        vundo-compact-display t))
+
+;; Persist undo/redo history across sessions (built-in undo, no undo-fu needed).
+(use-package undo-fu-session
+  :init
+  (setq undo-fu-session-directory (my/var "undo-fu-session/" t)
+        undo-fu-session-incompatible-files '("/COMMIT_EDITMSG\\'" "/git-rebase-todo\\'" "\\.gpg\\'")
+        undo-fu-session-compression 'gz)
+  :hook (emacs-startup . undo-fu-session-global-mode))
+
+(use-package expreg
+  :ensure nil
+  :bind (("C-=" . expreg-expand)
+         ("C-+" . expreg-contract))
+  :config
+  (add-hook 'after-change-major-mode-hook
+            (lambda ()
+              (when (or (derived-mode-p 'text-mode) (eq major-mode 'fundamental-mode))
+                (add-to-list 'expreg-functions #'expreg--sentence t)))))
+
 (global-reveal-mode 1)
 (setq browse-url-browser-function #'browse-url-default-browser)
 
@@ -265,8 +306,12 @@ With DIR-P, PATH itself is the directory."
 (with-eval-after-load 'recentf
   (dolist (p my/recentf-exclude) (add-to-list 'recentf-exclude p))
   (add-to-list 'recentf-exclude
-               (lambda (f) (string-prefix-p (expand-file-name my/cache-dir)
-                                       (expand-file-name f)))))
+               (lambda (f)
+                 (let ((f (expand-file-name f))
+                       (cache (expand-file-name my/cache-dir))
+                       (scratch (expand-file-name "scratch/" my/cache-dir)))
+                   (and (string-prefix-p cache f)
+                        (not (string-prefix-p scratch f)))))))
 
 ;; Enable after startup so reading history/places files doesn't slow boot.
 (add-hook 'emacs-startup-hook
@@ -302,8 +347,8 @@ With DIR-P, PATH itself is the directory."
 (global-set-key (kbd "C-x 3") #'my/split-right-focus)
 (global-set-key (kbd "C-x 2") #'my/split-below-focus)
 ;; Quick single-chord window ops (avoid M-digit = digit-argument):
-(global-set-key (kbd "M-\\") #'my/split-right-focus)   ; was toggle-input-method
-(global-set-key (kbd "C-\\") #'my/split-below-focus)   ; was delete-horizontal-space
+(global-set-key (kbd "C-S-\\") #'my/split-right-focus) 
+(global-set-key (kbd "C-|") #'my/split-below-focus)
 (global-set-key (kbd "M-o")  #'other-window)           ; fast focus; repeat: o o o
 (global-set-key (kbd "M-O")  #'delete-other-windows)   ; maximize current window
 (global-set-key (kbd "C-M-o") #'delete-window)         ; close current window
@@ -315,6 +360,49 @@ With DIR-P, PATH itself is the directory."
 
 (add-hook 'emacs-startup-hook
           (lambda () (winner-mode 1) (window-divider-mode 1) (repeat-mode 1)))
+
+;; popper: toggle/cycle "popup" buffers. `popper-display-control 'user' defers
+;; WHERE they appear to setup-windows.el; popper just hides/recalls/cycles them.
+(use-package popper
+  :bind (("C-`"   . popper-toggle)
+         ("M-`"   . popper-cycle)
+         ("C-M-`" . popper-toggle-type)
+         ("C-~"   . popper-cycle-backwards))
+  :init
+  (add-hook 'emacs-startup-hook #'popper-mode)
+  (setq popper-reference-buffers
+        '("^\\*Messages\\*"
+          ("[Oo]utput\\*$" . hide)
+          (TeX-output-mode . hide)
+          "\\*Preview-Ghostscript-Error\\*"
+          ("\\*Async Shell Command\\*" . hide)
+          ("^\\*Backtrace\\*" . hide)
+          ("\\*Completions\\*")
+          ("^\\*Compile-Log\\*" . hide)
+          ("^\\*Warnings\\*" . hide)
+          "\\*Shell Command Output\\*"
+          ("\\*Org LaTeX Precompilation\\*" . hide)
+          "^\\*Apropos" "^\\*Buffer List\\*" "^Calc:" "^\\*ielm\\*" "^\\*TeX Help\\*"
+          help-mode Custom-mode pdf-view-mode occur-mode ibuffer-mode dired-mode
+          bookmark-bmenu-mode xref--xref-buffer-mode calendar-mode
+          compilation-mode flymake-diagnostics-buffer-mode
+          magit-status-mode magit-process-mode magit-log-mode
+          magit-revision-mode magit-diff-mode))
+  :config
+  ;; Group popups by project, but fall back to ungrouped (no error) for buffers
+  ;; that aren't in a project -- raw `popper-group-by-project' signals there.
+  (defun my/popper-group-by-project ()
+    (condition-case nil (popper-group-by-project) (error nil)))
+  (setq popper-group-function #'my/popper-group-by-project
+        popper-display-control 'user
+        popper-mode-line '(:eval (propertize " POP" 'face 'mode-line-emphasis)))
+  (setq popper-reference-buffers
+        (append popper-reference-buffers
+                '("^\\*eshell.*\\*$" eshell-mode
+                  "^\\*shell.*\\*$"  shell-mode
+                  "^\\*term.*\\*$"   term-mode "^\\*vterm.*\\*$" vterm-mode
+                  "^\\*dape.*\\*$"   dape-info-mode dape-repl-mode)))
+  (popper-echo-mode 1))
 
 ;;; ===========================================================================
 ;;; 10. Dired (built-in file manager)
@@ -409,14 +497,20 @@ With DIR-P, PATH itself is the directory."
   :init
   (marginalia-mode))
 
-;; Icons next to minibuffer candidates (buffers, files, commands).
+;; Icons next to minibuffer candidates.
 (use-package nerd-icons-completion
   :after marginalia
-  :demand t
-  :config
+  :commands nerd-icons-completion-mode
+  :config (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
+
+(defun my/enable-completion-icons ()
+  "Load + enable minibuffer icons once, then unhook self."
+  (remove-hook 'minibuffer-setup-hook #'my/enable-completion-icons)
   (nerd-icons-completion-mode 1)
-  (nerd-icons-completion-marginalia-setup)
-  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
+  (nerd-icons-completion-marginalia-setup))
+(add-hook 'minibuffer-setup-hook #'my/enable-completion-icons)
+(add-hook 'emacs-startup-hook
+          (lambda () (run-with-idle-timer 1 nil #'my/enable-completion-icons)))
 
 ;;; ===========================================================================
 ;;; 12. Appearance
@@ -424,7 +518,7 @@ With DIR-P, PATH itself is the directory."
 ;; Main font + maximize + colors are set in early-init. Here: glyph fallback,
 ;; theme, and cheap UI niceties.
 (defconst my/variable-pitch-candidates
-  '("Fira Sans" "Segoe UI" "Cantarell" "Iosevka Aile")
+  '("Merriweather" "Iosevka Aile" "Fira Sans" "Cambria" "Segoe UI" "Cantarell")
   "Proportional fonts for variable-pitch faces, tried best-first.")
 
 (defun my/apply-fonts (&optional frame)
@@ -435,7 +529,8 @@ Family + size come from the frame created in early-init."
     (set-face-attribute 'fixed-pitch frame :family my/font-family :weight my/font-weight)
     (when-let* ((vp (seq-find (lambda (f) (find-font (font-spec :family f)))
                               my/variable-pitch-candidates)))
-      (set-face-attribute 'variable-pitch frame :family vp :weight 'regular))
+      (set-face-attribute 'variable-pitch frame :family vp :weight 'regular)
+      (setf (alist-get vp face-font-rescale-alist nil nil #'equal) 0.9))
     (when IS-WINDOWS
       (set-fontset-font t 'emoji  (font-spec :family "Segoe UI Emoji") frame 'prepend)
       (set-fontset-font t 'symbol (font-spec :family "Segoe UI Symbol") frame 'append))))
@@ -450,7 +545,29 @@ Family + size come from the frame created in early-init."
 (setq modus-themes-italic-constructs t
       modus-themes-bold-constructs t
       modus-themes-mixed-fonts t
-      modus-themes-org-blocks 'gray-background)
+      modus-themes-variable-pitch-ui nil
+      modus-themes-org-blocks 'gray-background
+      modus-themes-prompts '(bold background)
+      modus-themes-headings
+      '((0 . (1.35)) (1 . (1.30)) (2 . (1.24))
+        (3 . (semibold 1.17)) (4 . (1.14)) (t . (monochrome))))
+(setq modus-themes-common-palette-overrides
+      '((fg-line-number-active fg-main)
+        (bg-line-number-inactive unspecified)
+        (bg-line-number-active unspecified)
+        (fringe unspecified)
+        (border-mode-line-active unspecified)
+        (border-mode-line-inactive unspecified)
+        (date-common cyan) (date-deadline red-warmer) (date-event magenta-warmer)
+        (date-now yellow-warmer) (date-scheduled magenta-cooler)
+        (date-weekday cyan-cooler) (date-weekend blue-faint)))
+(setq modus-vivendi-palette-overrides
+      '((fg-main "#d6d6d4")
+        (bg-main "#090909")
+        (bg-region bg-lavender)
+        (fg-heading-1 magenta-faint)
+        (bg-mode-line-active bg-lavender)
+        (fg-mode-line-active "#ffffff")))
 (load-theme 'modus-vivendi :no-confirm)
 
 (defconst my/line-number-width 3)
@@ -516,44 +633,50 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
       show-paren-when-point-inside-paren t
       show-paren-context-when-offscreen 'overlay)
 
-;; --- Custom mode line. Segments carry no keymaps, so the mode line
-;; is non-clickable / non-draggable -- no accidental mouse edits. -------------
-(defun my/ml-icon ()
-  "Nerd-icon for the current major mode (empty string if unavailable)."
-  (if (fboundp 'nerd-icons-icon-for-mode)
-      (let ((i (ignore-errors (nerd-icons-icon-for-mode major-mode))))
-        (if (stringp i) i ""))
-    ""))
-(defun my/ml-project ()
-  "Current project name, or empty."
-  (if-let* ((p (and (fboundp 'project-current) (project-current))))
-      (propertize (concat " " (project-name p) " ") 'face 'mode-line-emphasis) ""))
-(defun my/ml-vc ()
-  "Git branch (from vc-mode), or empty."
-  (if (and (boundp 'vc-mode) vc-mode (stringp vc-mode))
-      (concat " " (string-trim (substring-no-properties vc-mode)) " ") ""))
+;; Default mode line, fully non-interactive. The standard segments bake their
+;; own keymap / mouse-face / help-echo as TEXT PROPERTIES (and inside
+;; `:propertize' forms) -- so unbinding the global `mode-line' mouse keys or
+;; nil-ing the segment keymap *variables* does nothing. We strip those
+;; properties from the constructs themselves.
+(defun my/ml-strip-plist (plist)
+  "Drop mouse/keymap keys from a `:propertize' property list PLIST."
+  (let (out)
+    (while plist
+      (unless (memq (car plist) '(local-map keymap mouse-face pointer help-echo))
+        (setq out (nconc out (list (car plist) (cadr plist)))))
+      (setq plist (cddr plist)))
+    out))
 
-(setq-default mode-line-format
-  '("%e "
-    (:eval (cond (buffer-read-only   (propertize "RO " 'face 'error))
-                 ((buffer-modified-p) (propertize "● "  'face 'warning))
-                 (t                   "  ")))
-    (:eval (concat (my/ml-icon) " "))
-    (:propertize "%b" face mode-line-buffer-id)
-    "   "
-    (:propertize "%l:%c" face shadow)
-    "  "
-    ;; Diagnostics counters (shown only when Flymake is on).
-    (:eval (when (bound-and-true-p flymake-mode) flymake-mode-line-format))
-    mode-line-format-right-align
-    (:eval (my/ml-project))
-    (:eval (my/ml-vc))
-    ;; eglot/LSP and other features inject their status here.
-    mode-line-misc-info
-    "  "
-    (:eval (propertize (substring-no-properties (format-mode-line mode-name))
-                       'face 'bold))
-    "  "))
+(defun my/ml-strip (obj)
+  "Recursively remove mouse interactivity from mode-line construct OBJ."
+  (cond
+   ((stringp obj)
+    (let ((s (copy-sequence obj)))
+      (remove-text-properties
+       0 (length s)
+       '(local-map nil keymap nil mouse-face nil pointer nil help-echo nil) s)
+      s))
+   ((not (consp obj)) obj)
+   ((eq (car obj) :eval) obj)                       ; never rewrite code
+   ((eq (car obj) :propertize)
+    (cons :propertize (cons (my/ml-strip (cadr obj))
+                            (my/ml-strip-plist (cddr obj)))))
+   (t (cons (my/ml-strip (car obj)) (my/ml-strip (cdr obj))))))
+
+(dolist (seg '(mode-line-front-space mode-line-mule-info mode-line-client
+               mode-line-modified mode-line-remote mode-line-frame-identification
+               mode-line-buffer-identification mode-line-position mode-line-modes
+               mode-line-misc-info mode-line-end-spaces minor-mode-alist))
+  (when (boundp seg)
+    (set-default seg (my/ml-strip (default-value seg)))))
+
+;; Belt-and-suspenders: neutralize the catch-all keys and the default tooltip.
+(dolist (e '([mode-line down-mouse-1] [mode-line mouse-1] [mode-line drag-mouse-1]
+             [mode-line down-mouse-2] [mode-line mouse-2]
+             [mode-line down-mouse-3] [mode-line mouse-3]
+             [header-line down-mouse-1] [header-line mouse-1]))
+  (global-set-key e #'ignore))
+(setq mode-line-default-help-echo nil)
 
 ;;; ===========================================================================
 ;;; 13. Icons (nerd-icons) — glyphs served by the installed Nerd Font
@@ -567,7 +690,144 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
   :hook (dired-mode . nerd-icons-dired-mode))
 
 ;;; ===========================================================================
-;;; 14. Customize writes go to their own file, not here
+;;; 14. Version control (magit + diff-hl + wgrep)
+;;; ===========================================================================
+;; Windows: process spawning is magit's bottleneck -- point it straight at
+;; git.exe, and expose Git's bundled Unix tools (diff/grep) for diff-hl/ediff.
+(when IS-WINDOWS
+  (let ((git-usr "C:/Program Files/Git/usr/bin")
+        (git-exe "C:/Program Files/Git/bin/git.exe"))
+    (when (file-directory-p git-usr)
+      (add-to-list 'exec-path git-usr)
+      (setenv "PATH" (concat git-usr ";" (getenv "PATH"))))
+    (when (file-exists-p git-exe)
+      (setq magit-git-executable git-exe))))
+
+(use-package magit                       ; loads on first C-x g
+  :init (setq magit-define-global-key-bindings nil)
+  :bind (("C-x g"   . magit-status)
+         ("C-x M-g" . magit-dispatch)
+         ("C-c g g" . magit-status)
+         ("C-c g b" . magit-blame-addition)
+         ("C-c g l" . magit-log-buffer-file))
+  :config
+  (setq magit-diff-refine-hunk 'all      ; word-level diff highlighting
+        magit-save-repository-buffers 'dontask))
+
+(use-package diff-hl                      ; git gutter (margin, since fringe=0)
+  :hook ((dired-mode        . diff-hl-dired-mode)
+         (magit-pre-refresh  . diff-hl-magit-pre-refresh)
+         (magit-post-refresh . diff-hl-magit-post-refresh))
+  :bind (("C-c g [" . diff-hl-previous-hunk)
+         ("C-c g ]" . diff-hl-next-hunk)
+         ("C-c g v" . diff-hl-show-hunk)
+         ("C-c g s" . diff-hl-stage-current-hunk)
+         ("C-c g r" . diff-hl-revert-hunk))
+  :init (add-hook 'emacs-startup-hook #'global-diff-hl-mode)
+  :config
+  (diff-hl-flydiff-mode 1)               ; update gutter live as you type
+  (diff-hl-margin-mode 1))               ; REQUIRED: fringe=0 -> draw in margin
+
+(use-package wgrep                        ; edit grep results in place, then save
+  :init (setq wgrep-auto-save-buffer t
+              wgrep-change-readonly-file t)
+  :bind (:map grep-mode-map ("C-c C-p" . wgrep-change-to-wgrep-mode)))
+
+;;; ===========================================================================
+;;; 15. Navigation & multi-cursor (avy, multiple-cursors, imenu, project)
+;;; ===========================================================================
+;; avy: jump anywhere by typing a short label. (M-j is windmove-down here, so
+;; the timer command lives on C-;.)
+(use-package avy
+  :bind (("C-;"   . avy-goto-char-timer)
+         ("C-'"   . avy-goto-line)
+         ("C-c j" . avy-goto-char-2)
+         ("C-c w" . avy-goto-word-1)
+         ("C-c S" . avy-isearch))
+  :config
+  (setq avy-timeout-seconds 0.8
+        avy-background t                  
+        avy-keys '(?a ?s ?d ?f ?j ?k ?l ?\; ?w ?e ?i ?o))
+  (set-face-attribute 'avy-background-face nil :foreground "#6c6c6c" :background 'unspecified)
+  (set-face-attribute 'avy-lead-face   nil :foreground "#ffffff" :background "#ff2d00" :weight 'bold)
+  (set-face-attribute 'avy-lead-face-0 nil :foreground "#1a1a1a" :background "#ff7a00" :weight 'bold)
+  (set-face-attribute 'avy-lead-face-1 nil :foreground "#1a1a1a" :background "#ffb000" :weight 'bold)
+  (set-face-attribute 'avy-lead-face-2 nil :foreground "#ffffff" :background "#ff4500" :weight 'bold))
+
+;; multiple-cursors: VS Code-style multi-caret editing.
+(use-package multiple-cursors
+  :init (setq mc/list-file (my/var "mc-lists.el")) 
+  :preface
+  (defun my/mc-mark-next-or-delete-char (arg)
+    "With an active region, add a cursor at the next match (VS Code C-d);
+otherwise delete the character ahead."
+    (interactive "p")
+    (if (use-region-p) (mc/mark-next-like-this arg) (delete-char arg)))
+  :bind (("C-S-c C-S-c" . mc/edit-lines)
+         ("C-d"         . my/mc-mark-next-or-delete-char)
+         ("C->"         . mc/mark-next-like-this)
+         ("C-<"         . mc/mark-previous-like-this)
+         ("C-c C-<"     . mc/mark-all-like-this)
+         ("C-\""        . mc/skip-to-next-like-this)
+         ("C-:"         . mc/skip-to-previous-like-this)))
+
+;; imenu (built-in): jump to defs/headings in the buffer (reveals folded text).
+(setq imenu-auto-rescan t
+      imenu-use-popup-menu nil
+      imenu-max-item-length 100)
+(global-set-key (kbd "M-s i") #'imenu)
+(add-hook 'imenu-after-jump-hook
+          (lambda () (when (bound-and-true-p outline-minor-mode) (outline-show-entry))))
+
+;; project.el (built-in): also detect projects by these markers, not just VCS.
+(with-eval-after-load 'project
+  (setq project-vc-extra-root-markers
+        '("package.json" "Cargo.toml" "pyproject.toml" "requirements.txt"
+          "setup.py" "go.mod" "pom.xml" ".project")))
+(setq project-switch-use-entire-map t)
+(global-set-key (kbd "C-c p") #'project-switch-project)
+
+;; project-x: save/restore each project's buffers + window layout (C-x p w to
+;; save).
+;; C-x p w	project-x-window-state-save	Manually save your current project session
+;; C-x p j	project-x-window-state-load	Load session from a project
+;; C-x p J	project-x-windows	Reload session for the current project
+;; C-x p a	project-x-add-local-project	Add project + root marker
+;; C-x p r	project-x-rename-session	Rename the session (without changing path)
+;; C-x p d	project-x-clear-session	Clear session data
+
+(use-package project-x
+  :ensure nil
+  :after project
+  :demand t
+  :config
+  (setq project-x-window-list-file (my/var "project-x-save.el"))
+  (setq project-x-local-identifier '("package.json" "mix.exs" "Project.toml" ".project"))
+  (setq project-x-auto-save-delay 10)
+  (setq project-prompter #'project-x--project-prompt)
+  (setq tab-bar-show nil)
+  ;; Silence the "Wrote/Saved project state" echo spam from auto-save.
+  (dolist (fn '(project-x--window-state-write project-x-window-state-save))
+    (advice-add fn :around (lambda (orig &rest a)
+                             (let ((inhibit-message t)) (apply orig a)))))
+  (project-x-mode 1)
+  (project-x-tabs-mode 1))
+
+;;; ===========================================================================
+;;; 16. Start in a sensible working directory
+;;; ===========================================================================
+;; Windows launches from the Start Menu with cwd = install bin/, so new buffers
+;; inherit C:/Program Files/... Land in the work root instead (HOME on Unix).
+(defconst my/start-dir (if IS-WINDOWS "D:/" (expand-file-name "~/"))
+  "Default working directory for fresh buffers at startup.")
+(when (file-directory-p my/start-dir)
+  (setq-default default-directory my/start-dir)
+  (dolist (buf '("*scratch*" "*Messages*"))
+    (when (get-buffer buf)
+      (with-current-buffer buf (setq default-directory my/start-dir)))))
+
+;;; ===========================================================================
+;;; 17. Customize writes go to their own file, not here
 ;;; ===========================================================================
 (setq custom-file (my/var "custom.el"))
 (when (file-exists-p custom-file)
