@@ -141,7 +141,7 @@ With DIR-P, PATH itself is the directory."
       use-package-compute-statistics t) ; M-x use-package-report
 
 ;;; ===========================================================================
-;;; 6. Feature modules (lisp/) — large / deferrable config lives here
+;;; 6. lisp/ modules — only large feature collections live here
 ;;; ===========================================================================
 (defconst my/lisp-dir (my/emacs-path "lisp/"))
 (make-directory my/lisp-dir t)
@@ -153,7 +153,190 @@ With DIR-P, PATH itself is the directory."
       (require feature)
     (error (message "Module %s failed: %s" feature (error-message-string err)))))
 
-;; (my/load 'my-completion) ... added as modules are built.
+(my/load 'my-commands)            ; custom utility commands
+
+;;; ===========================================================================
+;;; 7. Editing mechanics & built-in UX
+;;; ===========================================================================
+(delete-selection-mode 1)          ; typing replaces the active region
+(global-subword-mode 1)            ; CamelCase humps count as words
+(setq sentence-end-double-space nil
+      kill-whole-line t)           ; C-k at col 0 takes the newline too
+
+(defconst my/tab-width 4)
+(setq-default indent-tabs-mode nil
+              tab-width my/tab-width)
+(setq tab-always-indent 'complete) ; TAB indents, then completes
+
+(setq save-interprogram-paste-before-kill t
+      kill-do-not-save-duplicates t
+      kill-ring-max 500
+      mouse-drag-and-drop-region t
+      mouse-drag-and-drop-region-cross-program t)
+
+(defconst my/undo-limit        (* 64 1024 1024))
+(defconst my/undo-strong-limit (* 96 1024 1024))
+(defconst my/undo-outer-limit  (* 1024 1024 1024))
+(setq undo-limit my/undo-limit
+      undo-strong-limit my/undo-strong-limit
+      undo-outer-limit my/undo-outer-limit)
+
+(electric-pair-mode 1)
+(setq electric-pair-preserve-balance t)
+(add-hook 'prog-mode-hook          ; don't pair < > (templates, comparisons)
+          (lambda () (modify-syntax-entry ?< ".") (modify-syntax-entry ?> ".")))
+
+(add-hook 'prog-mode-hook #'hs-minor-mode)   ; code folding (hideshow)
+(with-eval-after-load 'hideshow
+  (define-key hs-minor-mode-map (kbd "C-{")     #'hs-hide-block)
+  (define-key hs-minor-mode-map (kbd "C-}")     #'hs-show-block)
+  (define-key hs-minor-mode-map (kbd "C-c C-{") #'hs-hide-all)
+  (define-key hs-minor-mode-map (kbd "C-c C-}") #'hs-show-all))
+
+(setq isearch-lazy-count t
+      lazy-count-prefix-format nil
+      lazy-count-suffix-format "  (%s/%s)"
+      isearch-allow-scroll t
+      isearch-wrap-pause 'no
+      search-whitespace-regexp ".*?"
+      search-invisible 'open)
+
+(setq set-mark-command-repeat-pop t
+      help-window-select t
+      ediff-window-setup-function 'ediff-setup-windows-plain
+      ediff-split-window-function 'split-window-horizontally
+      compilation-scroll-output t)
+(with-eval-after-load 'compile
+  (require 'ansi-color)
+  (add-hook 'compilation-filter-hook #'ansi-color-compilation-filter))
+
+(dolist (c '(narrow-to-region narrow-to-page narrow-to-defun
+             upcase-region downcase-region))
+  (put c 'disabled nil))
+
+(when (fboundp 'which-key-mode)   
+  (which-key-mode 1)
+  (setq which-key-idle-delay 0.5))
+
+(global-set-key (kbd "<escape>") #'keyboard-escape-quit)
+(define-key minibuffer-local-map (kbd "<escape>") #'abort-recursive-edit)
+(global-set-key (kbd "C-z")   #'undo-only)   ; C-z=suspend is useless in GUI
+(global-set-key (kbd "C-S-z") #'undo-redo)
+
+;;; ===========================================================================
+;;; 8. Session persistence (history, places, recent files)
+;;; ===========================================================================
+(setq history-length 1000
+      history-delete-duplicates t
+      savehist-autosave-interval 60
+      savehist-save-minibuffer-history t
+      savehist-additional-variables '(search-ring regexp-search-ring kill-ring)
+      global-auto-revert-non-file-buffers t
+      auto-revert-verbose nil
+      recentf-max-saved-items 500
+      recentf-auto-cleanup 'never)
+
+(defconst my/recentf-exclude
+  '("/node_modules/" "/site-packages/" "/dist-packages/" "/\\.cargo/registry/"
+    "/\\.rustup/" "/go/pkg/mod/" "/venv/" "/\\.venv/" "/\\.tox/" "/__pycache__/"
+    "/\\.git/" "/build/" "/dist/" "/target/" "/\\.cache/" "/\\.next/"
+    "\\.tmp\\'" "^/\\(?:ssh\\|su\\|sudo\\)?:")
+  "Path patterns kept out of the recent-files list.")
+(with-eval-after-load 'recentf
+  (dolist (p my/recentf-exclude) (add-to-list 'recentf-exclude p))
+  (add-to-list 'recentf-exclude
+               (lambda (f) (string-prefix-p (expand-file-name my/cache-dir)
+                                       (expand-file-name f)))))
+
+;; Enable after startup so reading history/places files doesn't slow boot.
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (savehist-mode 1) (save-place-mode 1)
+            (recentf-mode 1)  (global-auto-revert-mode 1)))
+
+;;; ===========================================================================
+;;; 9. Window & buffer navigation
+;;; ===========================================================================
+(setq switch-to-buffer-obey-display-actions t
+      window-divider-default-places t
+      window-divider-default-bottom-width 1
+      window-divider-default-right-width 1)
+
+;; Vim-style window jumps. NOTE: shadows M-h mark-paragraph, M-k kill-sentence,
+;; M-l downcase-word -- accepted trade for fast navigation.
+(global-set-key (kbd "M-h") #'windmove-left)
+(global-set-key (kbd "M-j") #'windmove-down)
+(global-set-key (kbd "M-k") #'windmove-up)
+(global-set-key (kbd "M-l") #'windmove-right)
+(global-set-key (kbd "C-S-h") #'windmove-swap-states-left)
+(global-set-key (kbd "C-S-j") #'windmove-swap-states-down)
+(global-set-key (kbd "C-S-k") #'windmove-swap-states-up)
+(global-set-key (kbd "C-S-l") #'windmove-swap-states-right)
+
+(defun my/split-right-focus ()
+  "Split right and focus the new window."
+  (interactive) (select-window (split-window-right)))
+(defun my/split-below-focus ()
+  "Split below and focus the new window."
+  (interactive) (select-window (split-window-below)))
+(global-set-key (kbd "C-x 3") #'my/split-right-focus)
+(global-set-key (kbd "C-x 2") #'my/split-below-focus)
+
+(defun my/boring-buffer-p (buf)
+  "Non-nil if BUF is internal/noisy and should be skipped when cycling."
+  (let ((name (buffer-name buf)))
+    (or (string-prefix-p " " name)
+        (string-match-p
+         "\\`\\*\\(Messages\\|Warnings\\|Compile-Log\\|Echo Area\\|Async\\)" name))))
+(setq switch-to-prev-buffer-skip (lambda (_w buf _x) (my/boring-buffer-p buf))
+      switch-to-next-buffer-skip (lambda (_w buf _x) (my/boring-buffer-p buf)))
+(global-set-key (kbd "M-[") #'previous-buffer)
+(global-set-key (kbd "M-]") #'next-buffer)
+
+(add-hook 'emacs-startup-hook
+          (lambda () (winner-mode 1) (window-divider-mode 1) (repeat-mode 1)))
+
+;;; ===========================================================================
+;;; 10. Dired (built-in file manager)
+;;; ===========================================================================
+(setq dired-kill-when-opening-new-dired-buffer t
+      dired-dwim-target t
+      delete-by-moving-to-trash t
+      dired-recursive-copies 'always
+      dired-recursive-deletes 'top
+      dired-create-destination-dirs 'always
+      dired-auto-revert-buffer t
+      dired-mouse-drag-files t
+      dired-isearch-filenames 'dwim
+      dired-listing-switches "-agho --group-directories-first"
+      wdired-allow-to-change-permissions t
+      wdired-create-parent-directories t)
+
+;; Windows/macOS lack GNU ls: use Emacs's own Lisp directory lister.
+(when (memq system-type '(windows-nt darwin))
+  (with-eval-after-load 'dired
+    (require 'ls-lisp)
+    (setq ls-lisp-use-insert-directory-program nil
+          ls-lisp-dirs-first t)))
+
+(defun my/dired-create-file (file)
+  "Create empty FILE in the current Dired dir and jump to it."
+  (interactive (list (read-file-name "Create file: " (dired-current-directory))))
+  (write-region "" nil (expand-file-name file))
+  (revert-buffer) (dired-goto-file (expand-file-name file)))
+
+(with-eval-after-load 'dired
+  (require 'dired-x)
+  (setq dired-omit-files "\\`\\.\\.?\\'")   ; hide only . and ..
+  (define-key dired-mode-map (kbd "H") #'dired-omit-mode)
+  (define-key dired-mode-map (kbd "c") #'my/dired-create-file)
+  (when (fboundp 'dired-do-open)
+    (define-key dired-mode-map (kbd "C-<return>") #'dired-do-open)))
+(add-hook 'dired-mode-hook #'dired-omit-mode)
+
+;;; ===========================================================================
+;;; 11. Appearance
+;;; ===========================================================================
 
 ;;; ===========================================================================
 ;;; 7. Appearance
@@ -226,7 +409,7 @@ With DIR-P, PATH itself is the directory."
       show-paren-context-when-offscreen 'overlay)
 
 ;;; ===========================================================================
-;;; 8. Icons (nerd-icons) — glyphs served by the installed Nerd Font
+;;; 12. Icons (nerd-icons) — glyphs served by the installed Nerd Font
 ;;; ===========================================================================
 ;; No extra font download: point nerd-icons at our Nerd Font. More integrations
 ;; (completion, modeline) hook in during later steps.
@@ -238,7 +421,7 @@ With DIR-P, PATH itself is the directory."
   :hook (dired-mode . nerd-icons-dired-mode))
 
 ;;; ===========================================================================
-;;; 9. Customize writes go to their own file, not here
+;;; 13. Customize writes go to their own file, not here
 ;;; ===========================================================================
 (setq custom-file (my/var "custom.el"))
 (when (file-exists-p custom-file)
