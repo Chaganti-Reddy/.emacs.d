@@ -45,6 +45,7 @@ elsewhere `alpha-background' keeps text opaque.")
 (setq inhibit-startup-screen t
       inhibit-startup-message t
       inhibit-startup-buffer-menu t
+      inhibit-startup-echo-area-message (user-login-name)
       initial-scratch-message nil
       inhibit-x-resources t)
 
@@ -55,6 +56,7 @@ elsewhere `alpha-background' keeps text opaque.")
 (setq native-comp-async-report-warnings-errors 'silent)
 
 (set-language-environment "UTF-8")
+(prefer-coding-system 'utf-8)
 (setq default-input-method nil)
 
 ;;; early-init.el ends here

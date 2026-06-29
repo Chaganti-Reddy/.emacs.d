@@ -75,6 +75,20 @@ With DIR-P, PATH itself is the directory."
   (setq inhibit-compacting-font-caches t
         w32-pipe-buffer-size my/w32-pipe-buffer-size))
 
+;; Engine performance (display + subprocess).
+(defconst my/process-output-max (* 4 1024 1024)
+  "Bytes read from a subprocess at once. Bigger = faster LSP.")
+(setq read-process-output-max my/process-output-max
+      process-adaptive-read-buffering nil       ; lower latency on process output
+      redisplay-skip-fontification-on-input t   ; smoother scroll under keypresses
+      bidi-inhibit-bpa t                         ; skip bidi paren algo -> faster redisplay
+      ffap-machine-p-known 'reject               ; never DNS-ping a host when resolving paths
+      large-file-warning-threshold (* 100 1024 1024)
+      frame-resize-pixelwise t
+      window-resize-pixelwise t)
+(setq-default bidi-paragraph-direction 'left-to-right
+              truncate-lines t)
+
 ;; Find git/clangd/pyright/... regardless of how Emacs was launched.
 (add-to-list 'exec-path (my/emacs-path "bin"))
 
@@ -91,7 +105,16 @@ With DIR-P, PATH itself is the directory."
         ("melpa"  . "https://melpa.org/packages/"))
       package-archive-priorities '(("gnu" . 10) ("nongnu" . 8) ("melpa" . 5))
       package-quickstart t
-      package-quickstart-file (my/emacs-path "var/package-quickstart.el"))
+      package-quickstart-file (my/emacs-path "var/package-quickstart.el")
+      package-native-compile t)
+
+;; Windows GPG frequently lacks the ELPA signing keys, causing "Failed to
+;; verify signature / no public key" on install. Package downloads still go
+;; over HTTPS, so the transport is authenticated; we skip the GPG check on
+;; Windows for reliability. Proper alternative if you want the check back:
+;; install the `gnu-elpa-keyring-update' package, which refreshes the keyring.
+(when IS-WINDOWS
+  (setq package-check-signature nil))
 
 ;; Fast path: load the prebuilt autoload bundle if package.el has generated it
 ;; (it does so on every install/delete); otherwise do the normal scan.
@@ -100,8 +123,13 @@ With DIR-P, PATH itself is the directory."
   (package-initialize))
 
 ;; First run only: fetch archive contents so :ensure can install packages.
+;; Wrapped so a flaky archive (e.g. nongnu on a restricted network) logs a
+;; message instead of aborting the whole init.
 (unless package-archive-contents
-  (package-refresh-contents))
+  (condition-case err
+      (package-refresh-contents)
+    (error (message "Package archive refresh failed (continuing): %s"
+                    (error-message-string err)))))
 
 (require 'use-package)
 (setq use-package-always-ensure t       ; auto-install missing packages
@@ -159,8 +187,13 @@ With DIR-P, PATH itself is the directory."
 ;; Drop 'spaces/'space-mark from this list if the dots feel noisy.
 (defconst my/whitespace-style
   '(face tabs tab-mark spaces space-mark trailing missing-newline-at-eof))
-(setq whitespace-style my/whitespace-style)
+(setq whitespace-style my/whitespace-style
+      whitespace-display-mappings '((tab-mark   ?\t [?▷ ?\t] [?\\ ?\t])
+                                    (space-mark ?\s [?·]     [?.])))
 (add-hook 'prog-mode-hook #'whitespace-mode)
+;; Strip trailing whitespace on save, but only in code buffers.
+(add-hook 'prog-mode-hook
+          (lambda () (add-hook 'before-save-hook #'delete-trailing-whitespace nil t)))
 
 ;; Scrolling: keyboard scroll never recenters; keep a margin; smooth wheel.
 (defconst my/scroll-margin 3)
@@ -179,6 +212,16 @@ With DIR-P, PATH itself is the directory."
 (setq make-pointer-invisible t        ; hide mouse while typing
       x-stretch-cursor t)             ; cursor spans wide glyphs like tabs
 
+;; Tooltips in the echo area instead of popup windows.
+(tooltip-mode -1)
+(setq tooltip-use-echo-area t)
+
+;; Matching parens; show the off-screen opener inline.
+(show-paren-mode 1)
+(setq show-paren-delay 0.1
+      show-paren-when-point-inside-paren t
+      show-paren-context-when-offscreen 'overlay)
+
 ;;; ===========================================================================
 ;;; 8. Icons (nerd-icons) — glyphs served by the installed Nerd Font
 ;;; ===========================================================================
@@ -194,7 +237,7 @@ With DIR-P, PATH itself is the directory."
 ;;; ===========================================================================
 ;;; 9. Customize writes go to their own file, not here
 ;;; ===========================================================================
-(setq custom-file (my/emacs-path "custom.el"))
+(setq custom-file (my/var "custom.el"))
 (when (file-exists-p custom-file)
   (load custom-file nil 'nomessage))
 
