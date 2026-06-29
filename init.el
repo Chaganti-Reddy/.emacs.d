@@ -312,6 +312,7 @@ With DIR-P, PATH itself is the directory."
   '("/node_modules/" "/site-packages/" "/dist-packages/" "/\\.cargo/registry/"
     "/\\.rustup/" "/go/pkg/mod/" "/venv/" "/\\.venv/" "/\\.tox/" "/__pycache__/"
     "/\\.git/" "/build/" "/dist/" "/target/" "/\\.cache/" "/\\.next/"
+    "/AppData/" "/[Tt]emp/" "/Temporary Internet Files/"   ; Windows junk paths
     "\\.tmp\\'" "^/\\(?:ssh\\|su\\|sudo\\)?:")
   "Path patterns kept out of the recent-files list.")
 (with-eval-after-load 'recentf
@@ -553,33 +554,6 @@ Family + size come from the frame created in early-init."
       use-dialog-box nil
       use-short-answers t)
 
-(setq modus-themes-italic-constructs t
-      modus-themes-bold-constructs t
-      modus-themes-mixed-fonts t
-      modus-themes-variable-pitch-ui nil
-      modus-themes-org-blocks 'gray-background
-      modus-themes-prompts '(bold background)
-      modus-themes-headings
-      '((0 . (1.35)) (1 . (1.30)) (2 . (1.24))
-        (3 . (semibold 1.17)) (4 . (1.14)) (t . (monochrome))))
-(setq modus-themes-common-palette-overrides
-      '((fg-line-number-active fg-main)
-        (bg-line-number-inactive unspecified)
-        (bg-line-number-active unspecified)
-        (fringe unspecified)
-        (border-mode-line-active unspecified)
-        (border-mode-line-inactive unspecified)
-        (date-common cyan) (date-deadline red-warmer) (date-event magenta-warmer)
-        (date-now yellow-warmer) (date-scheduled magenta-cooler)
-        (date-weekday cyan-cooler) (date-weekend blue-faint)))
-(setq modus-vivendi-palette-overrides
-      '((fg-main "#d6d6d4")
-        (bg-main "#090909")
-        (bg-region bg-lavender)
-        (fg-heading-1 magenta-faint)
-        (bg-mode-line-active bg-lavender)
-        (fg-mode-line-active "#ffffff")))
-(load-theme 'modus-vivendi :no-confirm)
 
 (defconst my/line-number-width 3)
 (setq display-line-numbers-type 'relative

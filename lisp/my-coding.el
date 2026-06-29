@@ -99,7 +99,12 @@
   (define-key eglot-mode-map (kbd "C-c e f") #'eglot-format-buffer)
   (define-key eglot-mode-map (kbd "C-c e h") #'eldoc-doc-buffer)
   (add-hook 'eglot-managed-mode-hook
-            (lambda () (when (eglot-managed-p) (eglot-inlay-hints-mode 1)))))
+            (lambda () (when (eglot-managed-p) (eglot-inlay-hints-mode 1))))
+  (setf (alist-get '(python-mode python-ts-mode) eglot-server-programs nil nil #'equal)
+        (lambda (&rest _)
+          (cond ((executable-find "basedpyright-langserver") '("basedpyright-langserver" "--stdio"))
+                ((executable-find "pyright-langserver")       '("pyright-langserver" "--stdio"))
+                (t '("pylsp"))))))
 
 (setq xref-show-definitions-function #'xref-show-definitions-buffer)
 (global-set-key (kbd "M-<f12>") #'xref-find-definitions-other-window)
@@ -210,7 +215,13 @@
 ;; first code file, not at startup.
 (use-package apheleia
   :hook (prog-mode . apheleia-mode)
-  :bind ("C-c f" . apheleia-format-buffer))
+  :bind ("C-c f" . apheleia-format-buffer)
+  :config
+  (unless (assq 'ruff apheleia-formatters)
+    (setf (alist-get 'ruff apheleia-formatters)
+          '("ruff" "format" "--stdin-filename" filepath "-")))
+  (setf (alist-get 'python-mode apheleia-mode-alist) 'ruff
+        (alist-get 'python-ts-mode apheleia-mode-alist) 'ruff))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Dape — Debug Adapter Protocol client

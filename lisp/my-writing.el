@@ -33,7 +33,7 @@
   (setq org-format-latex-options
         (plist-put
          (plist-put
-          (plist-put org-format-latex-options :scale 1.2)
+          (plist-put org-format-latex-options :scale 1.0)
           :foreground "#d6d6d4")
          :background "Transparent"))
   (when (executable-find "dvisvgm")
