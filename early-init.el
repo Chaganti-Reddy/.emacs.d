@@ -58,7 +58,16 @@ elsewhere `alpha-background' keeps text opaque.")
       inhibit-startup-message t
       inhibit-startup-buffer-menu t
       inhibit-startup-echo-area-message (user-login-name)
-      initial-scratch-message nil
+      initial-scratch-message
+      (concat
+       ";;   Emacs ready.  Scratch buffer — type freely.\n"
+       ";;\n"
+       ";;   Jump  C-;      Window  M-o       Popups  C-`\n"
+       ";;   Find  C-x C-f  Recent  C-x C-r   Buffer  C-x b   Project  C-x p\n"
+       ";;   Code  M-RET actions · C-c e r rename · C-c f format · M-n/M-p errors\n"
+       ";;   Math  C-S-e eval-in-place · C-x * e live embedded Calc\n"
+       ";;   Help  C-h k <key>   C-h f <fn>      Full reference:  README.md\n"
+       ";;\n")
       initial-major-mode 'fundamental-mode   ; lighter *scratch*, faster boot
       inhibit-x-resources t)
 

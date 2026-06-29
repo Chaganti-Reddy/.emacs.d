@@ -168,13 +168,13 @@
       (let ((beg (region-beginning)) (end (region-end)))
         (kill-region beg end)
         (insert (calc-eval `(,(current-kill 0)
-                             calc-language ,(if (derived-mode-p 'latex-mode 'LaTeX-mode)
+                             calc-language ,(if (derived-mode-p 'latex-mode 'LaTeX-mode 'org-mode)
                                                 'latex 'normal)
                              calc-prefer-frac t calc-angle-mode rad))))
     (let ((line (thing-at-point 'line t)))
       (end-of-line) (kill-line 0)
       (insert (calc-eval `(,line
-                           calc-language ,(if (derived-mode-p 'latex-mode 'LaTeX-mode)
+                           calc-language ,(if (derived-mode-p 'latex-mode 'LaTeX-mode 'org-mode)
                                               'latex 'normal)
                            calc-prefer-frac t calc-angle-mode rad))))))
 (use-package calc
