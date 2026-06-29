@@ -15,7 +15,8 @@
   (setq org-directory (if IS-WINDOWS "D:/Org" "~/Org")
         org-id-locations-file (my/var "org-id-locations")
         org-persist-directory (my/var "org-persist/" t)
-        org-preview-latex-image-directory (my/var "org-latex-preview/" t))
+        org-preview-latex-image-directory (my/var "org-latex-preview/" t)
+        org-modules nil)
   :hook ((org-mode . visual-line-mode)
          (org-mode . variable-pitch-mode)
          (org-mode . org-cdlatex-mode))     ; fast math input (e.g. `ab' -> a_b)
@@ -40,10 +41,14 @@
          :background 'auto))
   (when (executable-find "dvisvgm")
     (setq org-preview-latex-default-process 'dvisvgm))
-  ;; calc included -> evaluate symbolic math in `#+begin_src calc' blocks; (Embedded calc: C-x * e.)
-  (org-babel-do-load-languages
-   'org-babel-load-languages
-   '((emacs-lisp . t) (python . t) (C . t) (shell . t) (calc . t))))
+  ;; Babel langs (calc evaluates `#+begin_src calc'; embedded calc is C-x * e).
+  (setq org-babel-load-languages
+        '((emacs-lisp . t) (python . t) (C . t) (shell . t) (calc . t)))
+  (run-with-idle-timer
+   0.5 nil
+   (lambda ()
+     (org-babel-do-load-languages
+      'org-babel-load-languages org-babel-load-languages))))
 
 (use-package org-modern
   :after org
@@ -76,6 +81,10 @@
 (use-package org-fragtog
   :after org
   :hook (org-mode . org-fragtog-mode))
+
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (run-with-idle-timer 1.5 nil (lambda () (require 'org nil t)))))
 
 ;; Auto-tangle on save when the file has `#+auto_tangle: t' (built-in babel,
 ;; no extra package). Bind `before-save-hook' locally in org buffers.
