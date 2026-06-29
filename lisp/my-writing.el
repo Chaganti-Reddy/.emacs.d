@@ -3,9 +3,9 @@
 ;;; ---------------------------------------------------------------------------
 ;;; Org Latest
 ;;; ---------------------------------------------------------------------------
-;; :ensure can't upgrade a built-in, so install Org 9.8 explicitly once (guard
-;; skips when present). Needs `package-install-upgrade-built-in' t (init.el).
-(unless (package-installed-p 'org '(9 8))
+;; :ensure can't upgrade a built-in, so install Org 9.8 explicitly once.
+(when (and (featurep 'package)
+           (not (package-installed-p 'org '(9 8))))
   (ignore-errors (package-install 'org)))
 
 (use-package org
@@ -18,7 +18,6 @@
         org-preview-latex-image-directory (my/var "org-latex-preview/" t)
         org-modules nil)
   :hook ((org-mode . visual-line-mode)
-         (org-mode . variable-pitch-mode)
          (org-mode . org-cdlatex-mode))     ; fast math input (e.g. `ab' -> a_b)
   :custom
   (org-startup-indented t)
@@ -29,14 +28,12 @@
   (org-src-content-indentation 0)
   (org-confirm-babel-evaluate nil)
   (org-return-follows-link t)
-  ;; Do NOT preview every fragment on open -- that spawns LaTeX per fragment and
-  ;; makes first open very slow. org-fragtog previews on-point instead (live).
   (org-startup-with-latex-preview nil)
   :config
   (setq org-format-latex-options
         (plist-put
          (plist-put
-          (plist-put org-format-latex-options :scale 1.6)
+          (plist-put org-format-latex-options :scale 1.2)
           :foreground "#d6d6d4")
          :background "Transparent"))
   (when (executable-find "dvisvgm")

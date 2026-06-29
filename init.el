@@ -95,8 +95,6 @@ With DIR-P, PATH itself is the directory."
 ;;; ===========================================================================
 ;;; 5. Package system: package.el + use-package (built in)
 ;;; ===========================================================================
-(require 'package)
-
 (setq package-user-dir      (my/emacs-path "var/elpa/")
       package-gnupghome-dir (my/emacs-path "var/elpa/gnupg/")
       package-archives
@@ -117,16 +115,20 @@ With DIR-P, PATH itself is the directory."
 (when IS-WINDOWS
   (setq package-check-signature nil))
 
-;; Load the prebuilt autoload bundle (installed packages are usable from this
-;; alone). We deliberately do NOT read `package-archive-contents' here: parsing
-;; MELPA's multi-MB archive list every startup is the single biggest avoidable
-;; cost, and it's only needed to INSTALL packages, not to use installed ones.
+(require 'use-package)
+(setq use-package-always-ensure t       ; first run: auto-install missing packages
+      use-package-always-defer t        ; lazy by default; demand explicitly
+      use-package-expand-minimally t
+      use-package-compute-statistics t) ; M-x use-package-report
+
 (if (file-exists-p package-quickstart-file)
-    (load package-quickstart-file nil 'nomessage)
+    (progn
+      (load package-quickstart-file nil 'nomessage)
+      (setq use-package-ensure-function #'ignore))
+  (require 'package)
   (package-initialize))
 
-;; Populate the archive list lazily -- only the first time something actually
-;; installs. Read the on-disk cache (no network); refresh only if absent.
+;; Populate the archive list lazily -- only the first time something installs.
 (defun my/ensure-package-archives (&rest _)
   (unless package-archive-contents
     (condition-case nil
@@ -135,11 +137,20 @@ With DIR-P, PATH itself is the directory."
       (error (package-refresh-contents)))))
 (advice-add 'package-install :before #'my/ensure-package-archives)
 
-(require 'use-package)
-(setq use-package-always-ensure t       ; auto-install missing packages
-      use-package-always-defer t        ; lazy by default; demand explicitly
-      use-package-expand-minimally t
-      use-package-compute-statistics t) ; M-x use-package-report
+;; Add a NEW package later: declare its `use-package' AND run `M-x package-install
+;; <name>'. That loads package.el, installs it, and (because `package-quickstart'
+;; is on) regenerates the bundle -- so startup stays fast. This command does both
+;; for everything currently declared-but-missing, in one shot.
+(defun my/sync-packages ()
+  "Install any declared-but-missing packages and refresh the fast bundle."
+  (interactive)
+  (require 'package)
+  (unless package--initialized (package-initialize))
+  (package-refresh-contents)
+  (let ((use-package-ensure-function #'use-package-ensure-elpa))
+    (load user-init-file))
+  (package-quickstart-refresh)
+  (message "Packages synced + quickstart refreshed. Restart for a clean session."))
 
 ;;; ===========================================================================
 ;;; 6. lisp/ modules — only large feature collections live here
