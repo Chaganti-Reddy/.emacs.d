@@ -79,7 +79,6 @@ With DIR-P, PATH itself is the directory."
 (defconst my/process-output-max (* 4 1024 1024)
   "Bytes read from a subprocess at once. Bigger = faster LSP.")
 (setq read-process-output-max my/process-output-max
-      process-adaptive-read-buffering nil       ; lower latency on process output
       redisplay-skip-fontification-on-input t   ; smoother scroll under keypresses
       bidi-inhibit-bpa t                         ; skip bidi paren algo -> faster redisplay
       ffap-machine-p-known 'reject               ; never DNS-ping a host when resolving paths
@@ -146,12 +145,22 @@ With DIR-P, PATH itself is the directory."
 (defconst my/lisp-dir (my/emacs-path "lisp/"))
 (make-directory my/lisp-dir t)
 (add-to-list 'load-path my/lisp-dir)
+(setq load-prefer-newer t)
 
 (defun my/load (feature)
   "Load FEATURE module from lisp/, logging failures instead of aborting init."
   (condition-case err
       (require feature)
     (error (message "Module %s failed: %s" feature (error-message-string err)))))
+
+;; Keep modules byte-compiled: build once if needed, then recompile on save.
+(unless (file-exists-p (expand-file-name "my-commands.elc" my/lisp-dir))
+  (byte-recompile-directory my/lisp-dir 0))
+(add-hook 'after-save-hook
+          (lambda ()
+            (when (and buffer-file-name
+                       (file-in-directory-p buffer-file-name my/lisp-dir))
+              (byte-compile-file buffer-file-name))))
 
 (my/load 'my-commands)            ; custom utility commands
 
@@ -234,7 +243,7 @@ With DIR-P, PATH itself is the directory."
       history-delete-duplicates t
       savehist-autosave-interval 60
       savehist-save-minibuffer-history t
-      savehist-additional-variables '(search-ring regexp-search-ring kill-ring)
+      savehist-additional-variables '(search-ring regexp-search-ring)
       global-auto-revert-non-file-buffers t
       auto-revert-verbose nil
       recentf-max-saved-items 500
@@ -334,16 +343,35 @@ With DIR-P, PATH itself is the directory."
 (add-hook 'dired-mode-hook #'dired-omit-mode)
 
 ;;; ===========================================================================
-;;; 11. Appearance
+;;; 11. Completion & minibuffer (built-in)
 ;;; ===========================================================================
+;; Vertical candidate list + flex fuzzy matching.
+(fido-vertical-mode 1)
+(setq completion-styles '(flex basic)            ; fuzzy, with a safe fallback
+      completion-ignore-case t
+      read-buffer-completion-ignore-case t
+      read-file-name-completion-ignore-case t
+      completions-detailed t                      ; inline annotations 
+      completions-sort 'historical                ; recently used candidates first
+      completion-auto-help 'visible
+      enable-recursive-minibuffers t
+      icomplete-compute-delay 0
+      icomplete-show-matches-on-no-input t)
+(minibuffer-depth-indicate-mode 1)
+
+;; In-buffer code completion: inline ghost-text preview as you type (Emacs 30).
+;; completion-at-point (TAB) accepts; M-n / M-p cycle candidates.
+(when (fboundp 'global-completion-preview-mode)
+  (global-completion-preview-mode 1))
 
 ;;; ===========================================================================
-;;; 7. Appearance
+;;; 12. Appearance
 ;;; ===========================================================================
 ;; Main font + maximize + colors are set in early-init. Here: glyph fallback,
 ;; theme, and cheap UI niceties.
-(defconst my/variable-pitch-family "Iosevka Aile"
-  "Proportional font for prose / variable-pitch faces.")
+(defconst my/variable-pitch-candidates
+  '("Fira Sans" "Segoe UI" "Cantarell" "Iosevka Aile")
+  "Proportional fonts for variable-pitch faces, tried best-first.")
 
 (defun my/apply-fonts (&optional frame)
   "Weight, proportional face, and emoji/symbol glyph fallback for FRAME.
@@ -351,8 +379,9 @@ Family + size come from the frame created in early-init."
   (when (display-graphic-p frame)
     (set-face-attribute 'default frame :weight my/font-weight)
     (set-face-attribute 'fixed-pitch frame :family my/font-family :weight my/font-weight)
-    (when (find-font (font-spec :family my/variable-pitch-family))
-      (set-face-attribute 'variable-pitch frame :family my/variable-pitch-family :weight 'regular))
+    (when-let* ((vp (seq-find (lambda (f) (find-font (font-spec :family f)))
+                              my/variable-pitch-candidates)))
+      (set-face-attribute 'variable-pitch frame :family vp :weight 'regular))
     (when IS-WINDOWS
       (set-fontset-font t 'emoji  (font-spec :family "Segoe UI Emoji") frame 'prepend)
       (set-fontset-font t 'symbol (font-spec :family "Segoe UI Symbol") frame 'append))))
@@ -375,6 +404,7 @@ Family + size come from the frame created in early-init."
       display-line-numbers-width my/line-number-width)
 (add-hook 'prog-mode-hook #'display-line-numbers-mode)
 (add-hook 'text-mode-hook #'display-line-numbers-mode)
+(add-hook 'text-mode-hook #'visual-line-mode)
 (column-number-mode 1)
 
 ;; Visualize whitespace: spaces as dots, tabs as glyph, trailing highlighted.
@@ -417,7 +447,7 @@ Family + size come from the frame created in early-init."
       show-paren-context-when-offscreen 'overlay)
 
 ;;; ===========================================================================
-;;; 12. Icons (nerd-icons) — glyphs served by the installed Nerd Font
+;;; 13. Icons (nerd-icons) — glyphs served by the installed Nerd Font
 ;;; ===========================================================================
 ;; No extra font download: point nerd-icons at our Nerd Font. More integrations
 ;; (completion, modeline) hook in during later steps.
@@ -429,7 +459,7 @@ Family + size come from the frame created in early-init."
   :hook (dired-mode . nerd-icons-dired-mode))
 
 ;;; ===========================================================================
-;;; 13. Customize writes go to their own file, not here
+;;; 14. Customize writes go to their own file, not here
 ;;; ===========================================================================
 (setq custom-file (my/var "custom.el"))
 (when (file-exists-p custom-file)
