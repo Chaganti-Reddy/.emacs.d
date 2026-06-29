@@ -1,0 +1,18 @@
+# -*- mode: snippet -*-
+# name: jekyll-scratchpad-til
+# key: til
+# --
+#+TITLE: `(format-time-string "%Y-%m-%d")`
+#+LAYOUT: default
+#+PARENT: TIL
+#+NAV_ORDER: `(format-time-string "%Y%m%d")`
+#+DATE: `(format-time-string "%Y-%m-%d")`
+#+DESCRIPTION: "things i learned on `(format-time-string "%B %e, %Y")`"
+#+SEARCH_EXCLUDE: true
+
+* `(format-time-string "%Y-%m-%d")`
+*`(format-time-string "%A, %B %e %Y")`*
+
+---
+
+$0

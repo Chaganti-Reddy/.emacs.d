@@ -1,0 +1,6 @@
+# -*- mode: snippet -*-
+# name: org-youtube-embed
+# key: yt
+# --
+{% include youtube.html id="${1:VIDEO_ID}" %}
+$0

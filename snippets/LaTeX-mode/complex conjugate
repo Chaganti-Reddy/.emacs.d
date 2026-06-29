@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: complex conjugate
+# key: cj
+# condition: (and (texmathp) 'auto)
+# group: math
+# --
+^{\\star}$0

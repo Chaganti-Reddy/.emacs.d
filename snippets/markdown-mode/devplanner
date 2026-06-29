@@ -1,0 +1,35 @@
+#name: Developer Planner Template
+#key: devplan
+# --
+---
+title: "${1:Dev Plan: Feature Name}"
+date: `(format-time-string "%Y-%m-%d")`
+tags: [dev, planning, sprint]
+description: "${2:Sprint/Daily planning for feature development.}"
+---
+
+# Daily Objective
+* Goal: ${3:What are we delivering today?}
+
+# Task Breakdown
+- [ ] **Phase 1: Implementation**
+  - [ ] Implement core logic
+  - [ ] Write unit tests
+- [ ] **Phase 2: Integration**
+  - [ ] Verify bindings
+  - [ ] Review API schemas
+- [ ] **Phase 3: Refactoring & Testing**
+
+# Technical Notes & Snippets
+```rust
+fn main() {
+    println!("Hello World");
+}
+```
+
+# Blocker Log
+- [ ] Blocker A: $4
+
+# Retrospective / Notes
+* What went well: $5
+* What to improve: $6

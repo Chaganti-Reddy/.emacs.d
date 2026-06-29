@@ -1,0 +1,17 @@
+# -*- mode: snippet -*-
+# name: jekyll-scratchpad-book
+# key: book
+# --
+---
+layout: book-note
+title: "${1:Chapter Title}"
+book_id: ${2:book-id-slug}
+nav_order: ${3:1}
+book_url: /books/notes/$2/
+book_title: "${4:Book Title}"
+nav_exclude: true
+search_exclude: true
+permalink: /books/notes/$2/${5:chapter-slug}/
+---
+
+$0

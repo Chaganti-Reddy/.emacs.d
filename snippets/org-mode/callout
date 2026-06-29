@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: org-callout
+# key: co
+# --
+#+BEGIN_QUOTE
+[!${1:$$(yas-choose-value '("note" "warning" "tip" "important"))}]
+${2:Callout content}
+#+END_QUOTE
+$0

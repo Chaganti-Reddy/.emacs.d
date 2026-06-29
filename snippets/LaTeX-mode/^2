@@ -1,0 +1,7 @@
+# -*- mode: snippet -*-
+# name: ^2
+# key: sr
+# condition: (and (texmathp) 'auto)
+# group: math
+# --
+^2$0

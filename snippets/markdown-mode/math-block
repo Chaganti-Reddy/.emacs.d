@@ -1,0 +1,8 @@
+# -*- mode: snippet -*-
+# name: md-math-block
+# key: mb
+# --
+$$
+${1:E = mc^2}
+$$
+$0

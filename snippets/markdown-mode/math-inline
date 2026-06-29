@@ -1,0 +1,5 @@
+# -*- mode: snippet -*-
+# name: md-math-inline
+# key: mi
+# --
+$${1:E = mc^2}$0

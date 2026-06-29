@@ -1,0 +1,9 @@
+# -*- mode: snippet -*-
+# name: org-mermaid
+# key: mermaid
+# --
+#+BEGIN_SRC mermaid
+${1:graph TD
+    A --> B}
+#+END_SRC
+$0

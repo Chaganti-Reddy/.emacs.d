@@ -1,0 +1,42 @@
+#name: Researcher Note Template
+#key: research
+# --
+---
+title: "${1:Research Study: Topic}"
+date: `(format-time-string "%Y-%m-%d")`
+tags: [research, academia, science]
+description: "${3:Brief abstract or description of the research question.}"
+---
+
+# Introduction & Research Hypothesis
+* **Research Question:** ${4:What are we trying to solve?}
+* **Hypothesis:** ${5:State the core hypothesis.}
+
+# Lit Review / Background
+* Key References: $6
+* Existing Methodologies: $7
+
+# Mathematical / Theoretical Formulation
+${8:Detail equations using LaTeX syntax}
+$$ E = mc^2 $$
+
+# Experimental Setup & Methodology
+* Parameters:
+  * Variable A: $9
+  * Variable B: $10
+* Code Evaluation Block:
+```python
+import numpy as np
+print("Setup ready.")
+```
+
+# Observations & Results
+* Collected Data:
+  | Metric | Value |
+  |---|---|
+  | Target | $11 |
+* Notes: $12
+
+# Conclusion & Next Steps
+- [ ] Refine model
+- [ ] Write draft
