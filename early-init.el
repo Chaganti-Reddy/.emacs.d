@@ -8,11 +8,15 @@
 (defconst IS-LINUX   (eq system-type 'gnu/linux))
 
 ;;; --- Appearance constants ------------------------
-(defconst my/font-family "Iosevka Nerd Font Mono"
+(defconst my/font-family "Iosevka NFM"
   "Main monospace font. Must be installed on the system.")
-(defconst my/font-size 14 "Font size in points.")
+(defconst my/font-size 13 "Font size in points.")
 (defconst my/bg-fallback "#000000" "Frame bg before theme loads (avoids flash).")
 (defconst my/fg-fallback "#ffffff" "Frame fg before theme loads.")
+(defconst my/frame-alpha 95 "Frame opacity 0-100.")
+(defconst my/alpha-param (if IS-WINDOWS 'alpha 'alpha-background)
+  "Windows w32 lacks per-pixel bg alpha, so use whole-frame `alpha' there;
+elsewhere `alpha-background' keeps text opaque.")
 
 ;;; --- Defer GC during startup (init.el restores a runtime value) ------------
 (setq gc-cons-threshold most-positive-fixnum
@@ -32,7 +36,8 @@
         (fullscreen . maximized)
         (font . ,(format "%s-%d" my/font-family my/font-size))
         (background-color . ,my/bg-fallback)
-        (foreground-color . ,my/fg-fallback)))
+        (foreground-color . ,my/fg-fallback)
+        (,my/alpha-param . ,my/frame-alpha)))
 (setq tool-bar-mode nil menu-bar-mode nil
       frame-inhibit-implied-resize t)
 

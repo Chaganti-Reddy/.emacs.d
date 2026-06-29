@@ -99,6 +99,10 @@ With DIR-P, PATH itself is the directory."
     (load package-quickstart-file nil 'nomessage)
   (package-initialize))
 
+;; First run only: fetch archive contents so :ensure can install packages.
+(unless package-archive-contents
+  (package-refresh-contents))
+
 (require 'use-package)
 (setq use-package-always-ensure t       ; auto-install missing packages
       use-package-always-defer t        ; lazy by default; demand explicitly
@@ -149,15 +153,46 @@ With DIR-P, PATH itself is the directory."
       display-line-numbers-width my/line-number-width)
 (add-hook 'prog-mode-hook #'display-line-numbers-mode)
 (add-hook 'text-mode-hook #'display-line-numbers-mode)
-(add-hook 'prog-mode-hook #'hl-line-mode)
-
 (column-number-mode 1)
+
+;; Visualize whitespace: spaces as dots, tabs as glyph, trailing highlighted.
+;; Drop 'spaces/'space-mark from this list if the dots feel noisy.
+(defconst my/whitespace-style
+  '(face tabs tab-mark spaces space-mark trailing missing-newline-at-eof))
+(setq whitespace-style my/whitespace-style)
+(add-hook 'prog-mode-hook #'whitespace-mode)
+
+;; Scrolling: keyboard scroll never recenters; keep a margin; smooth wheel.
+(defconst my/scroll-margin 3)
+(setq scroll-conservatively 101
+      scroll-margin my/scroll-margin
+      scroll-preserve-screen-position t
+      mouse-wheel-progressive-speed nil
+      mouse-wheel-scroll-amount '(2 ((shift) . 1) ((control) . text-scale))
+      fast-but-imprecise-scrolling t)
 (when (fboundp 'pixel-scroll-precision-mode)
   (pixel-scroll-precision-mode 1))
+
+;; Cursor & mouse pointer.
 (setq-default cursor-type 'bar)
+(blink-cursor-mode -1)
+(setq make-pointer-invisible t        ; hide mouse while typing
+      x-stretch-cursor t)             ; cursor spans wide glyphs like tabs
 
 ;;; ===========================================================================
-;;; 8. Customize writes go to their own file, not here
+;;; 8. Icons (nerd-icons) — glyphs served by the installed Nerd Font
+;;; ===========================================================================
+;; No extra font download: point nerd-icons at our Nerd Font. More integrations
+;; (completion, modeline) hook in during later steps.
+(use-package nerd-icons
+  :defer t
+  :init (setq nerd-icons-font-family my/font-family))
+
+(use-package nerd-icons-dired
+  :hook (dired-mode . nerd-icons-dired-mode))
+
+;;; ===========================================================================
+;;; 9. Customize writes go to their own file, not here
 ;;; ===========================================================================
 (setq custom-file (my/emacs-path "custom.el"))
 (when (file-exists-p custom-file)
