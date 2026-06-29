@@ -37,8 +37,8 @@
         (plist-put
          (plist-put
           (plist-put org-format-latex-options :scale 1.6)
-          :foreground 'auto)
-         :background 'auto))
+          :foreground "#d6d6d4")
+         :background "Transparent"))
   (when (executable-find "dvisvgm")
     (setq org-preview-latex-default-process 'dvisvgm))
   ;; Babel langs (calc evaluates `#+begin_src calc'; embedded calc is C-x * e).
@@ -81,6 +81,21 @@
 (use-package org-fragtog
   :after org
   :hook (org-mode . org-fragtog-mode))
+
+;; Render existing fragments shortly AFTER opening (on idle, not on the open
+;; path). Without this, `org-startup-with-latex-preview nil' means a freshly
+;; opened file shows no previews until you move the cursor through each fragment.
+(defun my/org-preview-buffer-on-idle ()
+  "Preview all LaTeX fragments in this Org buffer once Emacs is idle."
+  (when (derived-mode-p 'org-mode)
+    (let ((buf (current-buffer)))
+      (run-with-idle-timer
+       0.4 nil
+       (lambda ()
+         (when (buffer-live-p buf)
+           (with-current-buffer buf
+             (ignore-errors (org-latex-preview '(16))))))))))  ; 16 = whole buffer
+(add-hook 'org-mode-hook #'my/org-preview-buffer-on-idle)
 
 (add-hook 'emacs-startup-hook
           (lambda ()
