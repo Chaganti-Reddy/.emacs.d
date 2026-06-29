@@ -116,15 +116,18 @@ With DIR-P, PATH itself is the directory."
 (when IS-WINDOWS
   (setq package-check-signature nil))
 
-;; Fast path: load the prebuilt autoload bundle if package.el has generated it
-;; (it does so on every install/delete); otherwise do the normal scan.
+;; Fast path: load the prebuilt autoload bundle if package.el generated it
+;; (it does on every install/delete). The quickstart bundle does NOT populate
+;; `package-archive-contents', so we read the on-disk archive cache ourselves
+;; (no network) -- otherwise the refresh guard below would fire every startup.
 (if (file-exists-p package-quickstart-file)
-    (load package-quickstart-file nil 'nomessage)
+    (progn
+      (load package-quickstart-file nil 'nomessage)
+      (package-read-all-archive-contents))
   (package-initialize))
 
-;; First run only: fetch archive contents so :ensure can install packages.
-;; Wrapped so a flaky archive (e.g. nongnu on a restricted network) logs a
-;; message instead of aborting the whole init.
+;; Only when the archive cache is genuinely empty (first run) do we hit the
+;; network. Wrapped so a flaky archive logs instead of aborting init.
 (unless package-archive-contents
   (condition-case err
       (package-refresh-contents)
