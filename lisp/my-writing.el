@@ -161,22 +161,41 @@
 ;;; ---------------------------------------------------------------------------
 ;; Select an expression (or sit on a line), hit C-S-e: calc evaluates it and
 ;; replaces it with the result, formatted as LaTeX inside LaTeX/Org math.
+(defun my/calc-strip-math (s)
+  "Strip surrounding math delimiters ($, \\(\\), \\[\\]) and whitespace from S.
+Calc rejects `$', so leaving them in produces a parse error."
+  (string-trim (replace-regexp-in-string "\\$\\|\\\\[][()]" "" s)))
+
+(defun my/math-region-at-point ()
+  "If point sits inside inline $...$ math, return (BEG . END) of its CONTENT.
+Otherwise nil. Keeps the `$' delimiters in place; only the inside is replaced."
+  (save-excursion
+    (let* ((p (point)) (bol (line-beginning-position)) (eol (line-end-position))
+           (open  (save-excursion (and (search-backward "$" bol t) (1+ (point)))))
+           (close (save-excursion (and (search-forward  "$" eol t) (1- (point))))))
+      (when (and open close (<= open p) (>= close p) (< open close))
+        (cons open close)))))
+
 (defun latex-math-from-calc ()
-  "Evaluate the region (or current line) with Calc; replace it with the result."
+  "Evaluate math with Calc and replace it in place.
+Uses the region if active, else the $...$ fragment at point, else the line."
   (interactive)
-  (if (region-active-p)
-      (let ((beg (region-beginning)) (end (region-end)))
-        (kill-region beg end)
-        (insert (calc-eval `(,(current-kill 0)
-                             calc-language ,(if (derived-mode-p 'latex-mode 'LaTeX-mode 'org-mode)
-                                                'latex 'normal)
-                             calc-prefer-frac t calc-angle-mode rad))))
-    (let ((line (thing-at-point 'line t)))
-      (end-of-line) (kill-line 0)
-      (insert (calc-eval `(,line
-                           calc-language ,(if (derived-mode-p 'latex-mode 'LaTeX-mode 'org-mode)
-                                              'latex 'normal)
-                           calc-prefer-frac t calc-angle-mode rad))))))
+  (let* ((bounds (cond ((region-active-p)
+                        (cons (region-beginning) (region-end)))
+                       ((my/math-region-at-point))
+                       (t (cons (line-beginning-position) (line-end-position)))))
+         (input  (my/calc-strip-math
+                  (buffer-substring-no-properties (car bounds) (cdr bounds))))
+         (result (calc-eval
+                  (list input
+                        'calc-language (if (derived-mode-p 'latex-mode 'LaTeX-mode 'org-mode)
+                                           'latex 'normal)
+                        'calc-prefer-frac t 'calc-angle-mode 'rad))))
+    ;; calc-eval returns (POS "message") on a parse error, not a string.
+    (unless (stringp result)
+      (user-error "Calc: %s" (if (consp result) (cadr result) "cannot evaluate")))
+    (delete-region (car bounds) (cdr bounds))
+    (insert result)))
 (use-package calc
   :ensure nil
   :bind (("C-x c" . calc)                       ; calculator (also C-x * c)
