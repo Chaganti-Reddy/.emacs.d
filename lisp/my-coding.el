@@ -144,19 +144,24 @@
 ;;; ---------------------------------------------------------------------------
 (use-package yasnippet
   :ensure t
-  :hook ((prog-mode . yas-minor-mode)
-         (text-mode . yas-minor-mode)
-         (org-mode  . yas-minor-mode))
+  :defer t
   :config
-  (add-to-list 'yas-snippet-dirs (expand-file-name "snippets" user-emacs-directory))
-
-  (unless (file-exists-p (expand-file-name "snippets" user-emacs-directory))
-    (make-directory (expand-file-name "snippets" user-emacs-directory) t))
-  (yas-reload-all))
+  (let ((dir (expand-file-name "snippets" user-emacs-directory)))
+    (make-directory dir t)
+    (add-to-list 'yas-snippet-dirs dir)))
 
 (use-package yasnippet-snippets
   :ensure t
-  :after yasnippet)
+  :defer t)
+
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (run-with-idle-timer
+             1.0 nil
+             (lambda ()
+               (require 'yasnippet)
+               (require 'yasnippet-snippets)
+               (yas-global-mode 1)))))
 
 (defvar my/yas-extra-mode-alist
   '((c-ts-mode . c-mode) (c++-ts-mode . c++-mode) (python-ts-mode . python-mode)
