@@ -115,23 +115,23 @@ With DIR-P, PATH itself is the directory."
 (when IS-WINDOWS
   (setq package-check-signature nil))
 
-;; Fast path: load the prebuilt autoload bundle if package.el generated it
-;; (it does on every install/delete). The quickstart bundle does NOT populate
-;; `package-archive-contents', so we read the on-disk archive cache ourselves
-;; (no network) -- otherwise the refresh guard below would fire every startup.
+;; Load the prebuilt autoload bundle (installed packages are usable from this
+;; alone). We deliberately do NOT read `package-archive-contents' here: parsing
+;; MELPA's multi-MB archive list every startup is the single biggest avoidable
+;; cost, and it's only needed to INSTALL packages, not to use installed ones.
 (if (file-exists-p package-quickstart-file)
-    (progn
-      (load package-quickstart-file nil 'nomessage)
-      (package-read-all-archive-contents))
+    (load package-quickstart-file nil 'nomessage)
   (package-initialize))
 
-;; Only when the archive cache is genuinely empty (first run) do we hit the
-;; network. Wrapped so a flaky archive logs instead of aborting init.
-(unless package-archive-contents
-  (condition-case err
-      (package-refresh-contents)
-    (error (message "Package archive refresh failed (continuing): %s"
-                    (error-message-string err)))))
+;; Populate the archive list lazily -- only the first time something actually
+;; installs. Read the on-disk cache (no network); refresh only if absent.
+(defun my/ensure-package-archives (&rest _)
+  (unless package-archive-contents
+    (condition-case nil
+        (progn (package-read-all-archive-contents)
+               (unless package-archive-contents (package-refresh-contents)))
+      (error (package-refresh-contents)))))
+(advice-add 'package-install :before #'my/ensure-package-archives)
 
 (require 'use-package)
 (setq use-package-always-ensure t       ; auto-install missing packages
@@ -236,6 +236,13 @@ With DIR-P, PATH itself is the directory."
 (global-reveal-mode 1)
 (setq browse-url-browser-function #'browse-url-default-browser)
 
+;; `q' keeps its default (bury). `C-c q' fully kills the window's buffer when
+;; you want a transient buffer (help/dired/compilation) gone for good.
+(defun my/quit-window-kill (&optional window)
+  "Like `quit-window' but kill the buffer instead of burying it."
+  (interactive) (quit-window t window))
+(global-set-key (kbd "C-c q") #'my/quit-window-kill)
+
 ;;; ===========================================================================
 ;;; 8. Session persistence (history, places, recent files)
 ;;; ===========================================================================
@@ -294,6 +301,12 @@ With DIR-P, PATH itself is the directory."
   (interactive) (select-window (split-window-below)))
 (global-set-key (kbd "C-x 3") #'my/split-right-focus)
 (global-set-key (kbd "C-x 2") #'my/split-below-focus)
+;; Quick single-chord window ops (avoid M-digit = digit-argument):
+(global-set-key (kbd "M-\\") #'my/split-right-focus)   ; was toggle-input-method
+(global-set-key (kbd "C-\\") #'my/split-below-focus)   ; was delete-horizontal-space
+(global-set-key (kbd "M-o")  #'other-window)           ; fast focus; repeat: o o o
+(global-set-key (kbd "M-O")  #'delete-other-windows)   ; maximize current window
+(global-set-key (kbd "C-M-o") #'delete-window)         ; close current window
 
 (setq switch-to-prev-buffer-skip (lambda (_w buf _x) (my/hidden-buffer-p buf))
       switch-to-next-buffer-skip (lambda (_w buf _x) (my/hidden-buffer-p buf)))
@@ -345,24 +358,65 @@ With DIR-P, PATH itself is the directory."
 ;;; ===========================================================================
 ;;; 11. Completion & minibuffer (built-in)
 ;;; ===========================================================================
-;; Vertical candidate list + flex fuzzy matching.
+;; Vertical candidate list .
 (fido-vertical-mode 1)
-(setq completion-styles '(flex basic)            ; fuzzy, with a safe fallback
-      completion-ignore-case t
+(setq completion-ignore-case t
       read-buffer-completion-ignore-case t
       read-file-name-completion-ignore-case t
-      completions-detailed t                      ; inline annotations 
+      completions-detailed t                     
       completions-sort 'historical                ; recently used candidates first
       completion-auto-help 'visible
+      completion-cycle-threshold 3                
       enable-recursive-minibuffers t
       icomplete-compute-delay 0
       icomplete-show-matches-on-no-input t)
 (minibuffer-depth-indicate-mode 1)
 
-;; In-buffer code completion: inline ghost-text preview as you type (Emacs 30).
-;; completion-at-point (TAB) accepts; M-n / M-p cycle candidates.
-(when (fboundp 'global-completion-preview-mode)
-  (global-completion-preview-mode 1))
+;; fido binds no TAB, so it falls back to `minibuffer-complete' (which pops the
+;; *Completions* buffer). Make TAB complete to the highlighted candidate inline.
+(with-eval-after-load 'icomplete
+  (define-key icomplete-fido-mode-map (kbd "TAB")   #'icomplete-force-complete)
+  (define-key icomplete-fido-mode-map (kbd "<tab>") #'icomplete-force-complete))
+
+;; Orderless: space-separated, any-order matching. fido hardcodes the `flex'
+;; style inside the minibuffer, so we re-assert orderless with a late (depth 95)
+;; minibuffer-setup-hook that runs after fido's own setup.
+(use-package orderless
+  :demand t
+  :init
+  (setq completion-styles '(orderless basic)
+        completion-category-defaults nil
+        completion-category-overrides '((file (styles partial-completion)) (buffer (styles orderless basic)))))
+(add-hook 'minibuffer-setup-hook
+          (lambda () (setq-local completion-styles '(orderless basic))) 95)
+
+;; Inline ghost-text completion preview (Emacs 30). Enabled per-buffer in
+;; `my/setup-editing-buffer' (terminals/special excluded) and in the
+;; eval-expression (M-:) minibuffer. RIGHT / TAB accept; M-n / M-p cycle.
+(when (require 'completion-preview nil t)
+  (setq completion-preview-exact-match-only nil)
+  (define-key completion-preview-active-mode-map (kbd "<right>") #'completion-preview-insert)
+  (define-key completion-preview-active-mode-map (kbd "TAB")     #'completion-preview-insert)
+  (add-hook 'eval-expression-minibuffer-setup-hook #'completion-preview-mode))
+
+;; Enable rich annotations using the Marginalia package
+(use-package marginalia
+  ;; Bind `marginalia-cycle' locally in the minibuffer. 
+  :bind (:map minibuffer-local-map
+         ("M-A" . marginalia-cycle))
+
+  ;; The :init section is always executed.
+  :init
+  (marginalia-mode))
+
+;; Icons next to minibuffer candidates (buffers, files, commands).
+(use-package nerd-icons-completion
+  :after marginalia
+  :demand t
+  :config
+  (nerd-icons-completion-mode 1)
+  (nerd-icons-completion-marginalia-setup)
+  (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
 ;;; ===========================================================================
 ;;; 12. Appearance
@@ -402,8 +456,21 @@ Family + size come from the frame created in early-init."
 (defconst my/line-number-width 3)
 (setq display-line-numbers-type 'relative
       display-line-numbers-width my/line-number-width)
-(add-hook 'prog-mode-hook #'display-line-numbers-mode)
-(add-hook 'text-mode-hook #'display-line-numbers-mode)
+
+(defconst my/bare-buffer-exempt-modes
+  '(term-mode eshell-mode shell-mode comint-mode pdf-view-mode image-mode
+    dired-mode special-mode compilation-mode help-mode Info-mode
+    completion-list-mode)
+  "Modes (and descendants) that get neither line numbers nor whitespace marks.")
+(defun my/setup-editing-buffer ()
+  "Enable line numbers + whitespace visualization in real editing buffers.
+Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer."
+  (unless (or (minibufferp)
+              (apply #'derived-mode-p my/bare-buffer-exempt-modes))
+    (display-line-numbers-mode 1)
+    (whitespace-mode 1)
+    (when (fboundp 'completion-preview-mode) (completion-preview-mode 1))))
+(add-hook 'after-change-major-mode-hook #'my/setup-editing-buffer)
 (add-hook 'text-mode-hook #'visual-line-mode)
 (column-number-mode 1)
 
@@ -414,7 +481,6 @@ Family + size come from the frame created in early-init."
 (setq whitespace-style my/whitespace-style
       whitespace-display-mappings '((tab-mark   ?\t [?▷ ?\t] [?\\ ?\t])
                                     (space-mark ?\s [?·]     [?.])))
-(add-hook 'prog-mode-hook #'whitespace-mode)
 ;; Strip trailing whitespace on save, but only in code buffers.
 (add-hook 'prog-mode-hook
           (lambda () (add-hook 'before-save-hook #'delete-trailing-whitespace nil t)))
@@ -431,10 +497,14 @@ Family + size come from the frame created in early-init."
   (pixel-scroll-precision-mode 1))
 
 ;; Cursor & mouse pointer.
-(setq-default cursor-type 'bar)
+(setq-default cursor-type 'box)
 (blink-cursor-mode -1)
 (setq make-pointer-invisible t        ; hide mouse while typing
       x-stretch-cursor t)             ; cursor spans wide glyphs like tabs
+
+;; Flush, fringeless look. NOTE: diff-hl/flymake normally draw in the fringe;
+(defconst my/fringe-width 0 "Fringe width in pixels (0 = none).")
+(fringe-mode my/fringe-width)
 
 ;; Tooltips in the echo area instead of popup windows.
 (tooltip-mode -1)
@@ -446,14 +516,52 @@ Family + size come from the frame created in early-init."
       show-paren-when-point-inside-paren t
       show-paren-context-when-offscreen 'overlay)
 
+;; --- Custom mode line. Segments carry no keymaps, so the mode line
+;; is non-clickable / non-draggable -- no accidental mouse edits. -------------
+(defun my/ml-icon ()
+  "Nerd-icon for the current major mode (empty string if unavailable)."
+  (if (fboundp 'nerd-icons-icon-for-mode)
+      (let ((i (ignore-errors (nerd-icons-icon-for-mode major-mode))))
+        (if (stringp i) i ""))
+    ""))
+(defun my/ml-project ()
+  "Current project name, or empty."
+  (if-let* ((p (and (fboundp 'project-current) (project-current))))
+      (propertize (concat " " (project-name p) " ") 'face 'mode-line-emphasis) ""))
+(defun my/ml-vc ()
+  "Git branch (from vc-mode), or empty."
+  (if (and (boundp 'vc-mode) vc-mode (stringp vc-mode))
+      (concat " " (string-trim (substring-no-properties vc-mode)) " ") ""))
+
+(setq-default mode-line-format
+  '("%e "
+    (:eval (cond (buffer-read-only   (propertize "RO " 'face 'error))
+                 ((buffer-modified-p) (propertize "● "  'face 'warning))
+                 (t                   "  ")))
+    (:eval (concat (my/ml-icon) " "))
+    (:propertize "%b" face mode-line-buffer-id)
+    "   "
+    (:propertize "%l:%c" face shadow)
+    "  "
+    ;; Diagnostics counters (shown only when Flymake is on).
+    (:eval (when (bound-and-true-p flymake-mode) flymake-mode-line-format))
+    mode-line-format-right-align
+    (:eval (my/ml-project))
+    (:eval (my/ml-vc))
+    ;; eglot/LSP and other features inject their status here.
+    mode-line-misc-info
+    "  "
+    (:eval (propertize (substring-no-properties (format-mode-line mode-name))
+                       'face 'bold))
+    "  "))
+
 ;;; ===========================================================================
 ;;; 13. Icons (nerd-icons) — glyphs served by the installed Nerd Font
 ;;; ===========================================================================
-;; No extra font download: point nerd-icons at our Nerd Font. More integrations
-;; (completion, modeline) hook in during later steps.
+(defconst my/icon-font "Symbols Nerd Font Mono" "Font family for nerd-icons.")
 (use-package nerd-icons
   :defer t
-  :init (setq nerd-icons-font-family my/font-family))
+  :init (setq nerd-icons-font-family my/icon-font))
 
 (use-package nerd-icons-dired
   :hook (dired-mode . nerd-icons-dired-mode))
