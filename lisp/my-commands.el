@@ -16,12 +16,33 @@
   "Open an indented line above point."
   (interactive)
   (beginning-of-line) (newline-and-indent) (forward-line -1) (indent-according-to-mode))
-(defun my/move-line-up ()
-  "Drag the current line up."
-  (interactive) (transpose-lines 1) (forward-line -2) (indent-according-to-mode))
-(defun my/move-line-down ()
-  "Drag the current line down."
-  (interactive) (forward-line 1) (transpose-lines 1) (forward-line -1) (indent-according-to-mode))
+;; Drag the current line OR the active region up/down (region-aware).
+(defun my/move-text-internal (arg)
+  "Move region (if active) or current line ARG lines down (negative = up)."
+  (cond
+   ((region-active-p)
+    (when (> (point) (mark)) (exchange-point-and-mark))
+    (let ((column (current-column))
+          (text (delete-and-extract-region (point) (mark))))
+      (forward-line arg) (move-to-column column t)
+      (set-mark (point)) (insert text) (exchange-point-and-mark)
+      (setq deactivate-mark nil)))
+   (t
+    (let ((column (current-column)))
+      (beginning-of-line)
+      (when (or (> arg 0) (not (bobp)))
+        (forward-line)
+        (when (or (< arg 0) (not (eobp))) (transpose-lines arg))
+        (forward-line -1))
+      (move-to-column column t)))))
+(defun my/move-line-up ()   (interactive) (my/move-text-internal -1))
+(defun my/move-line-down () (interactive) (my/move-text-internal 1))
+;; After M-<up>/M-<down>, tap <up>/<down> to keep dragging (repeat-mode).
+(defvar-keymap my/move-line-repeat-map
+  :repeat t
+  "<up>"   #'my/move-line-up
+  "<down>" #'my/move-line-down)
+
 (defun my/join-line ()
   "Join the next line onto this one (Vim J)."
   (interactive) (forward-line 1) (join-line))
@@ -168,6 +189,11 @@ start, and at column 0 just removes the newline.  Respects `subword-mode'."
         (beg (if (use-region-p) (region-beginning) (line-beginning-position)))
         (end (if (use-region-p) (region-end) (line-end-position))))
     (indent-rigidly beg end my/shift-width)))
+;; After `C-c <' or `C-c >', just tap < / > to keep shifting (repeat-mode).
+(defvar-keymap my/shift-repeat-map
+  :repeat t
+  "<" #'my/shift-region-left
+  ">" #'my/shift-region-right)
 
 ;; --- Project TODO/FIXME search ------------
 (defconst my/todo-regexp "\\(TODO\\|FIXME\\|HACK\\|BUG\\|XXX\\|NOTE\\):"
@@ -183,6 +209,37 @@ start, and at column 0 just removes the newline.  Respects `subword-mode'."
 (defun my/insert-date () (interactive) (insert (format-time-string "%Y-%m-%d")))
 (defun my/insert-time () (interactive) (insert (format-time-string "%H:%M")))
 
+;; --- Doctor: what external tools are installed (fresh-machine checklist) -----
+(defun my/doctor ()
+  "Report which external programs/grammars/fonts this config relies on."
+  (interactive)
+  (let ((rows
+         (list
+          (cons "git"                         (executable-find "git"))
+          (cons "ripgrep (rg)"                (executable-find "rg"))
+          (cons "clangd  (C/C++)"             (executable-find "clangd"))
+          (cons "pyright (Python)"            (or (executable-find "pyright-langserver")
+                                                  (executable-find "pyright")))
+          (cons "rust-analyzer (Rust)"        (executable-find "rust-analyzer"))
+          (cons "gopls   (Go)"                (executable-find "gopls"))
+          (cons "typescript-language-server"  (executable-find "typescript-language-server"))
+          (cons "jdtls   (Java)"              (executable-find "jdtls"))
+          (cons "pdflatex (LaTeX)"            (executable-find "pdflatex"))
+          (cons "dvisvgm (org math preview)"  (executable-find "dvisvgm"))
+          (cons "pandoc  (markdown)"          (executable-find "pandoc"))
+          (cons "node    (JS/Expo)"           (executable-find "node"))
+          (cons (format "font: %s" my/font-family)
+                (and (display-graphic-p) (find-font (font-spec :family my/font-family))))
+          (cons "tree-sitter python grammar"  (and (fboundp 'treesit-ready-p)
+                                                   (treesit-ready-p 'python t))))))
+    (with-current-buffer (get-buffer-create "*my-doctor*")
+      (erase-buffer)
+      (insert "Config dependencies  ([--] = missing, install to enable):\n\n")
+      (dolist (r rows)
+        (insert (format "  %s  %s\n" (if (cdr r) "[OK]" "[--]") (car r))))
+      (special-mode)
+      (display-buffer (current-buffer)))))
+
 ;; --- On-save: make #! scripts executable ------------------------------------
 (add-hook 'after-save-hook #'executable-make-buffer-file-executable-if-script-p)
 
@@ -194,19 +251,21 @@ start, and at column 0 just removes the newline.  Respects `subword-mode'."
 (global-set-key (kbd "C-<f5>")       #'my/reload-init)
 (global-set-key (kbd "<f6>")         #'my/new-temp-file)
 (global-set-key (kbd "<f8>")         #'next-error)
-(global-set-key (kbd "<f9>")         #'recompile)
 (global-set-key (kbd "<C-f9>")       #'my/smart-compile)
+(global-set-key (kbd "<C-S-f9>")     #'recompile)
 (global-set-key (kbd "C-S-p")        #'execute-extended-command)
 (global-set-key (kbd "C-S-f")        #'project-find-regexp)
+(global-set-key (kbd "C-c s d")      #'project-find-file)
 (global-set-key (kbd "C-<backspace>") #'my/backward-delete-word)
 (global-set-key (kbd "C-x b")        #'my/switch-to-buffer)
 (global-set-key (kbd "C-x k")        #'my/kill-this-buffer)
 (global-set-key (kbd "C-x K")        #'my/kill-buffer-and-window)
 (global-set-key (kbd "C-c <")        #'my/shift-region-left)
 (global-set-key (kbd "C-c >")        #'my/shift-region-right)
+(global-set-key (kbd "C-c r")        #'recentf-open)
 (global-set-key (kbd "C-c T")        #'my/project-todos)
 (global-set-key (kbd "C-c o")        #'my/open-init)
-(global-set-key (kbd "C-c r")        #'my/rename-file-and-buffer)
+(global-set-key (kbd "C-c R")        #'my/rename-file-and-buffer)
 (global-set-key (kbd "C-c D")        #'my/delete-file)
 (global-set-key (kbd "C-c y")        #'my/copy-path)
 (global-set-key (kbd "C-c J")        #'my/join-line)
