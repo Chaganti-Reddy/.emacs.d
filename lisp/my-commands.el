@@ -98,6 +98,87 @@
                (t compile-command))))
     (compile cmd)))
 
+;; --- Buffer switching / killing (hide internal & noisy buffers) -------------
+(defvar my/hidden-buffer-regexp
+  "\\`\\*\\(Messages\\|Warnings\\|Compile-Log\\|Echo Area\\|Async\\|Completions\\|\
+Flymake log\\|EGLOT\\|tramp/?\\|epc con\\).*\\*\\'"
+  "Buffers whose names match this (or start with a space) are hidden from
+`my/switch-to-buffer' and from buffer cycling.")
+
+(defun my/hidden-buffer-p (buf)
+  "Non-nil if BUF is internal/noisy and should be hidden from selection."
+  (let ((name (buffer-name buf)))
+    (or (string-prefix-p " " name)
+        (string-match-p my/hidden-buffer-regexp name))))
+
+(defun my/switch-to-buffer ()
+  "Switch buffers, omitting internal/noisy ones; RET defaults to the last buffer."
+  (interactive)
+  (switch-to-buffer
+   (completing-read
+    "Buffer: "
+    (mapcar #'buffer-name (seq-remove #'my/hidden-buffer-p (buffer-list)))
+    nil nil nil nil
+    (buffer-name (other-buffer (current-buffer) t)))))
+
+(defun my/kill-this-buffer ()
+  "Kill the current buffer without prompting for which one."
+  (interactive) (kill-buffer (current-buffer)))
+
+(defun my/kill-buffer-and-window ()
+  "Kill the current buffer and close its window unless it is the only one."
+  (interactive)
+  (if (one-window-p) (kill-buffer) (kill-buffer-and-window)))
+
+;; --- Smart C-<backspace> (VS-Code style, no kill-ring pollution) ------------
+(defun my/backward-delete-word (arg)
+  "Delete backward to the previous word boundary without touching the kill ring.
+Eats any trailing whitespace plus the word before it, never crosses the line
+start, and at column 0 just removes the newline.  Respects `subword-mode'."
+  (interactive "p")
+  (cond
+   ((use-region-p) (delete-region (region-beginning) (region-end)))
+   ((bolp) (delete-char -1))
+   (t
+    (let ((start (point))
+          (bol (line-beginning-position)))
+      (save-excursion
+        (skip-chars-backward " \t" bol)
+        (when (and (> (point) bol)            ; still on this line: eat a word
+                   (= (point) start))          ; (no whitespace was skipped)
+          (if (and (bound-and-true-p subword-mode) (fboundp 'subword-backward))
+              (subword-backward arg)
+            (backward-word arg)))
+        (when (< (point) bol) (goto-char bol))
+        (delete-region (point) start))))))
+
+;; --- Indent region left/right, keeping the selection active -----------------
+(defconst my/shift-width 4 "Columns to shift with `my/shift-region-*'.")
+(defun my/shift-region-left ()
+  "Shift the region (or line) left, keeping it highlighted."
+  (interactive)
+  (let ((deactivate-mark nil)
+        (beg (if (use-region-p) (region-beginning) (line-beginning-position)))
+        (end (if (use-region-p) (region-end) (line-end-position))))
+    (indent-rigidly beg end (- my/shift-width))))
+(defun my/shift-region-right ()
+  "Shift the region (or line) right, keeping it highlighted."
+  (interactive)
+  (let ((deactivate-mark nil)
+        (beg (if (use-region-p) (region-beginning) (line-beginning-position)))
+        (end (if (use-region-p) (region-end) (line-end-position))))
+    (indent-rigidly beg end my/shift-width)))
+
+;; --- Project TODO/FIXME search ------------
+(defconst my/todo-regexp "\\(TODO\\|FIXME\\|HACK\\|BUG\\|XXX\\|NOTE\\):"
+  "Annotation tags searched by `my/project-todos'.")
+(defun my/project-todos ()
+  "Search the current project for annotation tags like TODO:, FIXME:."
+  (interactive)
+  (if (project-current)
+      (project-find-regexp my/todo-regexp)
+    (message "Not in a project.")))
+
 ;; --- Insert date / time -----------------------------------------------------
 (defun my/insert-date () (interactive) (insert (format-time-string "%Y-%m-%d")))
 (defun my/insert-time () (interactive) (insert (format-time-string "%H:%M")))
@@ -117,9 +198,16 @@
 (global-set-key (kbd "<C-f9>")       #'my/smart-compile)
 (global-set-key (kbd "C-S-p")        #'execute-extended-command)
 (global-set-key (kbd "C-S-f")        #'project-find-regexp)
+(global-set-key (kbd "C-<backspace>") #'my/backward-delete-word)
+(global-set-key (kbd "C-x b")        #'my/switch-to-buffer)
+(global-set-key (kbd "C-x k")        #'my/kill-this-buffer)
+(global-set-key (kbd "C-x K")        #'my/kill-buffer-and-window)
+(global-set-key (kbd "C-c <")        #'my/shift-region-left)
+(global-set-key (kbd "C-c >")        #'my/shift-region-right)
+(global-set-key (kbd "C-c T")        #'my/project-todos)
 (global-set-key (kbd "C-c o")        #'my/open-init)
 (global-set-key (kbd "C-c r")        #'my/rename-file-and-buffer)
-(global-set-key (kbd "C-c K")        #'my/delete-file)
+(global-set-key (kbd "C-c D")        #'my/delete-file)
 (global-set-key (kbd "C-c y")        #'my/copy-path)
 (global-set-key (kbd "C-c J")        #'my/join-line)
 (global-set-key (kbd "C-c d")        #'duplicate-dwim)

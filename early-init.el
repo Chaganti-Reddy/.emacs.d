@@ -11,6 +11,7 @@
 (defconst my/font-family "Iosevka NFM"
   "Main monospace font. Must be installed on the system.")
 (defconst my/font-size 13 "Font size in points.")
+(defconst my/font-weight 'semibold "Default face weight.")
 (defconst my/bg-fallback "#000000" "Frame bg before theme loads (avoids flash).")
 (defconst my/fg-fallback "#ffffff" "Frame fg before theme loads.")
 (defconst my/frame-alpha 95 "Frame opacity 0-100.")
@@ -47,6 +48,7 @@ elsewhere `alpha-background' keeps text opaque.")
       inhibit-startup-buffer-menu t
       inhibit-startup-echo-area-message (user-login-name)
       initial-scratch-message nil
+      initial-major-mode 'fundamental-mode   ; lighter *scratch*, faster boot
       inhibit-x-resources t)
 
 ;;; --- Native compilation: cache under var/, silence warnings ----------------

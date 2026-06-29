@@ -222,6 +222,10 @@ With DIR-P, PATH itself is the directory."
 (define-key minibuffer-local-map (kbd "<escape>") #'abort-recursive-edit)
 (global-set-key (kbd "C-z")   #'undo-only)   ; C-z=suspend is useless in GUI
 (global-set-key (kbd "C-S-z") #'undo-redo)
+(global-set-key (kbd "C-/")   #'comment-line)
+
+(global-reveal-mode 1)
+(setq browse-url-browser-function #'browse-url-default-browser)
 
 ;;; ===========================================================================
 ;;; 8. Session persistence (history, places, recent files)
@@ -282,14 +286,8 @@ With DIR-P, PATH itself is the directory."
 (global-set-key (kbd "C-x 3") #'my/split-right-focus)
 (global-set-key (kbd "C-x 2") #'my/split-below-focus)
 
-(defun my/boring-buffer-p (buf)
-  "Non-nil if BUF is internal/noisy and should be skipped when cycling."
-  (let ((name (buffer-name buf)))
-    (or (string-prefix-p " " name)
-        (string-match-p
-         "\\`\\*\\(Messages\\|Warnings\\|Compile-Log\\|Echo Area\\|Async\\)" name))))
-(setq switch-to-prev-buffer-skip (lambda (_w buf _x) (my/boring-buffer-p buf))
-      switch-to-next-buffer-skip (lambda (_w buf _x) (my/boring-buffer-p buf)))
+(setq switch-to-prev-buffer-skip (lambda (_w buf _x) (my/hidden-buffer-p buf))
+      switch-to-next-buffer-skip (lambda (_w buf _x) (my/hidden-buffer-p buf)))
 (global-set-key (kbd "M-[") #'previous-buffer)
 (global-set-key (kbd "M-]") #'next-buffer)
 
@@ -308,6 +306,7 @@ With DIR-P, PATH itself is the directory."
       dired-auto-revert-buffer t
       dired-mouse-drag-files t
       dired-isearch-filenames 'dwim
+      dired-movement-style 'cycle
       dired-listing-switches "-agho --group-directories-first"
       wdired-allow-to-change-permissions t
       wdired-create-parent-directories t)
@@ -343,13 +342,22 @@ With DIR-P, PATH itself is the directory."
 ;;; ===========================================================================
 ;; Main font + maximize + colors are set in early-init. Here: glyph fallback,
 ;; theme, and cheap UI niceties.
-(defun my/apply-glyph-fonts (&optional frame)
-  "Emoji/symbol fallback so glyphs render instead of boxes."
-  (when (and IS-WINDOWS (display-graphic-p))
-    (set-fontset-font t 'emoji  (font-spec :family "Segoe UI Emoji") frame 'prepend)
-    (set-fontset-font t 'symbol (font-spec :family "Segoe UI Symbol") frame 'append)))
-(add-hook 'after-make-frame-functions #'my/apply-glyph-fonts)
-(my/apply-glyph-fonts)
+(defconst my/variable-pitch-family "Iosevka Aile"
+  "Proportional font for prose / variable-pitch faces.")
+
+(defun my/apply-fonts (&optional frame)
+  "Weight, proportional face, and emoji/symbol glyph fallback for FRAME.
+Family + size come from the frame created in early-init."
+  (when (display-graphic-p frame)
+    (set-face-attribute 'default frame :weight my/font-weight)
+    (set-face-attribute 'fixed-pitch frame :family my/font-family :weight my/font-weight)
+    (when (find-font (font-spec :family my/variable-pitch-family))
+      (set-face-attribute 'variable-pitch frame :family my/variable-pitch-family :weight 'regular))
+    (when IS-WINDOWS
+      (set-fontset-font t 'emoji  (font-spec :family "Segoe UI Emoji") frame 'prepend)
+      (set-fontset-font t 'symbol (font-spec :family "Segoe UI Symbol") frame 'append))))
+(add-hook 'after-make-frame-functions #'my/apply-fonts)
+(my/apply-fonts)
 
 (setq frame-title-format '("%b — Emacs")
       ring-bell-function #'ignore
