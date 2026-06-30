@@ -76,12 +76,12 @@ With DIR-P, PATH itself is the directory."
   (setq inhibit-compacting-font-caches t
         w32-pipe-buffer-size my/w32-pipe-buffer-size)
   ;; If SHELL points at Git's bash, cmdproxy delegates shell commands to it and
-  ;; MSYS mangles `/'-prefixed args (broke AUCTeX preview's /AUCTEXINPUT). Point
-  ;; SHELL at Emacs's own `cmdproxy.exe' wrapper.
-  (let ((cmdproxy (expand-file-name "cmdproxy.exe" invocation-directory)))
-    (when (file-exists-p cmdproxy)
-      (setenv "SHELL" cmdproxy)
-      (setq shell-file-name cmdproxy))))
+  ;; MSYS mangles `/'-prefixed args (`/AUCTEXINPUT' -> "C:/Program Files/Git/...")
+  ;; -> broke AUCTeX preview. UNSET SHELL so cmdproxy falls back to cmd (no bash,
+  ;; no mangling, no w32-check warning).
+  (setenv "SHELL" nil)
+  (setenv "MSYS_NO_PATHCONV" "1")
+  (setenv "MSYS2_ARG_CONV_EXCL" "*"))
 
 ;; Engine performance (display + subprocess).
 (defconst my/process-output-max (* 4 1024 1024)
@@ -98,6 +98,27 @@ With DIR-P, PATH itself is the directory."
 
 ;; Find git/clangd/pyright/... regardless of how Emacs was launched.
 (add-to-list 'exec-path (my/emacs-path "bin"))
+
+;; macOS GUI Emacs (Finder/Dock/Spotlight) and Linux launched from a .desktop
+;; file don't inherit the login shell's PATH -> eglot/compile/LaTeX silently
+;; fail to find clangd/pyright/gs/node. Windows gets PATH from the environment,
+;; so this is skipped there.
+(use-package exec-path-from-shell
+  :if (and (display-graphic-p) (not IS-WINDOWS))
+  :demand t
+  :config
+  (setq exec-path-from-shell-arguments '("-l")     ; login shell, non-interactive
+        exec-path-from-shell-variables '("PATH" "MANPATH" "LANG" "LC_ALL"))
+  (exec-path-from-shell-initialize))
+
+;; macOS: this config is M-heavy, so map Command -> Meta and leave Option free
+;; for typing accented characters. Covers both the ns and emacs-mac builds.
+(when IS-MAC
+  (setq ns-command-modifier 'meta
+        ns-option-modifier 'none
+        ns-right-option-modifier 'none
+        mac-command-modifier 'meta
+        mac-option-modifier 'none))
 
 ;;; ===========================================================================
 ;;; 5. Package system: package.el + use-package (built in)
@@ -298,7 +319,18 @@ With DIR-P, PATH itself is the directory."
       help-window-select t
       ediff-window-setup-function 'ediff-setup-windows-plain
       ediff-split-window-function 'split-window-horizontally
+      ediff-diff-options "-w"
+      ediff-keep-variants nil
       compilation-scroll-output t)
+(defvar my/ediff-saved-window-config nil)
+(add-hook 'ediff-before-setup-hook
+          (lambda () (setq my/ediff-saved-window-config
+                           (current-window-configuration))))
+(dolist (h '(ediff-quit-hook ediff-suspend-hook))
+  (add-hook h (lambda ()
+                (when (window-configuration-p my/ediff-saved-window-config)
+                  (set-window-configuration my/ediff-saved-window-config)))
+            t))
 (with-eval-after-load 'compile
   (require 'ansi-color)
   (add-hook 'compilation-filter-hook #'ansi-color-compilation-filter))
@@ -311,7 +343,17 @@ With DIR-P, PATH itself is the directory."
   (which-key-mode 1)
   (setq which-key-idle-delay 0.5))
 
-(global-set-key (kbd "<escape>") #'keyboard-escape-quit)
+;; ESC: cancel sanely. `keyboard-escape-quit' (the default) deletes OTHER windows
+;; when >1 window exists -- that's why ESC was killing popup/embark side windows.
+;; This DWIM version deactivates the region / aborts the minibuffer / else quits,
+;; but NEVER touches the window layout.
+(defun my/keyboard-quit-dwim ()
+  "Deactivate region, else abort minibuffer, else `keyboard-quit'. No window changes."
+  (interactive)
+  (cond ((region-active-p) (deactivate-mark))
+        ((> (minibuffer-depth) 0) (abort-recursive-edit))
+        (t (keyboard-quit))))
+(global-set-key (kbd "<escape>") #'my/keyboard-quit-dwim)
 (define-key minibuffer-local-map (kbd "<escape>") #'abort-recursive-edit)
 (global-set-key (kbd "C-z")   #'undo-only)   ; C-z=suspend is useless in GUI
 (global-set-key (kbd "C-S-z") #'undo-redo)
@@ -523,6 +565,9 @@ With DIR-P, PATH itself is the directory."
     (setq ls-lisp-use-insert-directory-program nil
           ls-lisp-dirs-first t)))
 
+(when (and IS-LINUX (not (executable-find "trash")))
+  (setq trash-directory (expand-file-name "~/.local/share/Trash/files")))
+
 (defun my/dired-create-file (file)
   "Create empty FILE in the current Dired dir and jump to it."
   (interactive (list (read-file-name "Create file: " (dired-current-directory))))
@@ -701,9 +746,18 @@ Family + size come from the frame created in early-init."
                               my/variable-pitch-candidates)))
       (set-face-attribute 'variable-pitch frame :family vp :weight 'regular)
       (setf (alist-get vp face-font-rescale-alist nil nil #'equal) 0.9))
-    (when IS-WINDOWS
+    (cond
+     (IS-WINDOWS
       (set-fontset-font t 'emoji  (font-spec :family "Segoe UI Emoji") frame 'prepend)
       (set-fontset-font t 'symbol (font-spec :family "Segoe UI Symbol") frame 'append))
+     (IS-MAC
+      (set-fontset-font t 'emoji  (font-spec :family "Apple Color Emoji") frame 'prepend))
+     (IS-LINUX
+      ;; Linux rarely auto-maps emoji -- set Noto explicitly when present.
+      (when (find-font (font-spec :family "Noto Color Emoji"))
+        (set-fontset-font t 'emoji  (font-spec :family "Noto Color Emoji") frame 'prepend))
+      (when (find-font (font-spec :family "Noto Sans Symbols2"))
+        (set-fontset-font t 'symbol (font-spec :family "Noto Sans Symbols2") frame 'append))))
     ;; Render the Unicode "mathematical" block (∑ ∫ √ 𝕏 ⟨⟩ ...) in a real math
     ;; font so org/LaTeX math + `org-pretty-entities' glyphs look right. Picks the
     ;; best installed; Cambria Math ships with Windows.
@@ -959,6 +1013,9 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
     (when (file-exists-p git-exe)
       (setq magit-git-executable git-exe))))
 
+;; You only use Git -- stop built-in VC probing every file with all backends.
+(setq vc-handled-backends '(Git))
+
 (use-package magit                       ; loads on first C-x g
   :init (setq magit-define-global-key-bindings nil)
   :bind (("C-x g"   . magit-status)
@@ -967,10 +1024,26 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
          ("C-c g b" . magit-blame-addition)
          ("C-c g l" . magit-log-buffer-file))
   :config
-  (setq magit-diff-refine-hunk 'all      ; word-level diff highlighting
-        magit-save-repository-buffers 'dontask))
+  (setq magit-diff-refine-hunk t
+        magit-save-repository-buffers 'dontask)
+  (setq auto-revert-buffer-list-filter #'magit-auto-revert-repository-buffer-p)
+  (when IS-WINDOWS
+    (setq magit-refresh-status-buffer nil
+          magit-revision-insert-related-refs nil)
+    (dolist (h '(magit-insert-tags-header
+                 magit-insert-unpushed-to-pushremote
+                 magit-insert-unpulled-from-pushremote
+                 magit-insert-unpulled-from-upstream))
+      (remove-hook 'magit-status-sections-hook h))
+    (remove-hook 'server-switch-hook 'magit-commit-diff)
+    (remove-hook 'with-editor-filter-visit-hook 'magit-commit-diff)))
 
-(use-package diff-hl                      ; git gutter (margin, since fringe=0)
+;; Step through a file's history, revision by revision (lean, no DB, lazy).
+(use-package git-timemachine
+  :defer t
+  :bind ("C-c g t" . git-timemachine))
+
+(use-package diff-hl
   :hook ((dired-mode        . diff-hl-dired-mode)
          (magit-pre-refresh  . diff-hl-magit-pre-refresh)
          (magit-post-refresh . diff-hl-magit-post-refresh))

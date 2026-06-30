@@ -159,22 +159,15 @@ If buffer-or-name is nil return current buffer's mode."
                                ;; (mode-line-format . (:eval (my/helper-window-mode-line-format)))
                                )))
 
-        ("^\\*Org PDF LaTeX Output\\*$"
-         (display-buffer-in-side-window)
-         (side . bottom)
-         (window-height . 0.2))
-
-        ("^\\*Org Preview LaTeX Output\\*$"
-         (display-buffer-in-side-window)
-         (side . bottom)
-         (window-height . 0.2))
+        ;; Routine TeX/Org-preview output + scratch buffers: never steal a
+        ;; window. They run silently; real failures surface in *TeX Help* /
+        ;; *Preview-Ghostscript-Error* (which still display, below).
+        ("\\(?:^\\*Org PDF LaTeX Output\\*$\\|^\\*Org Preview LaTeX Output\\*$\\|\
+^\\*Org LaTeX Precompilation\\*$\\|^\\*TeX\\(?: silent\\)?\\*$\\|^_region_\\|^prv_\\)"
+         (display-buffer-no-window)
+         (allow-no-window . t))
 
         ("^\\*Preview-Ghostscript-Error\\*$"
-         (display-buffer-in-side-window)
-         (side . bottom)
-         (window-height . 0.2))
-
-        ("^\\*Org LaTeX Precompilation\\*$"
          (display-buffer-in-side-window)
          (side . bottom)
          (window-height . 0.2))

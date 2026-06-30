@@ -123,20 +123,30 @@ modus-* are built-in (palette overrides in early-init); `doom-rouge' needs the
   (save-some-buffers t)
   (let* ((name (when buffer-file-name (file-name-nondirectory buffer-file-name)))
          (base (when name (file-name-sans-extension name)))
+         (use-bash (or (not IS-WINDOWS) (executable-find "bash")))
+         (cc (lambda (compiler std)
+               (if use-bash
+                   (format "%s%s \"%s\" -o \"%s\" && ./%s"
+                           compiler std name base base)
+                 (format "%s%s \"%s\" -o \"%s.exe\" && .\\%s.exe"
+                         compiler std name base base))))
          (cmd (cond
                ((or (file-exists-p "Makefile") (file-exists-p "makefile")) "make -k")
                ((locate-dominating-file default-directory "Cargo.toml") "cargo run")
                ((locate-dominating-file default-directory "go.mod") "go run .")
                ((derived-mode-p 'python-mode 'python-ts-mode) (format "python \"%s\"" name))
-               ((derived-mode-p 'c-mode 'c-ts-mode)
-                (format "gcc \"%s\" -o \"%s\" && \"./%s\"" name base base))
-               ((derived-mode-p 'c++-mode 'c++-ts-mode)
-                (format "g++ -std=c++20 \"%s\" -o \"%s\" && \"./%s\"" name base base))
+               ((derived-mode-p 'c-mode 'c-ts-mode)   (funcall cc "gcc" ""))
+               ((derived-mode-p 'c++-mode 'c++-ts-mode) (funcall cc "g++" " -std=c++20"))
                ((derived-mode-p 'js-mode 'js-ts-mode 'typescript-ts-mode)
                 (format "node \"%s\"" name))
                ((derived-mode-p 'sh-mode 'bash-ts-mode) (format "bash \"%s\"" name))
                (t compile-command))))
-    (compile cmd)))
+    (let ((shell-file-name (if (and IS-WINDOWS use-bash (executable-find "bash"))
+                               (executable-find "bash")
+                             shell-file-name))
+          (shell-command-switch (if (and IS-WINDOWS use-bash (executable-find "bash"))
+                                    "-c" shell-command-switch)))
+      (compile cmd))))
 
 ;; --- Open the NEXT buffer in a right/below split and focus it ---------------
 ;; Press the prefix, then trigger ANY open command -- dired RET, vertico
@@ -212,7 +222,8 @@ With prefix ARG move that many; non-nil RESET restarts from the top."
 ;; --- Buffer switching / killing (hide internal & noisy buffers) -------------
 (defvar my/hidden-buffer-regexp
   "\\`\\*\\(Messages\\|Warnings\\|Compile-Log\\|Echo Area\\|Async\\|Completions\\|\
-Ibuffer\\|Flymake log\\|EGLOT\\|tramp/?\\|epc con\\).*\\*\\'"
+Ibuffer\\|Flymake log\\|EGLOT\\|tramp/?\\|epc con\\|TeX\\|TeX Help\\|TeX silent\\|\
+Org Preview LaTeX Output\\|Org PDF LaTeX Output\\|preview-\\).*\\*\\'"
   "Buffers whose names match this (or start with a space) are hidden from
 `my/switch-to-buffer' and from buffer cycling.")
 
@@ -220,6 +231,8 @@ Ibuffer\\|Flymake log\\|EGLOT\\|tramp/?\\|epc con\\).*\\*\\'"
   "Non-nil if BUF is internal/noisy and should be hidden from selection."
   (let ((name (buffer-name buf)))
     (or (string-prefix-p " " name)
+        (string-prefix-p "_region_" name)
+        (string-prefix-p "prv_" name)
         (string-match-p my/hidden-buffer-regexp name))))
 
 (defun my/buffer-skip-p (win buf _bury-or-kill)

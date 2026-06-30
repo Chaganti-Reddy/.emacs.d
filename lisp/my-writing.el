@@ -33,7 +33,17 @@
   (org-confirm-babel-evaluate nil)
   (org-return-follows-link t)
   (org-startup-with-latex-preview nil)
+  (org-ellipsis " ▾")
+  (org-fontify-quote-and-verse-blocks t)
+  (org-fontify-whole-heading-line t)
+  (org-fontify-done-headline t)
+  (org-highlight-latex-and-related '(latex script entities))
   :config
+  (setq org-use-sub-superscripts '{})
+  (font-lock-add-keywords
+   'org-mode
+   '(("\\(\\\\\\(?:label\\|c?ref\\|eqref\\)\\){\\(.+?\\)}"
+      (1 font-lock-keyword-face) (2 font-lock-constant-face))))
   (advice-add 'org-try-cdlatex-tab :around
               (lambda (orig &rest _) (ignore-errors (funcall orig))))
   (setq org-format-latex-options
@@ -43,9 +53,13 @@
           :foreground 'default)
          :background 'default))
   (setq org-preview-latex-default-process
-        (cond ((executable-find "dvipng")  'dvipng)
-              ((executable-find "dvisvgm") 'dvisvgm)
-              (t org-preview-latex-default-process)))
+        (if IS-WINDOWS
+            (cond ((executable-find "dvipng")  'dvipng)
+                  ((executable-find "dvisvgm") 'dvisvgm)
+                  (t org-preview-latex-default-process))
+          (cond ((executable-find "dvisvgm") 'dvisvgm)
+                ((executable-find "dvipng")  'dvipng)
+                (t org-preview-latex-default-process))))
   ;; Babel langs (calc evaluates `#+begin_src calc'; embedded calc is C-x * e).
   (setq org-babel-load-languages
         '((emacs-lisp . t) (python . t) (C . t) (shell . t) (calc . t)))
@@ -66,6 +80,16 @@
   (org-modern-keyword "‣ ")
   (org-modern-horizontal-rule t)
   (org-modern-todo t))
+
+(defun my/scale-org-headings (&rest _)
+  (when (facep 'org-level-1)
+    (dolist (s '((org-level-1 . 1.4) (org-level-2 . 1.25) (org-level-3 . 1.18)
+                 (org-level-4 . 1.12) (org-level-5 . 1.08)
+                 (org-level-6 . 1.05) (org-level-7 . 1.0) (org-level-8 . 1.0)))
+      (set-face-attribute (car s) nil :height (cdr s) :weight 'semibold))
+    (set-face-attribute 'org-document-title nil :height 1.6 :weight 'bold)))
+(with-eval-after-load 'org-faces (my/scale-org-headings))
+(add-hook 'enable-theme-functions #'my/scale-org-headings)
 
 ;; cdlatex: fast math input (TAB templates, `;' math-symbol prefix). Powers
 ;; `org-cdlatex-mode' and LaTeX-mode. Symbol/modify maps from karthink.
@@ -162,8 +186,10 @@
   :hook ((LaTeX-mode . cdlatex-mode)
          (LaTeX-mode . turn-on-reftex)
          (LaTeX-mode . prettify-symbols-mode)
-         (LaTeX-mode . visual-line-mode))
+         (LaTeX-mode . visual-line-mode)
+         (LaTeX-mode . outline-minor-mode))
   :init
+  (setq outline-minor-mode-cycle t)
   (setq TeX-auto-save t
         TeX-parse-self t                  
         TeX-electric-escape nil
@@ -174,6 +200,8 @@
   :config
   (setq-default TeX-master nil)
   (setq TeX-PDF-mode t)
+  (when IS-WINDOWS
+    (setq-default TeX-PDF-from-DVI "Dvipdfmx"))
   (setq prettify-symbols-unprettify-at-point 'right-edge)
   ;; Windows: open in the OS-default PDF viewer (no SyncTeX).
   ;; Linux/macOS: in-Emacs pdf-tools with full SyncTeX.
@@ -184,8 +212,65 @@
 (with-eval-after-load 'preview
   (setq preview-scale-function
         (lambda () (* 1.25 (funcall (preview-scale-from-face)))))
+  (when (and IS-WINDOWS (executable-find "dvipng"))
+    (setq preview-image-type 'dvi*
+          preview-dvi*-image-type 'png))
+  (let ((gs (or (executable-find "mgs") (executable-find "gswin64c")
+                (executable-find "gswin32c") (executable-find "gs"))))
+    (when gs (setq preview-gs-command gs)))
+  (setq preview-auto-cache-preamble t)
   (define-key LaTeX-mode-map (kbd "C-c C-x") preview-map))
 
+;; --- LaTeX live auto-preview (the `org-fragtog' analogue for .tex) ---------
+;; AUCTeX already auto-REVEALS a preview's source when point enters it and
+;; re-hides it on leave (`preview-auto-reveal', default on), but it never
+;; REGENERATES previews after edits. This minor mode adds that half: a
+;; debounced idle timer re-previews the section around point once typing
+;; stops, so editing a formula and moving away re-renders it -- no manual
+;; C-c C-x C-s.
+(defvar-local my/latex-preview-timer nil)
+(defun my/latex-auto-preview--schedule (&rest _)
+  "Debounce: (re)arm the idle preview timer after an edit.
+Bound to `after-change-functions'."
+  (when (timerp my/latex-preview-timer) (cancel-timer my/latex-preview-timer))
+  (setq my/latex-preview-timer
+        (run-with-idle-timer 1.0 nil #'my/latex-auto-preview--run
+                             (current-buffer))))
+
+(defun my/latex-auto-preview--run (buf)
+  "Re-preview the current section once editing stops -- but only when point is
+OUTSIDE math, so the formula you're mid-editing never collapses under you.
+Uses `preview-section' (whole environments), NOT an ad-hoc region: region
+scoping mis-aligned boundaries (leading spaces, partial envs) and swallowed
+surrounding text like `\\end{document}'. Section-level always renders correctly;
+it only fires after an edit, when you've left math, so it isn't constant."
+  (when (buffer-live-p buf)
+    (with-current-buffer buf
+      (when (and (bound-and-true-p my/latex-auto-preview-mode)
+                 (not (and (fboundp 'texmathp) (texmathp))))
+        (ignore-errors (preview-section))))))
+
+(define-minor-mode my/latex-auto-preview-mode
+  "Re-render the LaTeX preview around point shortly after edits stop.
+Pairs with AUCTeX's `preview-auto-reveal' (source shown while point is inside
+a preview, image once you leave) for a live, `org-fragtog'-like feel."
+  :lighter " LivePrv"
+  (if my/latex-auto-preview-mode
+      (progn
+        (add-hook 'after-change-functions #'my/latex-auto-preview--schedule nil t)
+        ;; Render whatever math is already in the file shortly after opening.
+        (let ((buf (current-buffer)))
+          (run-with-idle-timer
+           0.8 nil
+           (lambda ()
+             (when (buffer-live-p buf)
+               (with-current-buffer buf
+                 (when (bound-and-true-p my/latex-auto-preview-mode)
+                   (ignore-errors (preview-buffer)))))))))
+    (remove-hook 'after-change-functions #'my/latex-auto-preview--schedule t)
+    (when (timerp my/latex-preview-timer) (cancel-timer my/latex-preview-timer))))
+
+(add-hook 'LaTeX-mode-hook #'my/latex-auto-preview-mode)
 
 ;; In-Emacs PDF viewer (Linux/macOS). epdfinfo build on Windows is painful, so
 ;; Windows just uses the OS-default viewer.

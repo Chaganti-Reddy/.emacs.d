@@ -52,6 +52,19 @@
                  (when (string-match-p "finished" e)
                    (message "Tree-sitter DLLs installed. Reopen files to use *-ts-mode."))))))
 
+;; Linux/macOS (any box with a C compiler): compile every grammar from source.
+;; The Windows DLL download above is the special case; this is the normal path.
+(defun my/install-treesit-grammars ()
+  "Compile+install all grammars in `treesit-language-source-alist' (needs cc)."
+  (interactive)
+  (unless (or (executable-find "cc") (executable-find "gcc") (executable-find "clang"))
+    (user-error "No C compiler found (cc/gcc/clang) -- needed to build grammars"))
+  (dolist (lang (mapcar #'car treesit-language-source-alist))
+    (unless (treesit-ready-p lang t)
+      (message "Building tree-sitter grammar: %s" lang)
+      (ignore-errors (treesit-install-language-grammar lang))))
+  (message "Tree-sitter grammars built. Reopen files to use *-ts-mode."))
+
 ;; Use *-ts-mode only when the grammar is actually available (no errors if not).
 (defun my/setup-treesit ()
   "Remap base modes + add auto-mode entries for languages with ready grammars."
@@ -202,6 +215,12 @@
 (setq cape-dabbrev-check-other-buffers nil)
 (setq cape-dict-file (my/var "dict/english-words.txt")
       ispell-alternate-dictionary (my/var "dict/english-words.txt"))
+(setq ispell-program-name
+      (or (executable-find "hunspell") (executable-find "aspell")
+          (executable-find "ispell") ispell-program-name))
+(when (and (stringp ispell-program-name)
+           (string-match-p "hunspell" ispell-program-name))
+  (setenv "DICTIONARY" "en_US"))
 
 ;; Fetch the word list (dwyl/english-words) into var/ on demand -- cross-OS via
 ;; `url-copy-file', no shell. auto-fetched once if absent.
