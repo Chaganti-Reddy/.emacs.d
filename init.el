@@ -659,7 +659,28 @@ With DIR-P, PATH itself is the directory."
          ("C-," . embark-dwim)
          ("C-h B" . embark-bindings))
   :init
-  (setq prefix-help-command #'embark-prefix-help-command))
+  (setq prefix-help-command #'embark-prefix-help-command)
+  :config
+  ;; Open the embark TARGET (file or buffer) in a split + focus -- the
+  ;; consult-like "act on the candidate" flow: in vertico OR dired, `C-.' then
+  ;; `3' (right) / `2' (below). Mnemonic matches C-x 3 / C-x 2.
+  (defun my/find-file-right (file)
+    (interactive "fFile: ")
+    (select-window (split-window (selected-window) nil 'right)) (find-file file))
+  (defun my/find-file-below (file)
+    (interactive "fFile: ")
+    (select-window (split-window (selected-window) nil 'below)) (find-file file))
+  (defun my/switch-buffer-right (buf)
+    (interactive "bBuffer: ")
+    (select-window (split-window (selected-window) nil 'right)) (switch-to-buffer buf))
+  (defun my/switch-buffer-below (buf)
+    (interactive "bBuffer: ")
+    (select-window (split-window (selected-window) nil 'below)) (switch-to-buffer buf))
+  (with-eval-after-load 'embark
+    (define-key embark-file-map   (kbd "3") #'my/find-file-right)
+    (define-key embark-file-map   (kbd "2") #'my/find-file-below)
+    (define-key embark-buffer-map (kbd "3") #'my/switch-buffer-right)
+    (define-key embark-buffer-map (kbd "2") #'my/switch-buffer-below)))
 
 ;;; ===========================================================================
 ;;; 12. Appearance
@@ -703,7 +724,18 @@ Family + size come from the frame created in early-init."
 
 (defconst my/line-number-width 3)
 (setq display-line-numbers-type 'relative
-      display-line-numbers-width my/line-number-width)
+      display-line-numbers-width my/line-number-width
+      display-line-numbers-width-start t)
+
+;; Flash the current line after big motions so the eye finds point.
+(with-eval-after-load 'pulse
+  (setq pulse-delay 0.04 pulse-iterations 8))
+(defun my/pulse-line (&rest _)
+  (pulse-momentary-highlight-one-line (point)))
+(dolist (cmd '(scroll-up-command scroll-down-command recenter-top-bottom other-window
+                                 windmove-up windmove-down windmove-left windmove-right))
+  (advice-add cmd :after #'my/pulse-line))
+
 
 (defconst my/bare-buffer-exempt-modes
   '(term-mode eshell-mode shell-mode comint-mode pdf-view-mode image-mode
@@ -752,9 +784,8 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 (setq make-pointer-invisible t        ; hide mouse while typing
       x-stretch-cursor t)             ; cursor spans wide glyphs like tabs
 
-;; Flush, fringeless look. NOTE: diff-hl/flymake normally draw in the fringe;
-(defconst my/fringe-width 0 "Fringe width in pixels (0 = none).")
-(fringe-mode my/fringe-width)
+(defconst my/fringe-width 8 "Left fringe width in pixels (git/diagnostic gutter).")
+(fringe-mode (cons my/fringe-width 0))
 
 ;; Tooltips in the echo area instead of popup windows.
 (tooltip-mode -1)
@@ -810,6 +841,36 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
              [header-line down-mouse-1] [header-line mouse-1]))
   (global-set-key e #'ignore))
 (setq mode-line-default-help-echo nil)
+
+;; clean-mode-line: abbreviate noisy minor-mode lighters to nothing
+;; and shorten major-mode names (emacs-lisp -> "Eλ", python -> "Py", ...). Keeps
+;; the default mode-line uncluttered. Trimmed to the modes this config uses.
+(require 'cl-lib)
+(defvar my/mode-line-cleaner-alist
+  '((yas-minor-mode . "") (eldoc-mode . "") (abbrev-mode . "")
+    (which-key-mode . "") (auto-revert-mode . "") (visual-line-mode . "")
+    (org-indent-mode . "") (hs-minor-mode . "") (cdlatex-mode . "")
+    (org-cdlatex-mode . "") (org-appear-mode . "") (hl-todo-mode . "")
+    (flymake-mode . " fly") (outline-minor-mode . " ֍")
+    (emacs-lisp-mode . "Eλ") (lisp-interaction-mode . "λ")
+    (python-mode . "Py") (python-ts-mode . "Py")
+    (org-mode . " ORG") (latex-mode . "TeX") (LaTeX-mode . "TeX")))
+(defun my/clean-mode-line ()
+  (cl-loop for (mode . str) in my/mode-line-cleaner-alist
+           do (let ((old (cdr (assq mode minor-mode-alist))))
+                (when old (setcar old str))
+                (when (eq mode major-mode) (setq mode-name str)))))
+(add-hook 'after-change-major-mode-hook #'my/clean-mode-line)
+
+;; Toggle the mode-line off in the current buffer (distraction-free).
+(define-minor-mode my/mode-line-hidden-mode
+  "Hide the mode-line in the current buffer."
+  :init-value nil :global nil
+  (if my/mode-line-hidden-mode
+      (setq-local mode-line-format nil)
+    (kill-local-variable 'mode-line-format)
+    (force-mode-line-update)))
+(global-set-key (kbd "C-c t l") #'my/mode-line-hidden-mode)
 
 (setq tab-bar-show 1
       tab-bar-new-button-show nil
@@ -920,8 +981,10 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
          ("C-c g r" . diff-hl-revert-hunk))
   :init (add-hook 'emacs-startup-hook #'global-diff-hl-mode)
   :config
-  (diff-hl-flydiff-mode 1)               ; update gutter live as you type
-  (diff-hl-margin-mode 1))               ; REQUIRED: fringe=0 -> draw in margin
+  (diff-hl-flydiff-mode 1)               ; live updates as you type
+  (define-fringe-bitmap 'my/diff-hl-bar [224] nil nil '(center repeated))
+  (setq diff-hl-fringe-bmp-function (lambda (_type _pos) 'my/diff-hl-bar)
+        diff-hl-draw-borders nil))
 
 (use-package wgrep                        ; edit grep results in place, then save
   :init (setq wgrep-auto-save-buffer t
