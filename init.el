@@ -158,6 +158,7 @@ With DIR-P, PATH itself is the directory."
 (defconst my/lisp-dir (my/emacs-path "lisp/"))
 (make-directory my/lisp-dir t)
 (add-to-list 'load-path my/lisp-dir)
+(add-to-list 'custom-theme-load-path my/lisp-dir)
 (setq load-prefer-newer t)
 
 (defun my/load (feature)
@@ -166,16 +167,12 @@ With DIR-P, PATH itself is the directory."
       (require feature)
     (error (message "Module %s failed: %s" feature (error-message-string err)))))
 
-;; Keep modules byte-compiled: build once if needed, then recompile on save.
-(unless (file-exists-p (expand-file-name "my-commands.elc" my/lisp-dir))
-  (byte-recompile-directory my/lisp-dir 0))
+(byte-recompile-directory my/lisp-dir 0)
 (add-hook 'after-save-hook
           (lambda ()
             (when (and buffer-file-name
                        (file-in-directory-p buffer-file-name my/lisp-dir))
               (byte-compile-file buffer-file-name))))
-
-(setq help-window-select t)
 
 (my/load 'my-commands)            ; custom utility commands
 (my/load 'setup-windows)          ; display-buffer placement rules
@@ -394,7 +391,7 @@ With DIR-P, PATH itself is the directory."
           ("^\\*Warnings\\*" . hide)
           "\\*Shell Command Output\\*"
           ("\\*Org LaTeX Precompilation\\*" . hide)
-          "^\\*Apropos" "^\\*Buffer List\\*" "^Calc:" "^\\*ielm\\*" "^\\*TeX Help\\*"
+          "^\\*Apropos" "^\\*Buffer List\\*" "^\\*ielm\\*" "^\\*TeX Help\\*"
           help-mode Custom-mode pdf-view-mode occur-mode ibuffer-mode dired-mode
           bookmark-bmenu-mode xref--xref-buffer-mode calendar-mode
           compilation-mode flymake-diagnostics-buffer-mode
@@ -414,6 +411,22 @@ With DIR-P, PATH itself is the directory."
                   "^\\*shell.*\\*$"  shell-mode
                   "^\\*term.*\\*$"   term-mode "^\\*vterm.*\\*$" vterm-mode
                   "^\\*dape.*\\*$"   dape-info-mode dape-repl-mode)))
+  ;; Shorten + tag popup names in the echo list. The echo shows
+  ;; e.g. "HLP, [1:MSG], [2:OUT]" instead of long "*Help*"/"*Messages*" names.
+  (defun my/popper-shorten (name)
+    "Transform popup buffer NAME into a short, padded label for the echo line."
+    (let ((tag (cond ((string-match-p "Messages"      name) "MSG")
+                     ((string-match-p "Help\\|Helpful" name) "HLP")
+                     ((string-match-p "Warnings\\|Compile-Log" name) "LOG")
+                     ((string-match-p "Output\\|Shell Command" name) "OUT")
+                     ((string-match-p "eshell\\|shell\\|term\\|vterm" name) "SH")
+                     ((string-match-p "compilation\\|[Cc]ompile" name) "CMP")
+                     ((string-match-p "Backtrace" name) "BT")
+                     ((string-match-p "[Mm]agit" name) "GIT")
+                     ((string-match-p "Calc" name) "CALC")
+                     (t (string-trim (replace-regexp-in-string "[*]" "" name))))))
+      (propertize (truncate-string-to-width tag 14) 'face 'popper-echo-area)))
+  (setq popper-echo-transform-function #'my/popper-shorten)
   (popper-echo-mode 1))
 
 ;;; ===========================================================================
