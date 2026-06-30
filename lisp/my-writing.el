@@ -18,7 +18,8 @@
         org-preview-latex-image-directory (my/var "org-latex-preview/" t)
         org-modules nil)
   :hook ((org-mode . visual-line-mode)
-         (org-mode . org-cdlatex-mode))     ; fast math input (e.g. `ab' -> a_b)
+         (org-mode . org-cdlatex-mode)      ; fast math input (e.g. `ab' -> a_b)
+         (org-mode . (lambda () (setq-local tab-always-indent t))))
   :custom
   (org-startup-indented t)
   (org-hide-emphasis-markers t)
@@ -33,6 +34,8 @@
   (org-return-follows-link t)
   (org-startup-with-latex-preview nil)
   :config
+  (advice-add 'org-try-cdlatex-tab :around
+              (lambda (orig &rest _) (ignore-errors (funcall orig))))
   (setq org-format-latex-options
         (plist-put
          (plist-put
@@ -84,6 +87,17 @@
   :after org
   :hook (org-mode . org-fragtog-mode))
 
+;; org-appear: reveal hidden emphasis/link/sub-super markers ONLY on the element
+;; at point (so editing *bold*/[[links]]/_x_ isn't blind). Pairs with
+;; `org-hide-emphasis-markers' + `org-pretty-entities'.
+(use-package org-appear
+  :after org
+  :hook (org-mode . org-appear-mode)
+  :custom
+  (org-appear-autoemphasis t)
+  (org-appear-autolinks t)
+  (org-appear-autosubmarkers t))
+
 ;; Render existing fragments shortly AFTER opening (on idle, not on the open
 ;; path). Without this, `org-startup-with-latex-preview nil' means a freshly
 ;; opened file shows no previews until you move the cursor through each fragment.
@@ -114,6 +128,19 @@
     (let ((before-save-hook nil)) (org-babel-tangle))))
 (add-hook 'org-mode-hook
           (lambda () (add-hook 'before-save-hook #'my/org-auto-tangle nil t)))
+
+;; org-capture: fast timestamped note into an inbox file (C-c c). Lightweight --
+;; no agenda/PKM machinery.
+(setq org-capture-templates
+      '(("n" "Note" entry (file "inbox.org")
+         "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :empty-lines 1)))
+(global-set-key (kbd "C-c c") #'org-capture)
+
+;; engrave-faces: export Org src blocks to PDF in your Emacs THEME colors (no
+;; Python/minted/-shell-escape needed -- Windows-friendly). Used by ox-latex.
+(use-package engrave-faces :defer t)
+(with-eval-after-load 'ox-latex
+  (setq org-latex-src-block-backend 'engraved))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Markdown
@@ -146,7 +173,8 @@
         reftex-default-bibliography (list (my/emacs-path "bib/refs.bib")))
   :config
   (setq-default TeX-master nil)
-  (setq TeX-PDF-mode t)                      ; produce PDF via pdflatex
+  (setq TeX-PDF-mode t)
+  (setq prettify-symbols-unprettify-at-point 'right-edge)
   ;; Windows: open in the OS-default PDF viewer (no SyncTeX).
   ;; Linux/macOS: in-Emacs pdf-tools with full SyncTeX.
   (unless IS-WINDOWS

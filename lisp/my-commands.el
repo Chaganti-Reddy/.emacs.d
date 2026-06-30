@@ -2,8 +2,13 @@
 
 ;; --- Config helpers ---------------------------------------------------------
 (defun my/reload-init ()
-  "Reload the configuration without restarting."
-  (interactive) (load-file user-init-file) (message "Config reloaded."))
+  "Reload the lisp/ feature modules AND init.el without restarting."
+  (interactive)
+  (dolist (m '(my-commands setup-windows my-coding my-writing))
+    (when-let* ((f (locate-library (symbol-name m))))
+      (load f nil t)))
+  (load-file user-init-file)
+  (message "Config + lisp/ modules reloaded."))
 (defun my/open-init ()
   "Open the init file."
   (interactive) (find-file user-init-file))
@@ -132,6 +137,77 @@ modus-* are built-in (palette overrides in early-init); `doom-rouge' needs the
                ((derived-mode-p 'sh-mode 'bash-ts-mode) (format "bash \"%s\"" name))
                (t compile-command))))
     (compile cmd)))
+
+;; --- Open the NEXT buffer in a right/below split and focus it ---------------
+;; Press the prefix, then trigger ANY open command -- dired RET, vertico
+;; find-file RET, embark, switch-buffer, xref... it lands in a fresh split.
+(defun my/open-next-in-split (side desc)
+  "Make the NEXT displayed buffer open in a SIDE (right/below) split, focused."
+  (display-buffer-override-next-command
+   (lambda (buffer alist)
+     (let ((win (split-window (selected-window) nil side)))
+       (window--display-buffer buffer win 'window alist)
+       (select-window win)
+       (cons win 'window)))
+   nil (format "[%s split]" desc))
+  (message "Next buffer opens in a %s split" desc))
+(defun my/open-right () "Next buffer -> right split."
+  (interactive) (my/open-next-in-split 'right "right"))
+(defun my/open-below () "Next buffer -> below split."
+  (interactive) (my/open-next-in-split 'below "below"))
+
+(defvar-keymap my/window-prefix-map
+  :doc "Window + split-open commands (on C-o)."
+  "f" #'find-file
+  "r" #'my/open-right
+  "b" #'my/open-below
+  "1" #'delete-other-windows
+  "o" #'other-window)
+
+;; `C-q' kill/close leader. 
+(defvar-keymap my/kill-prefix-map
+  :doc "Kill/close commands (on C-q)."
+  "q" #'delete-window
+  "k" #'my/kill-this-buffer
+  "K" #'my/kill-buffer-and-window
+  "t" #'tab-bar-close-tab
+  "p" #'my/close-project
+  "l" #'kill-whole-line
+  "i" #'quoted-insert)
+
+;; --- Half-page scroll (less disorienting than full C-v/M-v) -----------------
+(defun my/scroll-up-half ()
+  "Scroll up half a window."
+  (interactive)
+  (scroll-up-command (max 1 (/ (- (window-height) next-screen-context-lines) 2))))
+(defun my/scroll-down-half ()
+  "Scroll down half a window."
+  (interactive)
+  (scroll-down-command (max 1 (/ (- (window-height) next-screen-context-lines) 2))))
+
+;; --- Reader mode: hide cursor + page-lock the buffer for reading ------------
+(defvar-local my/hide-cursor--saved nil)
+(define-minor-mode my/hide-cursor-mode
+  "Hide the cursor and page-lock the buffer (a reading/pager mode)."
+  :lighter " Read"
+  (if my/hide-cursor-mode
+      (progn (scroll-lock-mode 1)
+             (setq my/hide-cursor--saved cursor-type cursor-type nil))
+    (scroll-lock-mode -1)
+    (setq cursor-type (or my/hide-cursor--saved t))))
+
+;; --- Repeatable error/grep/compile navigation ------------------------------
+(defun my/next-error (&optional arg reset)
+  "Go to the next error; after `M-g n', press bare n/p to keep cycling.
+With prefix ARG move that many; non-nil RESET restarts from the top."
+  (interactive "P")
+  (let ((num (if (eq last-command-event ?p) -1 1)))
+    (next-error (if arg (* arg num) num) reset)
+    (set-transient-map
+     (let ((map (make-sparse-keymap)))
+       (define-key map "n" #'my/next-error)
+       (define-key map "p" #'my/next-error)
+       map))))
 
 ;; --- Buffer switching / killing (hide internal & noisy buffers) -------------
 (defvar my/hidden-buffer-regexp
@@ -272,6 +348,12 @@ start, and at column 0 just removes the newline.  Respects `subword-mode'."
       (project-find-regexp my/todo-regexp)
     (message "Not in a project.")))
 
+;; --- Project: magit status in the project root (for the switch menu) --------
+(defun my/project-magit-status ()
+  "Run `magit-status' in the current project's root."
+  (interactive)
+  (magit-status-setup-buffer (project-root (project-current t))))
+
 ;; --- Close a project: kill its buffers + close its tab ----------------------
 (defun my/close-project ()
   "Close the current project in this frame: SAVE its window state, kill its
@@ -337,6 +419,11 @@ later (project-x). Acts only on the current frame's project/tab."
 (global-set-key (kbd "C-<f5>")       #'my/reload-init)
 (global-set-key (kbd "<f6>")         #'my/new-temp-file)
 (global-set-key (kbd "<f8>")         #'next-error)
+(global-set-key (kbd "M-g n")        #'my/next-error)
+(global-set-key (kbd "M-g p")        #'my/next-error)
+(global-set-key (kbd "C-v")          #'my/scroll-up-half)
+(global-set-key (kbd "M-v")          #'my/scroll-down-half)
+(global-set-key (kbd "C-c t r")      #'my/hide-cursor-mode)   ; reader/pager mode
 (global-set-key (kbd "<C-f9>")       #'my/smart-compile)
 (global-set-key (kbd "<C-S-f9>")     #'recompile)
 (global-set-key (kbd "C-S-p")        #'execute-extended-command)
@@ -345,8 +432,6 @@ later (project-x). Acts only on the current frame's project/tab."
 (global-set-key (kbd "C-<backspace>") #'my/backward-delete-word)
 (global-set-key (kbd "C-x b")        #'my/switch-to-buffer)
 (global-set-key (kbd "C-x C-b")      #'my/list-buffers)
-(global-set-key (kbd "C-x k")        #'my/kill-this-buffer)
-(global-set-key (kbd "C-x K")        #'my/kill-buffer-and-window)
 (global-set-key (kbd "C-c <")        #'my/shift-region-left)
 (global-set-key (kbd "C-c >")        #'my/shift-region-right)
 (global-set-key (kbd "C-c r")        #'recentf-open)
@@ -362,6 +447,9 @@ later (project-x). Acts only on the current frame's project/tab."
 (global-set-key (kbd "C-c t T")      #'my/toggle-theme)
 (global-set-key (kbd "C-c i d")      #'my/insert-date)
 (global-set-key (kbd "C-c i t")      #'my/insert-time)
+(global-set-key (kbd "C-c a")        #'mark-page)
+(global-set-key (kbd "C-o")          my/window-prefix-map)
+(global-set-key (kbd "C-q")          my/kill-prefix-map)
 
 (provide 'my-commands)
 ;;; my-commands.el ends here

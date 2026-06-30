@@ -363,16 +363,6 @@ If buffer-or-name is nil return current buffer's mode."
          (side . bottom)
          (slot . 2))
 
-         ;; Dired as a right-side popup (40% width)
-         ((lambda (buf act) (derived-mode-p 'dired-mode))
-         (display-buffer-reuse-window
-           display-buffer-in-side-window)
-         (body-function . select-window)
-         (side . right)
-         (slot . 3)
-         (window-width . 0.40)
-         (window-parameters . ((split-window . #'ignore)
-                               (no-delete-other-windows . t))))
 
         ((lambda (buf act) (member (buffer-mode buf) my/occur-grep-modes-list))
          (display-buffer-reuse-mode-window

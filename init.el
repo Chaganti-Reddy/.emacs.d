@@ -1,5 +1,5 @@
 ;;; init.el --- Main configuration -*- lexical-binding: t; -*-
-;; Loaded after early-init.el. 
+;; Loaded after early-init.el.
 
 ;;; ===========================================================================
 ;;; 1. Portable paths
@@ -57,7 +57,7 @@ With DIR-P, PATH itself is the directory."
 (defun my/gc-max  () (setq gc-cons-threshold most-positive-fixnum))
 
 (add-hook 'emacs-startup-hook    #'my/gc-runtime)
-(add-hook 'minibuffer-setup-hook #'my/gc-max)        
+(add-hook 'minibuffer-setup-hook #'my/gc-max)
 (add-hook 'minibuffer-exit-hook  #'my/gc-runtime)
 
 (add-hook 'emacs-startup-hook
@@ -74,7 +74,14 @@ With DIR-P, PATH itself is the directory."
 (when IS-WINDOWS
   ;; Skip an expensive GC step that bites when many fonts/emoji are cached.
   (setq inhibit-compacting-font-caches t
-        w32-pipe-buffer-size my/w32-pipe-buffer-size))
+        w32-pipe-buffer-size my/w32-pipe-buffer-size)
+  ;; If SHELL points at Git's bash, cmdproxy delegates shell commands to it and
+  ;; MSYS mangles `/'-prefixed args (broke AUCTeX preview's /AUCTEXINPUT). Point
+  ;; SHELL at Emacs's own `cmdproxy.exe' wrapper.
+  (let ((cmdproxy (expand-file-name "cmdproxy.exe" invocation-directory)))
+    (when (file-exists-p cmdproxy)
+      (setenv "SHELL" cmdproxy)
+      (setq shell-file-name cmdproxy))))
 
 ;; Engine performance (display + subprocess).
 (defconst my/process-output-max (* 4 1024 1024)
@@ -193,6 +200,7 @@ With DIR-P, PATH itself is the directory."
 ;;; ===========================================================================
 (delete-selection-mode 1)          ; typing replaces the active region
 (global-subword-mode 1)            ; CamelCase humps count as words
+(global-so-long-mode 1)            ; don't choke on files with very long lines
 (setq sentence-end-double-space nil
       kill-whole-line t)           ; C-k at col 0 takes the newline too
 
@@ -210,6 +218,10 @@ With DIR-P, PATH itself is the directory."
 ;; accidental inserts when clicking around.
 (global-set-key (kbd "<mouse-2>")      #'ignore)
 (global-set-key (kbd "<down-mouse-2>") #'ignore)
+;; Disable Control-click popup menus (buffer/face/mode menus) in buffers.
+(dolist (k '([C-down-mouse-1] [C-mouse-1] [C-down-mouse-2] [C-mouse-2]
+             [C-down-mouse-3] [C-mouse-3]))
+  (global-unset-key k))
 
 (defconst my/undo-limit        (* 64 1024 1024))
 (defconst my/undo-strong-limit (* 96 1024 1024))
@@ -224,19 +236,63 @@ With DIR-P, PATH itself is the directory."
           (lambda () (modify-syntax-entry ?< ".") (modify-syntax-entry ?> ".")))
 
 (add-hook 'prog-mode-hook #'hs-minor-mode)   ; code folding (hideshow)
+;; org-style folding for hideshow: one key cycles a block through
+;; hide -> children -> subtree -> show; another toggles the whole buffer.
+(defun my/hs-cycle (&optional level)
+  "Cycle hideshow folding at point like Org TAB."
+  (interactive "p")
+  (save-excursion
+    (if (= (or level 1) 1)
+        (pcase last-command
+          ('my/hs-cycle (hs-hide-level 1) (setq this-command 'my/hs-cycle-children))
+          ('my/hs-cycle-children (hs-show-block) (hs-show-block)
+                                 (setq this-command 'my/hs-cycle-subtree))
+          ('my/hs-cycle-subtree (hs-hide-block))
+          (_ (if (not (hs-already-hidden-p)) (hs-hide-block)
+               (hs-hide-level 1) (setq this-command 'my/hs-cycle-children))))
+      (hs-hide-level level) (setq this-command 'hs-hide-level))))
+(defun my/hs-global-cycle ()
+  "Toggle folding for the whole buffer (hide-all <-> show-all)."
+  (interactive)
+  (pcase last-command
+    ('my/hs-global-cycle (save-excursion (hs-show-all))
+                         (setq this-command 'hs-global-show))
+    (_ (hs-hide-all))))
 (with-eval-after-load 'hideshow
-  (define-key hs-minor-mode-map (kbd "C-{")     #'hs-hide-block)
+  (define-key hs-minor-mode-map (kbd "C-{")     #'my/hs-cycle)         ; cycle block
   (define-key hs-minor-mode-map (kbd "C-}")     #'hs-show-block)
-  (define-key hs-minor-mode-map (kbd "C-c C-{") #'hs-hide-all)
+  (define-key hs-minor-mode-map (kbd "C-c C-{") #'my/hs-global-cycle)  ; cycle buffer
   (define-key hs-minor-mode-map (kbd "C-c C-}") #'hs-show-all))
 
 (setq isearch-lazy-count t
       lazy-count-prefix-format nil
       lazy-count-suffix-format "  (%s/%s)"
-      isearch-allow-scroll t
+      isearch-allow-scroll 'unlimited
+      isearch-lax-whitespace t
+      isearch-yank-on-move 'shift
+      isearch-repeat-on-direction-change t
       isearch-wrap-pause 'no
       search-whitespace-regexp ".*?"
       search-invisible 'open)
+;; Exit isearch with the match selected as a region (search-then-operate).
+(defun my/isearch-mark-and-exit ()
+  "Mark the current search match and end the search."
+  (interactive)
+  (push-mark isearch-other-end t 'activate)
+  (setq deactivate-mark nil)
+  (isearch-done))
+(with-eval-after-load 'isearch
+  (define-key isearch-mode-map (kbd "M-RET") #'my/isearch-mark-and-exit))
+
+;; hippie-expand: richer text expansion than bare dabbrev on M-/ (tries visible
+;; text, all buffers, file names, lines, kill-ring, then lisp symbols).
+(global-set-key [remap dabbrev-expand] #'hippie-expand)
+(setq hippie-expand-try-functions-list
+      '(try-expand-dabbrev try-expand-dabbrev-visible try-expand-dabbrev-all-buffers
+                           try-complete-file-name-partially try-complete-file-name
+                           try-expand-all-abbrevs try-expand-list try-expand-line
+                           try-expand-whole-kill try-expand-dabbrev-from-kill
+                           try-complete-lisp-symbol-partially try-complete-lisp-symbol))
 
 (setq set-mark-command-repeat-pop t
       help-window-select t
@@ -248,10 +304,10 @@ With DIR-P, PATH itself is the directory."
   (add-hook 'compilation-filter-hook #'ansi-color-compilation-filter))
 
 (dolist (c '(narrow-to-region narrow-to-page narrow-to-defun
-             upcase-region downcase-region))
+                              upcase-region downcase-region))
   (put c 'disabled nil))
 
-(when (fboundp 'which-key-mode)   
+(when (fboundp 'which-key-mode)
   (which-key-mode 1)
   (setq which-key-idle-delay 0.5))
 
@@ -314,7 +370,11 @@ With DIR-P, PATH itself is the directory."
     "/\\.rustup/" "/go/pkg/mod/" "/venv/" "/\\.venv/" "/\\.tox/" "/__pycache__/"
     "/\\.git/" "/build/" "/dist/" "/target/" "/\\.cache/" "/\\.next/"
     "/AppData/" "/[Tt]emp/" "/Temporary Internet Files/"   ; Windows junk paths
-    "\\.tmp\\'" "^/\\(?:ssh\\|su\\|sudo\\)?:")
+    "\\.tmp\\'" "^/\\(?:ssh\\|su\\|sudo\\)?:"
+    ;; AUCTeX/TeX scratch + build junk (preview region files, aux output)
+    "_region_" "/\\.?prv[_/]" "/auto/" "/_minted"
+    "\\.\\(aux\\|log\\|out\\|toc\\|bbl\\|blg\\|synctex\\.gz\\|fls\\|fdb_latexmk\\)\\'"
+    "\\`<none>\\'")
   "Path patterns kept out of the recent-files list.")
 (with-eval-after-load 'recentf
   (dolist (p my/recentf-exclude) (add-to-list 'recentf-exclude p))
@@ -402,7 +462,7 @@ With DIR-P, PATH itself is the directory."
           "\\*Shell Command Output\\*"
           ("\\*Org LaTeX Precompilation\\*" . hide)
           "^\\*Apropos" "^\\*Buffer List\\*" "^\\*ielm\\*" "^\\*TeX Help\\*"
-          help-mode Custom-mode pdf-view-mode occur-mode ibuffer-mode dired-mode
+          help-mode Custom-mode pdf-view-mode occur-mode ibuffer-mode
           bookmark-bmenu-mode xref--xref-buffer-mode calendar-mode
           compilation-mode flymake-diagnostics-buffer-mode
           magit-status-mode magit-process-mode magit-log-mode
@@ -486,11 +546,11 @@ With DIR-P, PATH itself is the directory."
 (use-package vertico
   :demand t
   :custom
-  (vertico-count 17)
+  (vertico-count 10)
   (vertico-cycle t)
   :bind (:map vertico-map
-         ("C-c C-o" . embark-export)   ; send candidates to a buffer (e.g. dired)
-         ("M-*"     . embark-act-all)) ; act on ALL candidates at once
+              ("C-c C-o" . embark-export)   ; send candidates to a buffer (e.g. dired)
+              ("M-*"     . embark-act-all)) ; act on ALL candidates at once
   :init (vertico-mode))
 ;; Ido-like path editing in the minibuffer: RET descends, DEL ascends a dir.
 ;; (Extensions ship inside the vertico package -- :ensure nil, just require.)
@@ -498,9 +558,9 @@ With DIR-P, PATH itself is the directory."
   :ensure nil
   :after vertico
   :bind (:map vertico-map
-         ("RET"   . vertico-directory-enter)
-         ("DEL"   . vertico-directory-delete-char)
-         ("M-DEL" . vertico-directory-delete-word))
+              ("RET"   . vertico-directory-enter)
+              ("DEL"   . vertico-directory-delete-char)
+              ("M-DEL" . vertico-directory-delete-word))
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
 (use-package vertico-mouse
   :ensure nil
@@ -518,8 +578,8 @@ With DIR-P, PATH itself is the directory."
   :ensure nil
   :after vertico
   :bind (:map vertico-map
-         ("C-'" . vertico-quick-exit)
-         ("M-'" . vertico-quick-insert)))
+              ("C-'" . vertico-quick-exit)
+              ("M-'" . vertico-quick-insert)))
 
 (setq completion-ignore-case t
       read-buffer-completion-ignore-case t
@@ -535,11 +595,20 @@ With DIR-P, PATH itself is the directory."
   :defer t
   :init
   (setq completion-category-defaults nil
-        completion-category-overrides '((file (styles partial-completion)) (buffer (styles orderless basic)))))
+        completion-category-overrides '((file (styles partial-completion)) (buffer (styles orderless basic))))
+  :config
+  ;; Fast-dispatch: a short single-word query matches as a literal
+  ;; PREFIX (skip the regex machinery) -- snappier for the common case.
+  (defun my/orderless-fast-dispatch (word index total)
+    (and (= index 0) (= total 1) (length< word 3)
+         (cons 'orderless-literal-prefix word)))
+  (orderless-define-completion-style orderless-fast
+    (orderless-style-dispatchers '(my/orderless-fast-dispatch orderless-affix-dispatch))
+    (orderless-matching-styles '(orderless-literal orderless-regexp))))
 (defun my/enable-orderless ()
   (remove-hook 'minibuffer-setup-hook #'my/enable-orderless)
   (require 'orderless)
-  (setq completion-styles '(orderless basic)))
+  (setq completion-styles '(orderless-fast basic)))
 (add-hook 'minibuffer-setup-hook #'my/enable-orderless)
 
 ;; Inline ghost-text completion preview (Emacs 30). Enabled per-buffer in
@@ -553,10 +622,17 @@ With DIR-P, PATH itself is the directory."
 
 ;; Enable rich annotations using the Marginalia package
 (use-package marginalia
-  ;; Bind `marginalia-cycle' locally in the minibuffer.
   :commands marginalia-mode
   :bind (:map minibuffer-local-map
-         ("M-A" . marginalia-cycle)))
+         ("M-A" . marginalia-cycle))
+  :config
+  (pcase-dolist (`(,regexp . ,category)
+                 '(("\\burl\\b" . url)
+                   ("\\bHistory\\b" . history)
+                   ("\\bdefinitions?\\b" . xref-location)
+                   ("\\bxref\\b" . xref-location)))
+    (setf (alist-get regexp marginalia-prompt-categories nil nil #'equal)
+          category)))
 
 ;; Icons next to minibuffer candidates.
 (use-package nerd-icons-completion
@@ -572,7 +648,7 @@ With DIR-P, PATH itself is the directory."
   (nerd-icons-completion-marginalia-setup))
 (add-hook 'minibuffer-setup-hook #'my/enable-completion-icons)
 (add-hook 'emacs-startup-hook
-          (lambda () (run-with-idle-timer 1 nil #'my/enable-completion-icons)))
+          (lambda () (run-with-idle-timer 0.1 nil #'my/enable-completion-icons)))
 
 ;; Embark: act on the thing at point / the current completion candidate (like a
 ;; context menu). `C-.' = act, `C-,' = dwim (default action), `C-h B' = bindings.
@@ -620,7 +696,9 @@ Family + size come from the frame created in early-init."
 (setq frame-title-format '("%b — Emacs")
       ring-bell-function #'ignore
       use-dialog-box nil
-      use-short-answers t)
+      use-short-answers t
+      read-answer-short t
+      resize-mini-windows 'grow-only)
 
 
 (defconst my/line-number-width 3)
@@ -629,8 +707,8 @@ Family + size come from the frame created in early-init."
 
 (defconst my/bare-buffer-exempt-modes
   '(term-mode eshell-mode shell-mode comint-mode pdf-view-mode image-mode
-    dired-mode special-mode compilation-mode help-mode Info-mode
-    completion-list-mode)
+              dired-mode special-mode compilation-mode help-mode Info-mode
+              completion-list-mode)
   "Modes (and descendants) that get neither line numbers nor whitespace marks.")
 (defun my/setup-editing-buffer ()
   "Enable line numbers + whitespace visualization in real editing buffers.
@@ -719,9 +797,9 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
    (t (cons (my/ml-strip (car obj)) (my/ml-strip (cdr obj))))))
 
 (dolist (seg '(mode-line-front-space mode-line-mule-info mode-line-client
-               mode-line-modified mode-line-remote mode-line-frame-identification
-               mode-line-buffer-identification mode-line-position mode-line-modes
-               mode-line-misc-info mode-line-end-spaces minor-mode-alist))
+                                     mode-line-modified mode-line-remote mode-line-frame-identification
+                                     mode-line-buffer-identification mode-line-position mode-line-modes
+                                     mode-line-misc-info mode-line-end-spaces minor-mode-alist))
   (when (boundp seg)
     (set-default seg (my/ml-strip (default-value seg)))))
 
@@ -850,6 +928,19 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
               wgrep-change-readonly-file t)
   :bind (:map grep-mode-map ("C-c C-p" . wgrep-change-to-wgrep-mode)))
 
+;; smerge (merge conflicts): after the first command via the `C-c ^' prefix,
+;; repeat with bare keys (n/p next/prev, RET keep current, etc.) via repeat-mode.
+(with-eval-after-load 'smerge-mode
+  (map-keymap
+   (lambda (_key cmd)
+     (when (symbolp cmd) (put cmd 'repeat-map 'smerge-basic-map)))
+   smerge-basic-map))
+
+;; git-commit ergonomics: GitHub-friendly summary length + per-repo message ring.
+(with-eval-after-load 'git-commit
+  (setq git-commit-summary-max-length 54
+        git-commit-use-local-message-ring t))
+
 ;;; ===========================================================================
 ;;; 15. Navigation & multi-cursor (avy, multiple-cursors, imenu, project)
 ;;; ===========================================================================
@@ -863,7 +954,7 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
          ("C-c S" . avy-isearch))
   :config
   (setq avy-timeout-seconds 0.8
-        avy-background t                  
+        avy-background t
         avy-keys '(?a ?s ?d ?f ?j ?k ?l ?\; ?w ?e ?i ?o))
   (set-face-attribute 'avy-background-face nil :foreground "#6c6c6c" :background 'unspecified)
   (set-face-attribute 'avy-lead-face   nil :foreground "#ffffff" :background "#ff2d00" :weight 'bold)
@@ -872,7 +963,7 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
   (set-face-attribute 'avy-lead-face-2 nil :foreground "#ffffff" :background "#ff4500" :weight 'bold)
   ;; Dispatch actions: after a jump key, press one of these BEFORE the target
   ;; label to ACT on it instead of jumping. avy ships x/X kill, t teleport,
-  ;; m mark, n copy, y yank, z zap. Added (karthink-style), avoiding label keys:
+  ;; m mark, n copy, y yank, z zap. Added avoiding label keys:
   ;;   SPC embark · . mark-to-point · K kill-line · W copy-line · Y yank-line
   ;;   T teleport-line · C add-cursor (multiple-cursors)
   (defun avy-action-embark (pt)
@@ -912,7 +1003,7 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 
 ;; multiple-cursors: VS Code-style multi-caret editing.
 (use-package multiple-cursors
-  :init (setq mc/list-file (my/var "mc-lists.el")) 
+  :init (setq mc/list-file (my/var "mc-lists.el"))
   :preface
   (defun my/mc-mark-next-or-delete-char (arg)
     "With an active region, add a cursor at the next match (VS Code C-d);
@@ -942,7 +1033,19 @@ otherwise delete the character ahead."
           "setup.py" "go.mod" "pom.xml" ".project"))
   ;; `C-x p k' = close project: kill its buffers AND close its tab (was just
   ;; `project-kill-buffers'). See `my/close-project'.
-  (define-key project-prefix-map "k" #'my/close-project))
+  (define-key project-prefix-map "k" #'my/close-project)
+  ;; Curated, LABELED switch menu (karthink) -- adds magit/query-replace/eshell.
+  (setq project-switch-commands
+        '((?f "Find file"      project-find-file)
+          (?g "Find regexp"    project-find-regexp)
+          (?d "Dired"          project-dired)
+          (?b "Buffer"         project-switch-to-buffer)
+          (?v "Magit"          my/project-magit-status)
+          (?e "Eshell"         project-eshell)
+          (?c "Compile"        project-compile)
+          (?q "Query replace"  project-query-replace-regexp)
+          (?! "Shell command"  project-shell-command)
+          (?k "Close project"  my/close-project))))
 ;; nil -> `project-switch-project' shows the DESCRIPTIVE dispatch menu
 ;; ("[f] Find file  [g] Find regexp ..."), not the cryptic raw key list that
 ;; `t' produces.

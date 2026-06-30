@@ -97,7 +97,6 @@
   (define-key eglot-mode-map (kbd "C-c e d") #'xref-find-definitions)
   (define-key eglot-mode-map (kbd "C-c e R") #'xref-find-references)
   (define-key eglot-mode-map (kbd "C-c e f") #'eglot-format-buffer)
-  (define-key eglot-mode-map (kbd "C-c e h") #'eldoc-doc-buffer)
   (add-hook 'eglot-managed-mode-hook
             (lambda () (when (eglot-managed-p) (eglot-inlay-hints-mode 1))))
   (setf (alist-get '(python-mode python-ts-mode) eglot-server-programs nil nil #'equal)
@@ -116,7 +115,7 @@
       eldoc-echo-area-display-truncation-message nil
       ;; Show both the symbol's doc/signature AND any flymake diagnostic at point.
       eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly
-      ;; fringe is 0, so render diagnostic markers in the margin (else invisible).
+      eldoc-echo-area-prefer-doc-buffer t
       flymake-indicator-type 'margins
       flymake-no-changes-timeout 0.5
       flymake-start-on-save-buffer t)
@@ -126,6 +125,25 @@
   (define-key flymake-mode-map (kbd "M-p") #'flymake-goto-prev-error))
 (global-set-key (kbd "C-c x") #'flymake-show-buffer-diagnostics)
 (global-set-key (kbd "C-c X") #'flymake-show-project-diagnostics)
+(add-hook 'emacs-lisp-mode-hook #'flymake-mode)
+(global-set-key (kbd "C-h .") #'eldoc-doc-buffer)
+(global-set-key (kbd "C-h ,") #'display-local-help)
+
+;;; ---------------------------------------------------------------------------
+;;; hl-todo — highlight TODO/FIXME/NOTE/HACK in comments; jump with M-g t/T
+;;; ---------------------------------------------------------------------------
+(use-package hl-todo
+  :ensure t
+  :hook (prog-mode . hl-todo-mode)
+  :bind (:map prog-mode-map
+         ("M-g t" . hl-todo-next)
+         ("M-g T" . hl-todo-previous))
+  :config
+  (setq hl-todo-wrap-movement t)
+  (defvar-keymap my/hl-todo-repeat-map
+    :repeat t
+    "t" #'hl-todo-next
+    "T" #'hl-todo-previous))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Indentation per language (sane defaults; silence python's guess warning)
