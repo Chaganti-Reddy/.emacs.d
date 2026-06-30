@@ -4,7 +4,9 @@
 (defun my/reload-init ()
   "Reload the lisp/ feature modules AND init.el without restarting."
   (interactive)
-  (dolist (m '(my-commands setup-windows my-coding my-writing))
+  (dolist (m '(my-commands setup-windows my-coding my-writing
+  ;;  my-llm
+   ))
     (when-let* ((f (locate-library (symbol-name m))))
       (load f nil t)))
   (load-file user-init-file)

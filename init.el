@@ -206,6 +206,7 @@ With DIR-P, PATH itself is the directory."
 (my/load 'setup-windows)          ; display-buffer placement rules
 (my/load 'my-coding)              ; tree-sitter + eglot + diagnostics
 (my/load 'my-writing)             ; org (research/latex) + markdown
+;; (my/load 'my-llm)                 ; gptel LLM chat/rewrite
 
 ;; Run a server so `emacsclient' (git EDITOR, "open in Emacs") reuses this
 ;; session. Start it once Emacs is idle -- keeps it off the startup path.
@@ -960,7 +961,7 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
   :defer t
   :config
   (setq doom-themes-enable-bold t doom-themes-enable-italic t
-        ;; doom-rouge polish (karthink): flush modeline, brighter comments/tabs.
+        ;; doom-rouge polish: flush modeline, brighter comments/tabs.
         doom-rouge-padded-modeline nil
         doom-rouge-brighter-comments t
         doom-rouge-brighter-tabs t)
@@ -1176,7 +1177,7 @@ otherwise delete the character ahead."
   ;; `C-x p k' = close project: kill its buffers AND close its tab (was just
   ;; `project-kill-buffers'). See `my/close-project'.
   (define-key project-prefix-map "k" #'my/close-project)
-  ;; Curated, LABELED switch menu (karthink) -- adds magit/query-replace/eshell.
+  ;; Curated, LABELED switch menu -- adds magit/query-replace/eshell.
   (setq project-switch-commands
         '((?f "Find file"      project-find-file)
           (?g "Find regexp"    project-find-regexp)

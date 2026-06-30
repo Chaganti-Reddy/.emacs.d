@@ -92,7 +92,7 @@
 (add-hook 'enable-theme-functions #'my/scale-org-headings)
 
 ;; cdlatex: fast math input (TAB templates, `;' math-symbol prefix). Powers
-;; `org-cdlatex-mode' and LaTeX-mode. Symbol/modify maps from karthink.
+;; `org-cdlatex-mode' and LaTeX-mode.
 (use-package cdlatex
   :defer t
   :hook (LaTeX-mode . cdlatex-mode)
@@ -281,7 +281,7 @@ a preview, image once you leave) for a live, `org-fragtog'-like feel."
   :config (pdf-tools-install :no-query))  
 
 ;;; ---------------------------------------------------------------------------
-;;; Calc -- symbolic math + LaTeX (karthink's `latex-math-from-calc')
+;;; Calc -- symbolic math + LaTeX
 ;;; ---------------------------------------------------------------------------
 ;; Select an expression (or sit on a line), hit C-S-e: calc evaluates it and
 ;; replaces it with the result, formatted as LaTeX inside LaTeX/Org math.
