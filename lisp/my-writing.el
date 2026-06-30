@@ -23,6 +23,7 @@
   (org-startup-indented t)
   (org-hide-emphasis-markers t)
   (org-pretty-entities t)                   ; \alpha renders as the glyph
+  (org-pretty-entities-include-sub-superscripts t)
   (org-src-fontify-natively t)
   (org-src-tab-acts-natively t)
   (org-src-content-indentation 0)
@@ -34,10 +35,12 @@
         (plist-put
          (plist-put
           (plist-put org-format-latex-options :scale 1.0)
-          :foreground "#d6d6d4")
-         :background "Transparent"))
-  (when (executable-find "dvisvgm")
-    (setq org-preview-latex-default-process 'dvisvgm))
+          :foreground 'default)
+         :background 'default))
+  (setq org-preview-latex-default-process
+        (cond ((executable-find "dvipng")  'dvipng)
+              ((executable-find "dvisvgm") 'dvisvgm)
+              (t org-preview-latex-default-process)))
   ;; Babel langs (calc evaluates `#+begin_src calc'; embedded calc is C-x * e).
   (setq org-babel-load-languages
         '((emacs-lisp . t) (python . t) (C . t) (shell . t) (calc . t)))
@@ -148,6 +151,14 @@
     (setq TeX-source-correlate-mode t
           TeX-view-program-selection '((output-pdf "PDF Tools")))))
 
+;; preview-latex: inline previews INSIDE .tex buffers (separate from Org's
+;; preview). AUCTeX auto-installs it in `LaTeX-mode' under the `C-c C-p' prefix
+;; (C-c C-p C-b buffer, C-c C-p C-p at point, C-c C-p C-d document, C-c C-p C-c
+;; C-p clear region).
+(with-eval-after-load 'preview
+  (setq preview-scale-function
+        (lambda () (* 1.0 (funcall (preview-scale-from-face))))))
+
 ;; In-Emacs PDF viewer (Linux/macOS). epdfinfo build on Windows is painful, so
 ;; Windows just uses the OS-default viewer.
 (use-package pdf-tools
@@ -200,7 +211,14 @@ Uses the region if active, else the $...$ fragment at point, else the line."
   :ensure nil
   :bind (("C-x c" . calc)                       ; calculator (also C-x * c)
          ("C-S-e" . latex-math-from-calc))      ; evaluate math in-place
-  :config (setq calc-make-windows-dedicated t))
+  :config
+  ;; By default Calc builds its stack + trail windows itself (via `split-window'),
+  ;; bypassing `display-buffer-alist'. Setting these two hooks makes it route each
+  ;; buffer through `display-buffer' instead, so our alist rules apply -- stack and
+  ;; trail then dock together on the right, stacked. (See calc.el `calc-window-hook'.)
+  (setq calc-make-windows-dedicated t
+        calc-window-hook       (lambda () (display-buffer (current-buffer)))
+        calc-trail-window-hook (lambda () (display-buffer (current-buffer)))))
 ;; Inline algebraic evaluation in any buffer: C-x * e  (calc-embedded, built-in).
 
 ;; casual: a discoverable transient menu for Calc (and more) -- press `C-o' in

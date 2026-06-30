@@ -362,10 +362,16 @@ With DIR-P, PATH itself is the directory."
 (global-set-key (kbd "M-O")  #'delete-other-windows)   ; maximize current window
 (global-set-key (kbd "C-M-o") #'delete-window)         ; close current window
 
-(setq switch-to-prev-buffer-skip (lambda (_w buf _x) (my/hidden-buffer-p buf))
-      switch-to-next-buffer-skip (lambda (_w buf _x) (my/hidden-buffer-p buf)))
-(global-set-key (kbd "M-[") #'previous-buffer)
-(global-set-key (kbd "M-]") #'next-buffer)
+;; VSCode-like: `M-['/`M-]' cycle only within the current project (and always
+;; skip hidden/noisy buffers). See `my/buffer-skip-p'.
+(setq switch-to-prev-buffer-skip #'my/buffer-skip-p
+      switch-to-next-buffer-skip #'my/buffer-skip-p)
+(global-set-key (kbd "M-[") #'my/previous-buffer)
+(global-set-key (kbd "M-]") #'my/next-buffer)
+;; Tabs = projects (project-x). C-TAB / C-S-TAB switch between project tabs.
+;; (M-[ / M-] stay buffer-level within the current project.)
+(global-set-key (kbd "C-<tab>")   #'my/tab-next)
+(global-set-key (kbd "C-S-<tab>") #'my/tab-previous)
 
 (add-hook 'emacs-startup-hook
           (lambda () (winner-mode 1) (window-divider-mode 1) (repeat-mode 1)))
@@ -495,11 +501,15 @@ With DIR-P, PATH itself is the directory."
 ;; style inside the minibuffer, so we re-assert orderless with a late (depth 95)
 ;; minibuffer-setup-hook that runs after fido's own setup.
 (use-package orderless
-  :demand t
+  :defer t
   :init
-  (setq completion-styles '(orderless basic)
-        completion-category-defaults nil
+  (setq completion-category-defaults nil
         completion-category-overrides '((file (styles partial-completion)) (buffer (styles orderless basic)))))
+(defun my/enable-orderless ()
+  (remove-hook 'minibuffer-setup-hook #'my/enable-orderless)
+  (require 'orderless)
+  (setq completion-styles '(orderless basic)))
+(add-hook 'minibuffer-setup-hook #'my/enable-orderless)
 (add-hook 'minibuffer-setup-hook
           (lambda () (setq-local completion-styles '(orderless basic))) 95)
 
@@ -514,13 +524,10 @@ With DIR-P, PATH itself is the directory."
 
 ;; Enable rich annotations using the Marginalia package
 (use-package marginalia
-  ;; Bind `marginalia-cycle' locally in the minibuffer. 
+  ;; Bind `marginalia-cycle' locally in the minibuffer.
+  :commands marginalia-mode
   :bind (:map minibuffer-local-map
-         ("M-A" . marginalia-cycle))
-
-  ;; The :init section is always executed.
-  :init
-  (marginalia-mode))
+         ("M-A" . marginalia-cycle)))
 
 ;; Icons next to minibuffer candidates.
 (use-package nerd-icons-completion
@@ -529,8 +536,9 @@ With DIR-P, PATH itself is the directory."
   :config (add-hook 'marginalia-mode-hook #'nerd-icons-completion-marginalia-setup))
 
 (defun my/enable-completion-icons ()
-  "Load + enable minibuffer icons once, then unhook self."
+  "Load + enable marginalia and minibuffer icons once, then unhook self."
   (remove-hook 'minibuffer-setup-hook #'my/enable-completion-icons)
+  (marginalia-mode 1)
   (nerd-icons-completion-mode 1)
   (nerd-icons-completion-marginalia-setup))
 (add-hook 'minibuffer-setup-hook #'my/enable-completion-icons)
@@ -596,9 +604,11 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 (setq whitespace-style my/whitespace-style
       whitespace-display-mappings '((tab-mark   ?\t [?▷ ?\t] [?\\ ?\t])
                                     (space-mark ?\s [?·]     [?.])))
-;; Strip trailing whitespace on save, but only in code buffers.
-(add-hook 'prog-mode-hook
-          (lambda () (add-hook 'before-save-hook #'delete-trailing-whitespace nil t)))
+;; Strip trailing whitespace on save in code + org/LaTeX buffers. NOT markdown
+;; (two trailing spaces there = a hard line break).
+(dolist (hook '(prog-mode-hook org-mode-hook LaTeX-mode-hook))
+  (add-hook hook
+            (lambda () (add-hook 'before-save-hook #'delete-trailing-whitespace nil t))))
 
 ;; Scrolling: keyboard scroll never recenters; keep a margin; smooth wheel.
 (defconst my/scroll-margin 3)
@@ -675,6 +685,33 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
              [header-line down-mouse-1] [header-line mouse-1]))
   (global-set-key e #'ignore))
 (setq mode-line-default-help-echo nil)
+
+(setq tab-bar-show 1
+      tab-bar-new-button-show nil
+      tab-bar-close-button-show nil
+      tab-bar-tab-hints nil
+      tab-bar-auto-width nil
+      tab-bar-separator "  "
+      tab-bar-format '(tab-bar-format-tabs tab-bar-separator))
+
+(setq tab-bar-tab-name-format-function
+      (lambda (tab _i)
+        (propertize (format " %s " (alist-get 'name tab))
+                    'face (if (eq (car tab) 'current-tab)
+                              'tab-bar-tab 'tab-bar-tab-inactive))))
+
+(defun my/style-tab-bar (&rest _)
+  "Flat, theme-adaptive tab-bar faces (active = accent, inactive = dim)."
+  (set-face-attribute 'tab-bar nil :inherit 'default :box nil :height 0.95)
+  (set-face-attribute 'tab-bar-tab nil
+                      :inherit 'font-lock-function-name-face :box nil
+                      :weight 'bold :underline nil)
+  (set-face-attribute 'tab-bar-tab-inactive nil
+                      :inherit 'shadow :box nil :weight 'normal))
+(my/style-tab-bar)
+;; `enable-theme-functions' (Emacs 29+) fires after every `load-theme', so the
+;; tab-bar restyles itself whenever `my/toggle-theme' switches themes.
+(add-hook 'enable-theme-functions #'my/style-tab-bar)
 
 ;;; ===========================================================================
 ;;; 13. Icons (nerd-icons) — glyphs served by the installed Nerd Font
@@ -803,7 +840,6 @@ otherwise delete the character ahead."
   (setq project-x-local-identifier '("package.json" "mix.exs" "Project.toml" ".project"))
   (setq project-x-auto-save-delay 10)
   (setq project-prompter #'project-x--project-prompt)
-  (setq tab-bar-show nil)
   ;; Silence the "Wrote/Saved project state" echo spam from auto-save.
   (dolist (fn '(project-x--window-state-write project-x-window-state-save))
     (advice-add fn :around (lambda (orig &rest a)

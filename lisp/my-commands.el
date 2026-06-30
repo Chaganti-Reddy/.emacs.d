@@ -83,6 +83,18 @@
     (set-frame-parameter nil my/alpha-param
                          (if (and cur (/= cur 100)) 100 my/frame-alpha))))
 
+;; --- Theme toggle: modus-vivendi (default) <-> gruber-darker ---------------
+(defconst my/themes '(modus-vivendi gruber-darker)
+  "Themes cycled by `my/toggle-theme'; the first one is the default.")
+(defun my/toggle-theme ()
+  "Cycle to the next theme in `my/themes', disabling the current one."
+  (interactive)
+  (let* ((cur  (car custom-enabled-themes))
+         (next (or (cadr (memq cur my/themes)) (car my/themes))))
+    (mapc #'disable-theme custom-enabled-themes)
+    (load-theme next t)
+    (message "Theme: %s" next)))
+
 ;; --- Scratch / temp files by language --------------------------------------
 (defconst my/temp-root (my/var "scratch/" t) "Root for throwaway experiment files.")
 (defun my/new-temp-file (name)
@@ -132,15 +144,58 @@ Flymake log\\|EGLOT\\|tramp/?\\|epc con\\).*\\*\\'"
     (or (string-prefix-p " " name)
         (string-match-p my/hidden-buffer-regexp name))))
 
-(defun my/switch-to-buffer ()
-  "Switch buffers, omitting internal/noisy ones; RET defaults to the last buffer."
+(defun my/buffer-skip-p (win buf _bury-or-kill)
+  "Predicate for `switch-to-prev/next-buffer-skip' (VSCode-like scoping).
+Skip hidden/noisy buffers always; and when WIN currently shows a buffer that
+belongs to a project, also skip any BUF outside that project -- so `M-['/`M-]'
+cycle only within the current project. Outside a project, cycle all (non-hidden)."
+  (or (my/hidden-buffer-p buf)
+      (and (fboundp 'project-current)
+           (when-let* ((cur  (window-buffer win))
+                       (proj (with-current-buffer cur (project-current nil))))
+             (not (memq buf (project-buffers proj)))))))
+
+(defun my/switch-to-buffer (&optional all)
+  "Switch buffers, omitting internal/noisy ones; RET defaults to the last buffer.
+In a project, restrict candidates to that project's buffers (VSCode-like).
+With prefix ALL (\\[universal-argument]) -- or when not in a project -- offer
+every buffer."
+  (interactive "P")
+  (let* ((proj (unless all (and (fboundp 'project-current) (project-current nil))))
+         (bufs (seq-remove #'my/hidden-buffer-p
+                           (if proj (project-buffers proj) (buffer-list)))))
+    (switch-to-buffer
+     (completing-read
+      (if proj "Buffer (project): " "Buffer: ")
+      (mapcar #'buffer-name bufs)
+      nil nil nil nil
+      (buffer-name (other-buffer (current-buffer) t))))))
+
+(defun my/next-buffer ()
+  "Like `next-buffer', but say so when there's no other (project) buffer."
   (interactive)
-  (switch-to-buffer
-   (completing-read
-    "Buffer: "
-    (mapcar #'buffer-name (seq-remove #'my/hidden-buffer-p (buffer-list)))
-    nil nil nil nil
-    (buffer-name (other-buffer (current-buffer) t)))))
+  (let ((b (current-buffer)))
+    (next-buffer)
+    (when (eq b (current-buffer)) (message "No next buffer in this project"))))
+(defun my/previous-buffer ()
+  "Like `previous-buffer', but say so when there's no other (project) buffer."
+  (interactive)
+  (let ((b (current-buffer)))
+    (previous-buffer)
+    (when (eq b (current-buffer)) (message "No previous buffer in this project"))))
+
+(defun my/tab-next ()
+  "Like `tab-next', but say so when there is only one tab."
+  (interactive)
+  (if (<= (length (funcall tab-bar-tabs-function)) 1)
+      (message "No other tab")
+    (tab-next)))
+(defun my/tab-previous ()
+  "Like `tab-previous', but say so when there is only one tab."
+  (interactive)
+  (if (<= (length (funcall tab-bar-tabs-function)) 1)
+      (message "No other tab")
+    (tab-previous)))
 
 (defun my/kill-this-buffer ()
   "Kill the current buffer without prompting for which one."
@@ -272,6 +327,7 @@ start, and at column 0 just removes the newline.  Respects `subword-mode'."
 (global-set-key (kbd "C-c d")        #'duplicate-dwim)
 (global-set-key (kbd "M-Q")          #'my/unfill-paragraph)
 (global-set-key (kbd "C-c t t")      #'my/toggle-transparency)
+(global-set-key (kbd "C-c t T")      #'my/toggle-theme)
 (global-set-key (kbd "C-c i d")      #'my/insert-date)
 (global-set-key (kbd "C-c i t")      #'my/insert-time)
 
