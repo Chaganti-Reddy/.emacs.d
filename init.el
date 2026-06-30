@@ -477,29 +477,56 @@ With DIR-P, PATH itself is the directory."
 ;;; ===========================================================================
 ;;; 11. Completion & minibuffer (built-in)
 ;;; ===========================================================================
-;; Vertical candidate list .
-(fido-vertical-mode 1)
+;; Vertico: vertical completion UI (replaces built-in fido-vertical -- richer
+;; display + extensions). Pairs with orderless + marginalia + completion-preview.
+(use-package vertico
+  :demand t
+  :custom
+  (vertico-count 17)
+  (vertico-cycle t)
+  :bind (:map vertico-map
+         ("C-c C-o" . embark-export)   ; send candidates to a buffer (e.g. dired)
+         ("M-*"     . embark-act-all)) ; act on ALL candidates at once
+  :init (vertico-mode))
+;; Ido-like path editing in the minibuffer: RET descends, DEL ascends a dir.
+;; (Extensions ship inside the vertico package -- :ensure nil, just require.)
+(use-package vertico-directory
+  :ensure nil
+  :after vertico
+  :bind (:map vertico-map
+         ("RET"   . vertico-directory-enter)
+         ("DEL"   . vertico-directory-delete-char)
+         ("M-DEL" . vertico-directory-delete-word))
+  :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+(use-package vertico-mouse
+  :ensure nil
+  :after vertico
+  :init (vertico-mouse-mode))
+;; vertico-repeat: resume the LAST minibuffer session (candidates + input). Save
+;; each session to history; `C-x .' replays it.
+(use-package vertico-repeat
+  :ensure nil
+  :after vertico
+  :hook (minibuffer-setup . vertico-repeat-save)
+  :bind ("C-x ." . vertico-repeat))
+;; vertico-quick: avy-style labels to jump to any candidate. C-' select, M-' insert.
+(use-package vertico-quick
+  :ensure nil
+  :after vertico
+  :bind (:map vertico-map
+         ("C-'" . vertico-quick-exit)
+         ("M-'" . vertico-quick-insert)))
+
 (setq completion-ignore-case t
       read-buffer-completion-ignore-case t
       read-file-name-completion-ignore-case t
-      completions-detailed t                     
+      completions-detailed t
       completions-sort 'historical                ; recently used candidates first
       completion-auto-help 'visible
-      completion-cycle-threshold 3                
-      enable-recursive-minibuffers t
-      icomplete-compute-delay 0
-      icomplete-show-matches-on-no-input t)
+      completion-cycle-threshold 3
+      enable-recursive-minibuffers t)
 (minibuffer-depth-indicate-mode 1)
 
-;; fido binds no TAB, so it falls back to `minibuffer-complete' (which pops the
-;; *Completions* buffer). Make TAB complete to the highlighted candidate inline.
-(with-eval-after-load 'icomplete
-  (define-key icomplete-fido-mode-map (kbd "TAB")   #'icomplete-force-complete)
-  (define-key icomplete-fido-mode-map (kbd "<tab>") #'icomplete-force-complete))
-
-;; Orderless: space-separated, any-order matching. fido hardcodes the `flex'
-;; style inside the minibuffer, so we re-assert orderless with a late (depth 95)
-;; minibuffer-setup-hook that runs after fido's own setup.
 (use-package orderless
   :defer t
   :init
@@ -510,8 +537,6 @@ With DIR-P, PATH itself is the directory."
   (require 'orderless)
   (setq completion-styles '(orderless basic)))
 (add-hook 'minibuffer-setup-hook #'my/enable-orderless)
-(add-hook 'minibuffer-setup-hook
-          (lambda () (setq-local completion-styles '(orderless basic))) 95)
 
 ;; Inline ghost-text completion preview (Emacs 30). Enabled per-buffer in
 ;; `my/setup-editing-buffer' (terminals/special excluded) and in the
@@ -544,6 +569,17 @@ With DIR-P, PATH itself is the directory."
 (add-hook 'minibuffer-setup-hook #'my/enable-completion-icons)
 (add-hook 'emacs-startup-hook
           (lambda () (run-with-idle-timer 1 nil #'my/enable-completion-icons)))
+
+;; Embark: act on the thing at point / the current completion candidate (like a
+;; context menu). `C-.' = act, `C-,' = dwim (default action), `C-h B' = bindings.
+;; `prefix-help-command' -> embark makes any prefix (C-x, C-c ...) show a
+;; searchable completing-read of its keys.
+(use-package embark
+  :bind (("C-." . embark-act)
+         ("C-," . embark-dwim)
+         ("C-h B" . embark-bindings))
+  :init
+  (setq prefix-help-command #'embark-prefix-help-command))
 
 ;;; ===========================================================================
 ;;; 12. Appearance

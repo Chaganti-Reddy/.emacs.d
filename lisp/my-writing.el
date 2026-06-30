@@ -159,6 +159,15 @@
   (setq preview-scale-function
         (lambda () (* 1.0 (funcall (preview-scale-from-face))))))
 
+;; preview-auto: LIVE auto-preview of visible math as you edit (fragtog-like, but
+;; for .tex). Renders on idle within a window around point. interval bumped from
+;; 0.1 -> 0.3 so Windows isn't spawning latex on every keystroke pause.
+(use-package preview-auto
+  :after latex
+  :hook (LaTeX-mode . preview-auto-setup)
+  :custom
+  (preview-auto-interval 0.3))
+
 ;; In-Emacs PDF viewer (Linux/macOS). epdfinfo build on Windows is painful, so
 ;; Windows just uses the OS-default viewer.
 (use-package pdf-tools
