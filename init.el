@@ -1081,6 +1081,12 @@ otherwise delete the character ahead."
          ("C-\""        . mc/skip-to-next-like-this)
          ("C-:"         . mc/skip-to-previous-like-this)))
 
+;; goto-chg: jump to the location of the last edit (repeat to walk change
+;; history backward)
+(use-package goto-chg
+  :bind (("M-i"   . goto-last-change)
+         ("M-I"   . goto-last-change-reverse)))
+
 ;; imenu (built-in): jump to defs/headings in the buffer (reveals folded text).
 (setq imenu-auto-rescan t
       imenu-use-popup-menu nil
