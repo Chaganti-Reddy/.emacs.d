@@ -12,8 +12,8 @@
   "Main monospace font. Must be installed on the system.")
 (defconst my/font-size 13 "Font size in points.")
 (defconst my/font-weight 'semibold "Default face weight.")
-(defconst my/bg-fallback "#090909" "Frame bg (matches modus-vivendi bg-main override).")
-(defconst my/fg-fallback "#d6d6d4" "Frame fg (matches modus-vivendi fg-main override).")
+(defconst my/bg-fallback "#172030" "Frame bg (matches doom-rouge `bg' -- the default theme).")
+(defconst my/fg-fallback "#FAFFF6" "Frame fg (matches doom-rouge `fg').")
 (defconst my/frame-alpha 95 "Frame opacity 0-100.")
 (defconst my/alpha-param (if IS-WINDOWS 'alpha 'alpha-background)
   "Windows w32 lacks per-pixel bg alpha, so use whole-frame `alpha' there;
@@ -81,10 +81,12 @@ elsewhere `alpha-background' keeps text opaque.")
 (prefer-coding-system 'utf-8)
 (setq default-input-method nil)
 
-;;; --- Theme: load HERE, before the first frame paints -----------------------
-;; modus-themes are built in. Loading the theme in early-init (not init) means
-;; the frame is created already themed -- no white "box" flashing before the
-;; theme applies ~1s into init. Palette/heading settings must precede load-theme.
+;;; --- Theme palette settings (theme itself loaded in init) ------------------
+;; Default theme is doom-rouge, which needs the doom-themes package -- not yet
+;; on `load-path' here -- so it's loaded in init.el §12. The dark frame bg/fg
+;; above (doom-rouge colors) make the first paint correct, so there's no white
+;; flash before the theme applies. These modus palette overrides are kept so
+;; `C-c t T' renders modus-vivendi/operandi correctly when toggled to.
 (setq modus-themes-italic-constructs t
       modus-themes-bold-constructs t
       modus-themes-mixed-fonts t                 ; code/tables/verbatim stay mono
@@ -119,6 +121,5 @@ elsewhere `alpha-background' keeps text opaque.")
         (fg-heading-1 "#a01f64")
         (fg-heading-2 "#2f5f9f")
         (fg-heading-3 "#1a8388")))
-(load-theme 'modus-vivendi :no-confirm)
 
 ;;; early-init.el ends here

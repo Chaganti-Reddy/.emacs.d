@@ -24,6 +24,8 @@
   (org-hide-emphasis-markers t)
   (org-pretty-entities t)                   ; \alpha renders as the glyph
   (org-pretty-entities-include-sub-superscripts t)
+  (org-image-align 'center)                 ; center inline images + LaTeX previews
+  (org-support-shift-select t)
   (org-src-fontify-natively t)
   (org-src-tab-acts-natively t)
   (org-src-content-indentation 0)
@@ -151,22 +153,11 @@
     (setq TeX-source-correlate-mode t
           TeX-view-program-selection '((output-pdf "PDF Tools")))))
 
-;; preview-latex: inline previews INSIDE .tex buffers (separate from Org's
-;; preview). AUCTeX auto-installs it in `LaTeX-mode' under the `C-c C-p' prefix
-;; (C-c C-p C-b buffer, C-c C-p C-p at point, C-c C-p C-d document, C-c C-p C-c
-;; C-p clear region).
 (with-eval-after-load 'preview
   (setq preview-scale-function
-        (lambda () (* 1.0 (funcall (preview-scale-from-face))))))
+        (lambda () (* 1.25 (funcall (preview-scale-from-face)))))
+  (define-key LaTeX-mode-map (kbd "C-c C-x") preview-map))
 
-;; preview-auto: LIVE auto-preview of visible math as you edit (fragtog-like, but
-;; for .tex). Renders on idle within a window around point. interval bumped from
-;; 0.1 -> 0.3 so Windows isn't spawning latex on every keystroke pause.
-(use-package preview-auto
-  :after latex
-  :hook (LaTeX-mode . preview-auto-setup)
-  :custom
-  (preview-auto-interval 0.3))
 
 ;; In-Emacs PDF viewer (Linux/macOS). epdfinfo build on Windows is painful, so
 ;; Windows just uses the OS-default viewer.

@@ -206,6 +206,10 @@ With DIR-P, PATH itself is the directory."
       kill-ring-max 500
       mouse-drag-and-drop-region t
       mouse-drag-and-drop-region-cross-program t)
+;; Disable middle-click (mouse-2) paste of the primary selection -- avoids
+;; accidental inserts when clicking around.
+(global-set-key (kbd "<mouse-2>")      #'ignore)
+(global-set-key (kbd "<down-mouse-2>") #'ignore)
 
 (defconst my/undo-limit        (* 64 1024 1024))
 (defconst my/undo-strong-limit (* 96 1024 1024))
@@ -356,8 +360,8 @@ With DIR-P, PATH itself is the directory."
 (global-set-key (kbd "C-x 3") #'my/split-right-focus)
 (global-set-key (kbd "C-x 2") #'my/split-below-focus)
 ;; Quick single-chord window ops (avoid M-digit = digit-argument):
-(global-set-key (kbd "C-S-\\") #'my/split-right-focus) 
-(global-set-key (kbd "C-|") #'my/split-below-focus)
+(global-set-key (kbd "C-|") #'my/split-right-focus)
+(global-set-key (kbd "C-_") #'my/split-below-focus)
 (global-set-key (kbd "M-o")  #'other-window)           ; fast focus; repeat: o o o
 (global-set-key (kbd "M-O")  #'delete-other-windows)   ; maximize current window
 (global-set-key (kbd "C-M-o") #'delete-window)         ; close current window
@@ -789,6 +793,8 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
     (window-divider-mode 1)))
 (add-hook 'enable-theme-functions #'my/doom-theme-settings)
 
+(load-theme 'doom-rouge t)
+
 ;;; ===========================================================================
 ;;; 13. Icons (nerd-icons) — glyphs served by the installed Nerd Font
 ;;; ===========================================================================
@@ -937,7 +943,10 @@ otherwise delete the character ahead."
   ;; `C-x p k' = close project: kill its buffers AND close its tab (was just
   ;; `project-kill-buffers'). See `my/close-project'.
   (define-key project-prefix-map "k" #'my/close-project))
-(setq project-switch-use-entire-map t)
+;; nil -> `project-switch-project' shows the DESCRIPTIVE dispatch menu
+;; ("[f] Find file  [g] Find regexp ..."), not the cryptic raw key list that
+;; `t' produces.
+(setq project-switch-use-entire-map nil)
 (global-set-key (kbd "C-c p") #'project-switch-project)
 
 ;; project-x: save/restore each project's buffers + window layout (C-x p w to

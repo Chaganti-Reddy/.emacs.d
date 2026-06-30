@@ -84,8 +84,8 @@
                          (if (and cur (/= cur 100)) 100 my/frame-alpha))))
 
 ;; --- Theme toggle: modus-vivendi (default) <-> gruber-darker ---------------
-(defconst my/themes '(modus-vivendi modus-operandi gruber-darker doom-rouge)
-  "Themes cycled by `my/toggle-theme'; the first one is the default.
+(defconst my/themes '(doom-rouge modus-vivendi modus-operandi gruber-darker)
+  "Themes cycled by `my/toggle-theme'; the first one is the default (doom-rouge).
 modus-* are built-in (palette overrides in early-init); `doom-rouge' needs the
 `doom-themes' package (its divider tweak is in `my/doom-theme-settings').")
 (defun my/toggle-theme ()
