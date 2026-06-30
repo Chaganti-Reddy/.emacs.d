@@ -566,7 +566,14 @@ Family + size come from the frame created in early-init."
       (setf (alist-get vp face-font-rescale-alist nil nil #'equal) 0.9))
     (when IS-WINDOWS
       (set-fontset-font t 'emoji  (font-spec :family "Segoe UI Emoji") frame 'prepend)
-      (set-fontset-font t 'symbol (font-spec :family "Segoe UI Symbol") frame 'append))))
+      (set-fontset-font t 'symbol (font-spec :family "Segoe UI Symbol") frame 'append))
+    ;; Render the Unicode "mathematical" block (∑ ∫ √ 𝕏 ⟨⟩ ...) in a real math
+    ;; font so org/LaTeX math + `org-pretty-entities' glyphs look right. Picks the
+    ;; best installed; Cambria Math ships with Windows.
+    (when-let* ((mf (seq-find (lambda (f) (find-font (font-spec :family f)))
+                              '("Latin Modern Math" "STIX Two Math" "XITS Math"
+                                "Cambria Math" "DejaVu Math TeX Gyre"))))
+      (set-fontset-font t 'mathematical (font-spec :family mf) frame 'prepend))))
 (add-hook 'after-make-frame-functions #'my/apply-fonts)
 (my/apply-fonts)
 
@@ -696,9 +703,12 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 
 (setq tab-bar-tab-name-format-function
       (lambda (tab _i)
-        (propertize (format " %s " (alist-get 'name tab))
-                    'face (if (eq (car tab) 'current-tab)
-                              'tab-bar-tab 'tab-bar-tab-inactive))))
+        (let ((face (if (eq (car tab) 'current-tab)
+                        'tab-bar-tab 'tab-bar-tab-inactive)))
+          (concat
+           (propertize (format " %s " (alist-get 'name tab)) 'face face)
+           (propertize "✕ " 'face face 'close-tab t
+                       'pointer 'hand 'help-echo "Click to close this tab")))))
 
 (defun my/style-tab-bar (&rest _)
   "Flat, theme-adaptive tab-bar faces (active = accent, inactive = dim)."
@@ -712,6 +722,36 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 ;; `enable-theme-functions' (Emacs 29+) fires after every `load-theme', so the
 ;; tab-bar restyles itself whenever `my/toggle-theme' switches themes.
 (add-hook 'enable-theme-functions #'my/style-tab-bar)
+
+(use-package doom-themes
+  :defer t
+  :config
+  (setq doom-themes-enable-bold t doom-themes-enable-italic t
+        ;; doom-rouge polish (karthink): flush modeline, brighter comments/tabs.
+        doom-rouge-padded-modeline nil
+        doom-rouge-brighter-comments t
+        doom-rouge-brighter-tabs t)
+  (doom-themes-org-config))
+;; doom-themes' quickstart autoload fails to register its theme dir (relies on
+;; `load-file-name', nil under the bundle), so `load-theme 'doom-rouge' can't
+;; find the file. Register the package dir (where the *-theme.el files live).
+(dolist (d (file-expand-wildcards (expand-file-name "doom-themes-*" package-user-dir)))
+  (when (file-directory-p d)
+    (add-to-list 'custom-theme-load-path (file-name-as-directory d))
+    (let ((sub (expand-file-name "themes" d)))   ; some versions use a subdir
+      (when (file-directory-p sub)
+        (add-to-list 'custom-theme-load-path (file-name-as-directory sub))))))
+
+(defun my/doom-theme-settings (theme &rest _)
+  "Widen window dividers for `doom-rouge', thin them for other themes."
+  (if (eq theme 'doom-rouge)
+      (setq window-divider-default-right-width 2
+            window-divider-default-bottom-width 2)
+    (setq window-divider-default-right-width 1
+          window-divider-default-bottom-width 1))
+  (when (bound-and-true-p window-divider-mode)
+    (window-divider-mode 1)))
+(add-hook 'enable-theme-functions #'my/doom-theme-settings)
 
 ;;; ===========================================================================
 ;;; 13. Icons (nerd-icons) — glyphs served by the installed Nerd Font
@@ -787,7 +827,46 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
   (set-face-attribute 'avy-lead-face   nil :foreground "#ffffff" :background "#ff2d00" :weight 'bold)
   (set-face-attribute 'avy-lead-face-0 nil :foreground "#1a1a1a" :background "#ff7a00" :weight 'bold)
   (set-face-attribute 'avy-lead-face-1 nil :foreground "#1a1a1a" :background "#ffb000" :weight 'bold)
-  (set-face-attribute 'avy-lead-face-2 nil :foreground "#ffffff" :background "#ff4500" :weight 'bold))
+  (set-face-attribute 'avy-lead-face-2 nil :foreground "#ffffff" :background "#ff4500" :weight 'bold)
+  ;; Dispatch actions: after a jump key, press one of these BEFORE the target
+  ;; label to ACT on it instead of jumping. avy ships x/X kill, t teleport,
+  ;; m mark, n copy, y yank, z zap. Added (karthink-style), avoiding label keys:
+  ;;   SPC embark · . mark-to-point · K kill-line · W copy-line · Y yank-line
+  ;;   T teleport-line · C add-cursor (multiple-cursors)
+  (defun avy-action-embark (pt)
+    "Run `embark-act' on the item at PT, then return to the original window."
+    (unwind-protect
+        (save-excursion (goto-char pt) (embark-act))
+      (select-window (cdr (ring-ref avy-ring 0))))
+    t)
+  (defun avy-action-mark-to-char (pt)
+    "Set the mark here and move point to PT (select the span)."
+    (activate-mark) (goto-char pt) t)
+  (defun avy-action-kill-whole-line (pt)
+    (save-excursion (goto-char pt) (kill-whole-line))
+    (select-window (cdr (ring-ref avy-ring 0))) t)
+  (defun avy-action-copy-whole-line (pt)
+    (save-excursion
+      (goto-char pt)
+      (copy-region-as-kill (line-beginning-position) (line-beginning-position 2)))
+    (select-window (cdr (ring-ref avy-ring 0))) t)
+  (defun avy-action-yank-whole-line (pt)
+    (avy-action-copy-whole-line pt) (save-excursion (yank)) t)
+  (defun avy-action-teleport-whole-line (pt)
+    (avy-action-kill-whole-line pt) (save-excursion (yank)) t)
+  (defun avy-action-add-cursor (pt)
+    "Drop an extra cursor at PT (multiple-cursors)."
+    (require 'multiple-cursors)
+    (save-excursion (goto-char pt) (mc/create-fake-cursor-at-point))
+    (mc/maybe-multiple-cursors-mode)
+    (select-window (cdr (ring-ref avy-ring 0))) t)
+  (setf (alist-get ?\s avy-dispatch-alist) #'avy-action-embark
+        (alist-get ?.  avy-dispatch-alist) #'avy-action-mark-to-char
+        (alist-get ?K  avy-dispatch-alist) #'avy-action-kill-whole-line
+        (alist-get ?W  avy-dispatch-alist) #'avy-action-copy-whole-line
+        (alist-get ?Y  avy-dispatch-alist) #'avy-action-yank-whole-line
+        (alist-get ?T  avy-dispatch-alist) #'avy-action-teleport-whole-line
+        (alist-get ?C  avy-dispatch-alist) #'avy-action-add-cursor))
 
 ;; multiple-cursors: VS Code-style multi-caret editing.
 (use-package multiple-cursors
@@ -818,7 +897,10 @@ otherwise delete the character ahead."
 (with-eval-after-load 'project
   (setq project-vc-extra-root-markers
         '("package.json" "Cargo.toml" "pyproject.toml" "requirements.txt"
-          "setup.py" "go.mod" "pom.xml" ".project")))
+          "setup.py" "go.mod" "pom.xml" ".project"))
+  ;; `C-x p k' = close project: kill its buffers AND close its tab (was just
+  ;; `project-kill-buffers'). See `my/close-project'.
+  (define-key project-prefix-map "k" #'my/close-project))
 (setq project-switch-use-entire-map t)
 (global-set-key (kbd "C-c p") #'project-switch-project)
 

@@ -84,8 +84,10 @@
                          (if (and cur (/= cur 100)) 100 my/frame-alpha))))
 
 ;; --- Theme toggle: modus-vivendi (default) <-> gruber-darker ---------------
-(defconst my/themes '(modus-vivendi gruber-darker)
-  "Themes cycled by `my/toggle-theme'; the first one is the default.")
+(defconst my/themes '(modus-vivendi modus-operandi gruber-darker doom-rouge)
+  "Themes cycled by `my/toggle-theme'; the first one is the default.
+modus-* are built-in (palette overrides in early-init); `doom-rouge' needs the
+`doom-themes' package (its divider tweak is in `my/doom-theme-settings').")
 (defun my/toggle-theme ()
   "Cycle to the next theme in `my/themes', disabling the current one."
   (interactive)
@@ -134,7 +136,7 @@
 ;; --- Buffer switching / killing (hide internal & noisy buffers) -------------
 (defvar my/hidden-buffer-regexp
   "\\`\\*\\(Messages\\|Warnings\\|Compile-Log\\|Echo Area\\|Async\\|Completions\\|\
-Flymake log\\|EGLOT\\|tramp/?\\|epc con\\).*\\*\\'"
+Ibuffer\\|Flymake log\\|EGLOT\\|tramp/?\\|epc con\\).*\\*\\'"
   "Buffers whose names match this (or start with a space) are hidden from
 `my/switch-to-buffer' and from buffer cycling.")
 
@@ -196,6 +198,16 @@ every buffer."
   (if (<= (length (funcall tab-bar-tabs-function)) 1)
       (message "No other tab")
     (tab-previous)))
+
+(defun my/list-buffers (&optional all)
+  "Open an ibuffer. In a project, filter to that project's files (VSCode-like).
+With prefix ALL (\\[universal-argument]) -- or outside a project -- list all."
+  (interactive "P")
+  (let ((proj (unless all (and (fboundp 'project-current) (project-current nil)))))
+    (if proj
+        (ibuffer nil (format "*Ibuffer: %s*" (project-name proj))
+                 `((filename . ,(regexp-quote (expand-file-name (project-root proj))))))
+      (ibuffer))))
 
 (defun my/kill-this-buffer ()
   "Kill the current buffer without prompting for which one."
@@ -260,6 +272,25 @@ start, and at column 0 just removes the newline.  Respects `subword-mode'."
       (project-find-regexp my/todo-regexp)
     (message "Not in a project.")))
 
+;; --- Close a project: kill its buffers + close its tab ----------------------
+(defun my/close-project ()
+  "Close the current project in this frame: SAVE its window state, kill its
+buffers, and close its tab. The saved state lets `C-x p p' restore the layout
+later (project-x). Acts only on the current frame's project/tab."
+  (interactive)
+  (if (project-current nil)
+      (progn
+        ;; Persist the layout BEFORE killing -- the 10s auto-save debounce won't
+        ;; have fired, so save explicitly or the state would be lost.
+        (when (fboundp 'project-x-window-state-save)
+          (ignore-errors (project-x-window-state-save)))
+        (project-kill-buffers t)
+        (when (and (bound-and-true-p tab-bar-mode)
+                   (> (length (funcall tab-bar-tabs-function)) 1))
+          (tab-close))
+        (message "Project closed (window state saved)."))
+    (message "Not in a project.")))
+
 ;; --- Insert date / time -----------------------------------------------------
 (defun my/insert-date () (interactive) (insert (format-time-string "%Y-%m-%d")))
 (defun my/insert-time () (interactive) (insert (format-time-string "%H:%M")))
@@ -313,6 +344,7 @@ start, and at column 0 just removes the newline.  Respects `subword-mode'."
 (global-set-key (kbd "C-c s d")      #'project-find-file)
 (global-set-key (kbd "C-<backspace>") #'my/backward-delete-word)
 (global-set-key (kbd "C-x b")        #'my/switch-to-buffer)
+(global-set-key (kbd "C-x C-b")      #'my/list-buffers)
 (global-set-key (kbd "C-x k")        #'my/kill-this-buffer)
 (global-set-key (kbd "C-x K")        #'my/kill-buffer-and-window)
 (global-set-key (kbd "C-c <")        #'my/shift-region-left)

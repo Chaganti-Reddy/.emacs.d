@@ -103,7 +103,9 @@ elsewhere `alpha-background' keeps text opaque.")
         (border-mode-line-inactive unspecified)
         (date-common cyan) (date-deadline red-warmer) (date-event magenta-warmer)
         (date-now yellow-warmer) (date-scheduled magenta-cooler)
-        (date-weekday cyan-cooler) (date-weekend blue-faint)))
+        (date-weekday cyan-cooler) (date-weekend blue-faint) (date-holiday blue)
+        (mail-recipient fg-main)
+        (bg-region bg-sage) (fg-region unspecified)))
 (setq modus-vivendi-palette-overrides
       '((fg-main "#d6d6d4")
         (bg-main "#090909")
@@ -111,6 +113,12 @@ elsewhere `alpha-background' keeps text opaque.")
         (fg-heading-1 magenta-faint)
         (bg-mode-line-active bg-lavender)
         (fg-mode-line-active "#ffffff")))
+(setq modus-operandi-palette-overrides
+      '((bg-mode-line-active bg-blue-intense)
+        (fg-mode-line-active fg-main)
+        (fg-heading-1 "#a01f64")
+        (fg-heading-2 "#2f5f9f")
+        (fg-heading-3 "#1a8388")))
 (load-theme 'modus-vivendi :no-confirm)
 
 ;;; early-init.el ends here
