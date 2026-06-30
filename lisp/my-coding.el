@@ -197,12 +197,41 @@
 ;;; Cape + completion-at-point chains (one base chain, one LSP override)
 ;;; ---------------------------------------------------------------------------
 (use-package cape :ensure t :defer t)
+;; Restrict dabbrev to the current buffer -- scanning ALL buffers is the classic
+;; dabbrev latency source (worse on Windows). Strictly faster completion.
+(setq cape-dabbrev-check-other-buffers nil)
+(setq cape-dict-file (my/var "dict/english-words.txt")
+      ispell-alternate-dictionary (my/var "dict/english-words.txt"))
+
+;; Fetch the word list (dwyl/english-words) into var/ on demand -- cross-OS via
+;; `url-copy-file', no shell. auto-fetched once if absent.
+(defun my/download-wordlist (&optional force)
+  "Download the English word list for `cape-dict'/`ispell' if missing (or FORCE)."
+  (interactive "P")
+  (let ((f (my/var "dict/english-words.txt")))
+    (when (or force (not (file-exists-p f)))
+      (message "Downloading English word list...")
+      (url-copy-file
+       "https://raw.githubusercontent.com/dwyl/english-words/master/words_alpha.txt"
+       f t)
+      (message "Word list saved: %s" f))))
+(add-hook 'emacs-startup-hook
+          (lambda ()
+            (run-with-idle-timer
+             3 nil (lambda () (ignore-errors (my/download-wordlist))))))
 
 ;; Code buffers WITHOUT an LSP: file paths, snippets, keywords, words.
 (defun my/code-capfs ()
   (setq-local completion-at-point-functions
               (list #'cape-file #'yasnippet-capf #'cape-keyword #'cape-dabbrev)))
 (add-hook 'prog-mode-hook #'my/code-capfs)
+
+(defun my/text-capfs ()
+  (add-hook 'completion-at-point-functions #'cape-dict    90 t)
+  (add-hook 'completion-at-point-functions #'cape-dabbrev 91 t)
+  (add-hook 'completion-at-point-functions #'cape-file    92 t)
+  (add-hook 'completion-at-point-functions #'cape-tex     93 t))
+(add-hook 'text-mode-hook #'my/text-capfs)
 
 ;; Eglot buffers: merge LSP + file + snippets into ONE popup (dabbrev fallback).
 (defun my/eglot-capfs ()
