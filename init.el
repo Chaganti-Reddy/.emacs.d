@@ -40,7 +40,6 @@ With DIR-P, PATH itself is the directory."
       url-configuration-directory (my/var "url/" t)
       url-cache-directory     (my/var "url/cache/" t)
       nsm-settings-file       (my/var "network-security.data")
-      server-auth-dir         (my/var "server/" t)
       transient-history-file  (my/var "transient/history.el")
       transient-levels-file   (my/var "transient/levels.el")
       transient-values-file   (my/var "transient/values.el"))
@@ -75,13 +74,15 @@ With DIR-P, PATH itself is the directory."
   ;; Skip an expensive GC step that bites when many fonts/emoji are cached.
   (setq inhibit-compacting-font-caches t
         w32-pipe-buffer-size my/w32-pipe-buffer-size)
-  ;; If SHELL points at Git's bash, cmdproxy delegates shell commands to it and
-  ;; MSYS mangles `/'-prefixed args (`/AUCTEXINPUT' -> "C:/Program Files/Git/...")
-  ;; -> broke AUCTeX preview. UNSET SHELL so cmdproxy falls back to cmd (no bash,
-  ;; no mangling, no w32-check warning).
+  (let ((cmdproxy (expand-file-name "cmdproxy.exe" exec-directory)))
+    (when (file-exists-p cmdproxy) (setq shell-file-name cmdproxy)))
   (setenv "SHELL" nil)
   (setenv "MSYS_NO_PATHCONV" "1")
-  (setenv "MSYS2_ARG_CONV_EXCL" "*"))
+  (setenv "MSYS2_ARG_CONV_EXCL" "*")
+  (when-let* ((mgs (executable-find "mgs"))
+              (dll (expand-file-name "mgsdll64.dll" (file-name-directory mgs)))
+              ((file-exists-p dll)))
+    (setenv "LIBGS" dll)))
 
 ;; Engine performance (display + subprocess).
 (defconst my/process-output-max (* 4 1024 1024)
@@ -197,23 +198,28 @@ With DIR-P, PATH itself is the directory."
 (setq load-prefer-newer t)
 
 (defun my/load (feature)
-  "Load FEATURE module from lisp/, logging failures instead of aborting init."
+  "Load FEATURE's .el SOURCE from lisp/, logging failures instead of aborting."
   (condition-case err
-      (require feature)
+      (load (expand-file-name (format "%s.el" feature) my/lisp-dir) nil t)
     (error (message "Module %s failed: %s" feature (error-message-string err)))))
-
-(byte-recompile-directory my/lisp-dir 0)
-(add-hook 'after-save-hook
-          (lambda ()
-            (when (and buffer-file-name
-                       (file-in-directory-p buffer-file-name my/lisp-dir))
-              (byte-compile-file buffer-file-name))))
 
 (my/load 'my-commands)            ; custom utility commands
 (my/load 'setup-windows)          ; display-buffer placement rules
 (my/load 'my-coding)              ; tree-sitter + eglot + diagnostics
 (my/load 'my-writing)             ; org (research/latex) + markdown
 ;; (my/load 'my-llm)              ; gptel LLM -- DEAD CODE.
+
+(defvar my/preload-done nil
+  "Set to t once `my/preload-all-packages' finishes.
+`emacs-daemon.bat' polls this so it can show progress until the daemon is fully
+warm, instead of returning the instant the process launches.")
+
+(defun my/last-message ()
+  "Most recent non-empty line of *Messages* (so the launcher can echo progress).
+No string-literal args -> the value is safe to fetch over `emacsclient -e' from
+a Windows .bat without quote-escaping headaches."
+  (with-current-buffer (messages-buffer)
+    (car (last (split-string (string-trim (buffer-string)) "\n")))))
 
 (defun my/preload-all-packages ()
   "Eagerly load every configured package (for a daemon's clients)."
@@ -233,7 +239,8 @@ With DIR-P, PATH itself is the directory."
                       "csv-mode" "denote" "denote-journal" "pdf-tools"
                       "eglot" "flymake" "dired" "ibuffer" "project"))
          (when (locate-library lib) (ignore-errors (load-library lib))))
-       (with-temp-buffer (when (fboundp 'org-mode) (org-mode)))
+       (ignore-errors (with-temp-buffer (when (fboundp 'org-mode) (org-mode))))
+       (setq my/preload-done t)
        (message "[Daemon: preloaded packages in %.1fs]"
                 (float-time (time-subtract (current-time) t0)))))))
 (when (daemonp)
@@ -676,7 +683,7 @@ With DIR-P, PATH itself is the directory."
     (orderless-matching-styles '(orderless-literal orderless-regexp))))
 (defun my/enable-orderless ()
   (when (and (require 'orderless nil t)
-             (fboundp 'orderless-fast))
+             (assq 'orderless-fast completion-styles-alist))
     (remove-hook 'minibuffer-setup-hook #'my/enable-orderless)
     (setq completion-styles '(orderless-fast basic))))
 (add-hook 'minibuffer-setup-hook #'my/enable-orderless)
@@ -1090,17 +1097,7 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
   :config
   (setq magit-diff-refine-hunk t
         magit-save-repository-buffers 'dontask)
-  (setq auto-revert-buffer-list-filter #'magit-auto-revert-repository-buffer-p)
-  (when IS-WINDOWS
-    (setq magit-refresh-status-buffer nil
-          magit-revision-insert-related-refs nil)
-    (dolist (h '(magit-insert-tags-header
-                 magit-insert-unpushed-to-pushremote
-                 magit-insert-unpulled-from-pushremote
-                 magit-insert-unpulled-from-upstream))
-      (remove-hook 'magit-status-sections-hook h))
-    (remove-hook 'server-switch-hook 'magit-commit-diff)
-    (remove-hook 'with-editor-filter-visit-hook 'magit-commit-diff)))
+  (setq auto-revert-buffer-list-filter #'magit-auto-revert-repository-buffer-p))
 
 (use-package magit-section
   :ensure nil

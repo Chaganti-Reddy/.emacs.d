@@ -173,10 +173,16 @@ emacsclient -e '(elpaca-update-all)'
   ```
 - **macOS:** `brew services start emacs` — or a `~/Library/LaunchAgents/emacs.plist`
   running `emacs --fg-daemon` with `RunAtLoad`/`KeepAlive`.
-- **Windows:** Task Scheduler → Basic Task → trigger *When I log on* → program
-  `runemacs.exe`, arguments `--daemon`. Desktop shortcut:
-  `emacsclientw.exe -c -n -a ""` (starts a daemon if none, else connects).
-  (`runemacs.exe` = no console window; `emacsclientw.exe` = windowed client.)
+- **Windows:** run **`emacs-daemon.bat`** (in this repo) once per login — it finds
+  `runemacs.exe` (PATH / scoop / Program Files / choco), **stops any running
+  daemon, and starts a fresh one** (so re-running it = reload everything). Then
+  make a Start-Menu / taskbar shortcut whose target is:
+  ```
+  emacsclientw.exe -c -n -a ""
+  ```
+  Right-click it → *Pin to taskbar*. Clicking opens a frame instantly.
+  (`runemacs.exe` = no console window; `emacsclientw.exe` = windowed client.
+  For fully-automatic start, point a Task Scheduler *At log on* task at the bat.)
 
 ## Notes
 

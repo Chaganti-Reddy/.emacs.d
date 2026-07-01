@@ -242,17 +242,18 @@ Org Preview LaTeX Output\\|Org PDF LaTeX Output\\|preview-\\).*\\*\\'"
 Skip hidden/noisy buffers always; and when WIN currently shows a buffer that
 belongs to a project, also skip any BUF outside that project -- so `M-['/`M-]'
 cycle only within the current project. Outside a project, cycle all (non-hidden)."
-  (or (my/hidden-buffer-p buf)
-      (and (fboundp 'project-current)
-           (when-let* ((cur  (window-buffer win))
-                       (proj (with-current-buffer cur (project-current nil))))
-             (not (memq buf (project-buffers proj)))))))
+  (and (not (string= (buffer-name buf) "*scratch*"))
+       (or (my/hidden-buffer-p buf)
+           (and (fboundp 'project-current)
+                (when-let* ((cur  (window-buffer win))
+                            (proj (with-current-buffer cur (project-current nil))))
+                  (not (memq buf (project-buffers proj))))))))
 
 (defun my/switch-to-buffer (&optional all)
   "Switch buffers, omitting internal/noisy ones; RET defaults to the last buffer.
 In a project, restrict candidates to that project's buffers (VSCode-like).
 With prefix ALL (\\[universal-argument]) -- or when not in a project -- offer
-every buffer."
+every buffer (incl. *scratch*)."
   (interactive "P")
   (let* ((proj (unless all (and (fboundp 'project-current) (project-current nil))))
          (bufs (seq-remove #'my/hidden-buffer-p

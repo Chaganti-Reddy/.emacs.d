@@ -43,16 +43,17 @@ elsewhere `alpha-background' keeps text opaque.")
       frame-inhibit-implied-resize t)
 
 ;; Maximize. On Windows, `(fullscreen . maximized)' in `default-frame-alist'
-;; makes the frame repaint (white/garbage) WHILE it maximizes mid-load -- the
-;; classic startup glitch (bug#64846). Instead, maximize natively via the window
-;; manager AFTER init, once the buffer is themed and drawn: one clean snap, no
-;; glitch. Elsewhere the alist entry is fine.
-(if IS-WINDOWS
-    (add-hook 'window-setup-hook
-              (lambda ()
-                (when (fboundp 'w32-send-sys-command)
-                  (w32-send-sys-command #xf030))))   ; SC_MAXIMIZE
-  (add-to-list 'default-frame-alist '(fullscreen . maximized)))
+;; makes the INITIAL frame repaint (white/garbage) WHILE it maximizes mid-load
+;; -- the classic startup glitch (bug#64846).
+(if (not IS-WINDOWS)
+    (add-to-list 'default-frame-alist '(fullscreen . maximized))
+  ;; Initial non-daemon frame: clean WM maximize after load (dodges bug#64846).
+  (add-hook 'window-setup-hook
+            (lambda ()
+              (when (fboundp 'w32-send-sys-command)
+                (w32-send-sys-command #xf030))))       ; SC_MAXIMIZE
+  (add-hook 'after-make-frame-functions
+            (lambda (frame) (set-frame-parameter frame 'fullscreen 'maximized))))
 
 ;;; --- Quiet startup ---------------------------------------------------------
 (setq inhibit-startup-screen t

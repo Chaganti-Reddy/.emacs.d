@@ -99,9 +99,9 @@
         eglot-report-progress nil       ; no progress spam in echo area
         eglot-sync-connect nil          ; connect async; don't block
         eglot-extend-to-xref t)
-  ;; Auto-start the server when opening these languages (if it's installed).
   :hook ((c-ts-mode c++-ts-mode python-ts-mode rust-ts-mode java-ts-mode
-          go-ts-mode js-ts-mode typescript-ts-mode tsx-ts-mode) . eglot-ensure)
+          go-ts-mode js-ts-mode typescript-ts-mode tsx-ts-mode
+          c-mode c++-mode python-mode js-mode) . eglot-ensure)
   :config
   (define-key eglot-mode-map (kbd "<f2>")    #'eglot-rename)
   (define-key eglot-mode-map (kbd "M-RET")   #'eglot-code-actions)

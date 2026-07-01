@@ -1,3 +1,5 @@
 var/
 *.elc
 elpa/
+elpaca/
+server/

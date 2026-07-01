@@ -10,6 +10,10 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
   (cond ((fboundp 'org-latex-preview-mode)      (org-latex-preview-mode 1))
         ((fboundp 'org-latex-preview-auto-mode) (org-latex-preview-auto-mode 1))))
 
+(setq org-directory (if IS-WINDOWS "D:/Org" "~/Org"))
+
+(use-package async :defer t)
+
 (use-package org
   :ensure (org
            :remotes ("tecosaur"
@@ -39,8 +43,7 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
            :pin nil)
   :defer t
   :init
-  (setq org-directory (if IS-WINDOWS "D:/Org" "~/Org")
-        org-id-locations-file (my/var "org-id-locations")
+  (setq org-id-locations-file (my/var "org-id-locations")
         org-persist-directory (my/var "org-persist/" t)
         org-preview-latex-image-directory (my/var "org-latex-preview/" t)
         org-modules nil)
@@ -74,23 +77,127 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
       (1 font-lock-keyword-face) (2 font-lock-constant-face))))
   (advice-add 'org-try-cdlatex-tab :around
               (lambda (orig &rest _) (ignore-errors (funcall orig))))
-  (when (boundp 'org-latex-preview-numbered)
-    (setq org-latex-preview-numbered t))
-  (when (boundp 'org-latex-preview-mode-display-live)
-    (setq org-latex-preview-mode-display-live t))
-  (when (boundp 'org-latex-preview-mode-update-delay)
-    (setq org-latex-preview-mode-update-delay 0.25))
-  (when (boundp 'org-latex-preview-process-active-indicator)
-    (setq org-latex-preview-process-active-indicator 'face))
-  (when (boundp 'org-latex-preview-process-precompile)
-    (setq org-latex-preview-process-precompile t))
-  (when (boundp 'org-latex-preview-cache)
-    (setq org-latex-preview-cache 'persist))
-  (when (boundp 'org-latex-preview-appearance-options)
-    (setq org-latex-preview-appearance-options
-          (plist-put (plist-put org-latex-preview-appearance-options
-                                :page-width 0.8)
-                     :foreground 'auto)))
+  (with-eval-after-load 'org-latex-preview
+    (setq org-latex-preview-numbered t
+          org-latex-preview-mode-display-live '(block edit-special)
+          org-latex-preview-mode-update-delay 0.3
+          org-latex-preview-mode-track-inserts t
+          org-latex-preview-process-active-indicator 'face
+          org-latex-preview-process-precompile t
+          org-latex-preview-cache 'persist
+          org-latex-preview-persist-expiry 30
+          org-latex-preview-mode-ignored-commands
+          '(next-line previous-line scroll-up-command scroll-down-command
+            mwheel-scroll scroll-other-window scroll-other-window-down))
+    (plist-put org-latex-preview-appearance-options :scale 1.0)
+    (plist-put org-latex-preview-appearance-options :zoom
+               (+ (/ (face-attribute 'default :height) 100.0) 0.15))
+    (plist-put org-latex-preview-appearance-options :page-width 0.8)
+    (plist-put org-latex-preview-appearance-options :foreground 'auto)
+    (defun my/org-latex-preview-image-at-point (&optional _arg)
+      "Copy the preview image file for the fragment at point to the kill-ring."
+      (interactive "P")
+      (if-let* ((img (thread-first (point) (overlays-at) last car
+                       (overlay-get 'preview-image) cdr (plist-get :file)))
+                ((file-exists-p img)))
+          (progn (kill-new img) (message "Preview image path copied."))
+        (message "No LaTeX preview image at point.")))
+    (defun my/org-latex-next-env (&optional arg)
+      "Jump to the next LaTeX math environment/fragment."
+      (interactive "p")
+      (save-match-data
+        (re-search-forward org-latex-preview--tentative-math-re nil t (or arg 1))))
+    (defun my/org-latex-prev-env (&optional arg)
+      "Jump to the previous LaTeX math environment/fragment."
+      (interactive "p")
+      (my/org-latex-next-env (- (or arg 1))))
+    (defvar-keymap my/org-latex-env-map :repeat t
+      "m" #'my/org-latex-next-env "M" #'my/org-latex-prev-env
+      "n" #'my/org-latex-next-env "p" #'my/org-latex-prev-env)
+    (put 'my/org-latex-next-env 'repeat-map 'my/org-latex-env-map)
+    (put 'my/org-latex-prev-env 'repeat-map 'my/org-latex-env-map)
+    (defun my/org-latex-preview-show-error ()
+      "Surface a LaTeX preview compile error via local help."
+      (display-local-help t))
+    (add-hook 'org-ctrl-c-ctrl-c-final-hook #'my/org-latex-preview-show-error -10)
+    (define-key org-mode-map (kbd "C-c i w")     #'my/org-latex-preview-image-at-point)
+    (define-key org-mode-map (kbd "M-g m")       #'my/org-latex-next-env)
+    (define-key org-mode-map (kbd "M-g M")       #'my/org-latex-prev-env)
+    (define-key org-mode-map (kbd "C-c C-x SPC") #'org-latex-preview-clear-cache)
+    ;; --- Live preview for freshly-typed $...$ / $$...$$ --------------------
+    ;; tecosaur's insert-tracker (`...--detect-fragments-in-change') only scans
+    ;; for \(..\), \[..\] and \begin/\end on the fly -- dollar math is skipped
+    ;; (ambiguous with currency), so a newly typed $x$ only previews on reopen.
+    ;; Feed the $ positions it skips into Org's OWN tracking function so dollar
+    ;; math tracks live exactly like \(..\).
+    (defun my/org-latex-preview--track-dollar (beg end _)
+      "Track newly inserted $...$ / $$...$$ fragments for live preview."
+      (when org-latex-preview-mode-track-inserts
+        (let ((initial-point (point)) frags)
+          (save-excursion
+            (goto-char beg)
+            (while (search-forward "$" end t)
+              (push (org-latex-preview-mode--maybe-track-element-here
+                     'latex-fragment initial-point)
+                    frags)))
+          (when (setq frags (delq nil frags))
+            (org-latex-preview--place-from-elements
+             org-latex-preview-process-default frags)))))
+    (advice-add 'org-latex-preview-mode--detect-fragments-in-change :after
+                #'my/org-latex-preview--track-dollar)
+    ;; --- Background preamble precompilation ---------------------
+    (defun my/org-latex-preview-precompile-async (org-buf)
+      "Precompile the Org LaTeX-preview preamble for ORG-BUF in the background."
+      (when (buffer-live-p org-buf)
+        (with-current-buffer org-buf
+          (when (and org-latex-preview-process-precompile
+                     (require 'async nil t))
+            (let* ((org-location (org-find-library-dir "org"))
+                   (compiler (or (cdr (assoc "LATEX_COMPILER"
+                                             (org-collect-keywords '("LATEX_COMPILER"))))
+                                 org-latex-compiler))
+                   (header (concat (or org-latex-preview--preamble-content
+                                       (org-latex-preview--get-preamble))
+                                   org-latex-preview--include-preview-string))
+                   (relative-file-p
+                    (string-match-p "\\(?:\\\\input{\\|\\\\include{\\)[^/]" header))
+                   (remote-file-p (file-remote-p default-directory))
+                   (info (list :latex-compiler compiler
+                               :precompile-format-spec
+                               (let ((c (cdr (assoc compiler
+                                                    org-latex-preview-compiler-command-map))))
+                                 `((?l . ,c) (?L . ,(car (split-string (or c " "))))))))
+                   (preamble-hash
+                    (sha1 (concat header compiler
+                                  (if relative-file-p default-directory "-temp")))))
+              (when (and (equal compiler "pdflatex")
+                         (not remote-file-p)
+                         (not (cadr (org-persist-read "LaTeX format file cache"
+                                                      (list :key preamble-hash) nil nil
+                                                      :read-related t))))
+                (async-start
+                 `(lambda ()
+                    (add-to-list 'load-path ,org-location)
+                    (require 'ox)
+                    (org-latex--precompile-preamble
+                     ',info ,header
+                     ,(expand-file-name preamble-hash temporary-file-directory)))
+                 `(lambda (dump-file)
+                    (let ((inhibit-message t))
+                      (org-persist--load-index)
+                      (org-persist-register
+                       `("LaTeX format file cache" (file ,dump-file))
+                       (list :key ,preamble-hash) :write-immediately t)
+                      (message "Org LaTeX preamble precompiled in background."))))))))))
+    (defun my/org-latex-preview-precompile-idle (&optional beg end _)
+      "On idle, kick off background preamble precompile for the current buffer.
+Signature also fits `org-latex-preview-clear-cache' advice (BEG END)."
+      (unless (or beg end)
+        (run-with-idle-timer
+         2 nil #'my/org-latex-preview-precompile-async (current-buffer))))
+    (advice-add 'org-latex-preview-clear-cache :after
+                #'my/org-latex-preview-precompile-idle)
+    (add-hook 'org-mode-hook #'my/org-latex-preview-precompile-idle))
   ;; Babel langs (calc evaluates `#+begin_src calc'; embedded calc is C-x * e).
   (setq org-babel-load-languages
         '((emacs-lisp . t) (python . t) (C . t) (shell . t) (calc . t)))
@@ -112,12 +219,12 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
   (org-modern-tag t)
   (org-modern-priority t)
   (org-modern-todo t)
-  (org-modern-checkbox t)
+  (org-modern-checkbox '((?X . "☑") (?- . "◧") (?\s . "☐")))
+  (org-modern-progress 12)
   (org-modern-list '((?+ . "◦") (?- . "–") (?* . "•")))
   (org-modern-keyword "‣ ")
   (org-modern-block-name t)
-  (org-modern-horizontal-rule t)
-  (org-modern-progress t))
+  (org-modern-horizontal-rule t))
 
 (use-package org-modern-indent
   :ensure (org-modern-indent :host github :repo "jdtsmith/org-modern-indent")
@@ -309,7 +416,7 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
 
 (with-eval-after-load 'preview
   (setq preview-scale-function
-        (lambda () (* 1.25 (funcall (preview-scale-from-face)))))
+        (lambda () (* 1.20 (funcall (preview-scale-from-face)))))
   (when (and IS-WINDOWS (executable-find "dvipng"))
     (setq preview-image-type 'dvi*
           preview-dvi*-image-type 'png))
