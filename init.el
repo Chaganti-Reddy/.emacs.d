@@ -99,18 +99,6 @@ With DIR-P, PATH itself is the directory."
 ;; Find git/clangd/pyright/... regardless of how Emacs was launched.
 (add-to-list 'exec-path (my/emacs-path "bin"))
 
-;; macOS GUI Emacs (Finder/Dock/Spotlight) and Linux launched from a .desktop
-;; file don't inherit the login shell's PATH -> eglot/compile/LaTeX silently
-;; fail to find clangd/pyright/gs/node. Windows gets PATH from the environment,
-;; so this is skipped there.
-(use-package exec-path-from-shell
-  :if (and (display-graphic-p) (not IS-WINDOWS))
-  :demand t
-  :config
-  (setq exec-path-from-shell-arguments '("-l")     ; login shell, non-interactive
-        exec-path-from-shell-variables '("PATH" "MANPATH" "LANG" "LC_ALL"))
-  (exec-path-from-shell-initialize))
-
 ;; macOS: this config is M-heavy, so map Command -> Meta and leave Option free
 ;; for typing accented characters. Covers both the ns and emacs-mac builds.
 (when IS-MAC
@@ -225,18 +213,27 @@ With DIR-P, PATH itself is the directory."
 (my/load 'setup-windows)          ; display-buffer placement rules
 (my/load 'my-coding)              ; tree-sitter + eglot + diagnostics
 (my/load 'my-writing)             ; org (research/latex) + markdown
-;; (my/load 'my-llm)              ; gptel LLM -- DEAD CODE until Copilot license.
-;;   lisp/my-llm.el is kept as-is; uncomment this + re-add gptel/gptel-agent/mcp
-;;   to `my/ensure-packages' when you have Copilot, then M-x my/install-packages.
+;; (my/load 'my-llm)              ; gptel LLM -- DEAD CODE.
 
-;; Run a server so `emacsclient' (git EDITOR, "open in Emacs") reuses this
-;; session. Start it once Emacs is idle -- keeps it off the startup path.
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (run-with-idle-timer
-             1.0 nil
-             (lambda () (require 'server)
-               (unless (server-running-p) (server-start))))))
+(defun my/preload-all-packages ()
+  "Eagerly load every configured package (for a daemon's clients)."
+  (let ((t0 (current-time)))
+    (dolist (lib '("vertico" "orderless" "marginalia" "embark" "avy" "goto-chg"
+                   "multiple-cursors" "hl-todo" "popper" "nerd-icons"
+                   "nerd-icons-completion" "nerd-icons-dired" "transient"
+                   "magit" "magit-section" "git-timemachine" "diff-hl" "wgrep"
+                   "cape" "yasnippet" "yasnippet-capf" "apheleia" "dape"
+                   "doom-themes" "vundo" "undo-fu-session" "casual" "expreg"
+                   "project-x" "org" "ox" "ol" "ob-core" "org-capture"
+                   "org-agenda" "org-modern" "org-modern-indent" "org-appear"
+                   "cdlatex" "engrave-faces" "latex" "reftex" "markdown-mode"
+                   "csv-mode" "denote" "denote-journal" "pdf-tools"
+                   "eglot" "flymake" "dired" "ibuffer" "project"))
+      (when (locate-library lib) (ignore-errors (load-library lib))))
+    (message "[Daemon: preloaded packages in %.1fs]"
+             (float-time (time-subtract (current-time) t0)))))
+(when (daemonp)
+  (add-hook 'elpaca-after-init-hook #'my/preload-all-packages))
 
 ;;; ===========================================================================
 ;;; 7. Editing mechanics & built-in UX
@@ -950,7 +947,42 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
       (setq-local mode-line-format nil)
     (kill-local-variable 'mode-line-format)
     (force-mode-line-update)))
-(global-set-key (kbd "C-c t l") #'my/mode-line-hidden-mode)
+
+;; `C-c t' -> a Transient popup for toggling frequently-used modes.
+(defun my/toggle-modes ()
+  "Open the mode-toggle menu using transient."
+  (interactive)
+  (require 'transient)
+  (call-interactively #'my/toggle-modes-transient))
+(with-eval-after-load 'transient
+  (transient-define-prefix my/toggle-modes-transient ()
+    "Toggle frequently-used minor modes."
+    [["Appearance"
+      ("t" "transparency"   my/toggle-transparency)
+      ("T" "theme"          my/toggle-theme)
+      ("m" "mode-line"      my/mode-line-hidden-mode)
+      ("r" "hide cursor"    my/hide-cursor-mode)
+      ("8" "pretty symbols" prettify-symbols-mode)]
+     ["View"
+      ("v" "visual-line"    visual-line-mode)
+      ("k" "truncate lines" toggle-truncate-lines)
+      ("n" "line numbers"   display-line-numbers-mode)
+      ("w" "whitespace"     whitespace-mode)
+      ("h" "hl-line"        hl-line-mode)]
+     ["Buffer / Code"
+      ("R" "read-only"      read-only-mode)
+      ("a" "auto-fill"      auto-fill-mode)
+      ("f" "flymake"        flymake-mode)
+      ("g" "diff-hl"        diff-hl-mode)
+      ("d" "debug on error" toggle-debug-on-error)]
+     ["Org" :if-derived org-mode
+      ("om" "modern"        org-modern-mode)
+      ("oi" "indent"        org-indent-mode)
+      ("oN" "numbers"       org-num-mode)
+      ("op" "pretty entities" org-toggle-pretty-entities)
+      ("oL" "latex preview" org-latex-preview-mode
+       :if (lambda () (fboundp 'org-latex-preview-mode)))]]))
+(global-set-key (kbd "C-c t") #'my/toggle-modes)
 
 (setq tab-bar-show 1
       tab-bar-new-button-show nil
@@ -1062,6 +1094,14 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
       (remove-hook 'magit-status-sections-hook h))
     (remove-hook 'server-switch-hook 'magit-commit-diff)
     (remove-hook 'with-editor-filter-visit-hook 'magit-commit-diff)))
+
+(use-package magit-section
+  :ensure nil
+  :after magit
+  :bind (:map magit-section-mode-map ("," . magit-section-up))
+  :config
+  (setq magit-section-initial-visibility-alist
+        '((stashes . hide) ([file unstaged status] . hide))))
 
 ;; Step through a file's history, revision by revision (lean, no DB, lazy).
 (use-package git-timemachine
