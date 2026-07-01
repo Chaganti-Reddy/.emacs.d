@@ -1,6 +1,6 @@
 # Emacs configuration
 
-A lean, fast, built-in-first Emacs 30 setup. No distribution, no framework — `package.el` + `use-package`, everything lazy-loaded.
+A lean, fast, built-in-first Emacs 30 setup. No distribution, no framework — `elpaca` + `use-package`, everything lazy-loaded.
 
 ## Key bindings
 
@@ -91,19 +91,36 @@ A lean, fast, built-in-first Emacs 30 setup. No distribution, no framework — `
 ### Org, LaTeX & math
 | Key | Action |
 |-----|--------|
-| `C-c c` | Capture a note to the inbox |
+| `C-c c` | Capture a note / todo to the inbox |
+| `C-c A` | Open the agenda (`C-c a` is mark-whole-buffer) |
 | `C-c C-e l p` / `l o` | Export to PDF / and open (engraved code) |
-| `C-c C-x C-b` / `C-p` / `C-r` | LaTeX preview: buffer / at point / region |
+| `C-c C-x C-l` | LaTeX preview at point (manual) |
 | `C-S-e` | Evaluate math at line/region with Calc, in place |
 | `C-x * e` | Toggle live embedded Calc on the formula at point |
-| `C-x c` | Calculator (Calc) • `C-o` in Calc: menu (casual) |
-| (auto) | Org LaTeX previews render on idle + toggle as the cursor enters/leaves (fragtog) |
+| `C-x c` | Calculator (Calc) |
+| (auto) | **Live LaTeX preview** (tecosaur Org): renders on open, updates as you type, reveals source at the cursor |
+
+### Notes (denote) — `C-c n` leader
+| Key | Action |
+|-----|--------|
+| `C-c n n` / `C-c n c` | New note / turn region into a note |
+| `C-c n o` | Open or create a note |
+| `C-c n l` / `C-c n L` | Insert link to a note / links matching a regexp |
+| `C-c n b` | Backlinks buffer (notes linking here) |
+| `C-c n r` / `C-c n R` | Rename file / rename via front-matter |
+| `C-c n j` | New / existing journal entry |
+
+### Transient menus (casual)
+| Key | Action |
+|-----|--------|
+| `C-o` (in mode) | Menu for Calc · Dired · Info · I-search · IBuffer · Bookmarks · RE-Builder · Agenda |
+| `C-c O` | General editing menu (EditKit) |
+| `M-g a` | Avy actions menu |
 
 ### Toggles & misc (`C-c` leader)
 | Key | Action |
 |-----|--------|
-| `C-c t t` / `C-c t T` | Toggle transparency / theme (doom-rouge → modus → operandi → gruber) |
-| `C-c t r` / `C-c t l` | Reader mode / hide mode-line |
+| `C-c t` | **Toggle-modes menu** (transient popup): `t` transparency · `T` theme · `m` mode-line · `r` cursor · `8` pretty-symbols · `v`/`k` visual-line/truncate · `n` line-numbers · `w` whitespace · `h` hl-line · `R` read-only · `f` flymake · `g` diff-hl · (in org) `om`/`oi`/`oN`/`op`/`oL` |
 | `C-c a` | Mark whole buffer |
 | `C-c o` / `C-<f5>` | Open init / reload config |
 | `C-c r` / `<f6>` | Recent files / new scratch file by language |
@@ -114,18 +131,19 @@ A lean, fast, built-in-first Emacs 30 setup. No distribution, no framework — `
 
 ## Commands
 
-- `M-x my/sync-packages` — install declared-but-missing packages + refresh the fast startup bundle (run once after adding a package).
+- `M-x elpaca-manager` — browse / install / delete packages · `M-x elpaca-update-all` — update everything · `M-x elpaca-log` — build output.
 - `M-x my/doctor` — check external tooling (servers, git, TeX…).
 - `M-x my/install-treesit-grammars-windows` — fetch prebuilt tree-sitter grammars (Windows).
 
 ## Adding a package
 
-1. Add a `use-package` form (in `init.el` or the relevant `lisp/` module).
-2. Run `M-x package-install <name>` **once** (or `M-x my/sync-packages`).
-3. Restart. Config-only changes never need a sync — startup stays fast.
+1. Add a `use-package … :ensure t` form (in `init.el` or the relevant `lisp/` module). Built-ins and vendored files use `:ensure nil`.
+2. Restart — elpaca installs any new declaration on the next start.
+3. Update later with `M-x elpaca-update-all`. Config-only changes need no install.
 
 ## Notes
 
-- Startup loads `package.el` lazily; the quickstart bundle makes installed packages usable without it.
+- Packages are managed by **elpaca** — git clones + builds under `var/elpaca/`, activated after init (so package-touching startup code hangs off `elpaca-after-init-hook`).
+- Org is the **tecosaur dev branch** (built via elpaca) for the live LaTeX preview; its `:pre-build` stamps `org-version.el` so there's no version-mismatch warning.
 - The mode line is intentionally non-interactive (no mouse).
 - State lives under `var/`; the config root stays clean.

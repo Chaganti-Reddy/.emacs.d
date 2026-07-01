@@ -10,8 +10,8 @@
 ;; Copilot's token caches under `~/.emacs.d/.cache/copilot-chat/' (it does NOT
 ;; reuse copilot.el's apps.json). Optional local Ollama backend is also keyless.
 ;;
-;; First-time setup:  M-x my/sync-packages   (installs gptel)
-;;                    M-x gptel-gh-login      (browser device-login, once)
+;; First-time setup:  uncomment (my/load 'my-llm) in init.el §6 + restart
+;;                    (elpaca installs gptel), then M-x gptel-gh-login (once)
 ;;
 ;; Leader: C-c l   (l l chat · l s send · l m menu · l r rewrite · l a add
 ;;                  context · l f add-file · l k abort · l R resume saved chat)
@@ -157,7 +157,7 @@ the full solution only when I explicitly ask.")
 
 ;;; --- gptel-agent: agentic loop (Read/Write/Edit/Bash/WebSearch...) ----------
 ;; "Claude Code in Emacs": the @gptel-agent preset gives a full tool-using agent,
-;; @gptel-plan a read-only planner. Installed from MELPA via `my/sync-packages'.
+;; @gptel-plan a read-only planner. Installed via elpaca (its use-package form).
 (use-package gptel-agent
   :ensure t
   :after gptel

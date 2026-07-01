@@ -121,137 +121,83 @@ With DIR-P, PATH itself is the directory."
         mac-option-modifier 'none))
 
 ;;; ===========================================================================
-;;; 5. Package system: package.el + use-package (built in)
-;;; ===========================================================================
-(setq package-user-dir      (my/emacs-path "var/elpa/")
-      package-gnupghome-dir (my/emacs-path "var/elpa/gnupg/")
-      package-archives
-      '(("gnu"    . "https://elpa.gnu.org/packages/")
-        ("nongnu" . "https://elpa.nongnu.org/nongnu/")
-        ("melpa"  . "https://melpa.org/packages/"))
-      package-archive-priorities '(("gnu" . 10) ("nongnu" . 8) ("melpa" . 5))
-      package-quickstart t
-      package-quickstart-file (my/emacs-path "var/package-quickstart.el")
-      package-native-compile t
-      package-install-upgrade-built-in t)   ; lets us install Org 9.8 over built-in
+;;; 5. Package system: elpaca + use-package
+;;; ==========================================================================
+(defvar elpaca-installer-version 0.12)
+(defvar elpaca-directory (expand-file-name "var/elpaca/" user-emacs-directory))
+(defvar elpaca-builds-directory (expand-file-name "builds/" elpaca-directory))
+(defvar elpaca-sources-directory (expand-file-name "sources/" elpaca-directory))
+(defvar elpaca-order '(elpaca :repo "https://github.com/progfolio/elpaca.git"
+                              :ref nil :depth 1 :inherit ignore
+                              :files (:defaults "elpaca-test.el" (:exclude "extensions"))
+                              :build (:not elpaca-activate)))
+(let* ((repo  (expand-file-name "elpaca/" elpaca-sources-directory))
+       (build (expand-file-name "elpaca/" elpaca-builds-directory))
+       (order (cdr elpaca-order))
+       (default-directory repo))
+  (add-to-list 'load-path (if (file-exists-p build) build repo))
+  (unless (file-exists-p repo)
+    (make-directory repo t)
+    (when (<= emacs-major-version 28) (require 'subr-x))
+    (condition-case-unless-debug err
+        (if-let* ((buffer (pop-to-buffer-same-window "*elpaca-bootstrap*"))
+                  ((zerop (apply #'call-process `("git" nil ,buffer t "clone"
+                                                  ,@(when-let* ((depth (plist-get order :depth)))
+                                                      (list (format "--depth=%d" depth) "--no-single-branch"))
+                                                  ,(plist-get order :repo) ,repo))))
+                  ((zerop (call-process "git" nil buffer t "checkout"
+                                        (or (plist-get order :ref) "--"))))
+                  (emacs (concat invocation-directory invocation-name))
+                  ((zerop (call-process emacs nil buffer nil "-Q" "-L" "." "--batch"
+                                        "--eval" "(byte-recompile-directory \".\" 0 'force)")))
+                  ((require 'elpaca))
+                  ((elpaca-generate-autoloads "elpaca" repo)))
+            (progn (message "%s" (buffer-string)) (kill-buffer buffer))
+          (error "%s" (with-current-buffer buffer (buffer-string))))
+      ((error) (warn "%s" err) (delete-directory repo 'recursive))))
+  (unless (require 'elpaca-autoloads nil t)
+    (require 'elpaca)
+    (elpaca-generate-autoloads "elpaca" repo)
+    (let ((load-source-file-function nil)) (load "./elpaca-autoloads"))))
+(add-hook 'after-init-hook #'elpaca-process-queues)
+(elpaca `(,@elpaca-order))
 
-;; Windows GPG frequently lacks the ELPA signing keys, causing "Failed to
-;; verify signature / no public key" on install. Package downloads still go
-;; over HTTPS, so the transport is authenticated; we skip the GPG check on
-;; Windows for reliability. Proper alternative if you want the check back:
-;; install the `gnu-elpa-keyring-update' package, which refreshes the keyring.
 (when IS-WINDOWS
-  (setq package-check-signature nil))
+  (setq elpaca-queue-limit 8))
+
+(unless (ignore-errors
+          (let ((link (make-temp-name
+                       (expand-file-name "elpaca-symlink-probe-"
+                                         temporary-file-directory))))
+            (make-symbolic-link temporary-file-directory link)
+            (delete-file link) t))
+  (elpaca-no-symlink-mode))
+
+(elpaca elpaca-use-package
+  (elpaca-use-package-mode))
+(elpaca-wait)
 
 (require 'use-package)
-(setq use-package-always-ensure t       ; first run: auto-install missing packages
+(setq use-package-always-ensure t       ; every declaration installs via elpaca
       use-package-always-defer t        ; lazy by default; demand explicitly
       use-package-expand-minimally t
       use-package-compute-statistics t) ; M-x use-package-report
 
-;; Every ELPA package the config needs. Built-ins (eglot, calc, org handled
-;; separately) and vendored packages in lisp/ (expreg, project-x, gptel-quick,
-;; llm-tool-collection) and vertico's bundled extensions are NOT listed.
-;; ADD NEW PACKAGES HERE too (belt-and-suspenders with each `use-package').
-(defvar my/ensure-packages
-  '(vertico orderless marginalia embark avy goto-chg multiple-cursors
-    hl-todo popper nerd-icons nerd-icons-completion nerd-icons-dired
-    magit diff-hl git-timemachine wgrep cape yasnippet yasnippet-capf
-    apheleia dape doom-themes vundo undo-fu-session org-modern org-appear
-    org-fragtog cdlatex engrave-faces auctex markdown-mode csv-mode
-    pdf-tools casual exec-path-from-shell
-    ;; LLM (gptel gptel-agent mcp)
-    )
-  "ELPA packages installed up front on a fresh machine.")
+(use-package exec-path-from-shell
+  :if (and (display-graphic-p) (not IS-WINDOWS))
+  :demand t
+  :config
+  (setq exec-path-from-shell-arguments '("-l")     ; login shell, non-interactive
+        exec-path-from-shell-variables '("PATH" "MANPATH" "LANG" "LC_ALL"))
+  (exec-path-from-shell-initialize))
 
-(defvar my/install-max-attempts 5
-  "How many passes `my/install-packages' makes over still-missing packages.
-Downloads on flaky/corporate networks intermittently fail with \"No Data\";
-retrying the failed ones almost always succeeds.")
+(use-package elpaca-ui
+  :ensure nil
+  :bind (:map elpaca-ui-mode-map
+              ("p" . previous-line)
+              ("F" . elpaca-ui-mark-pull))
+  :hook (elpaca-log-mode . elpaca-ui-live-update-mode))
 
-(defun my/install-packages ()
-  "Install every missing package in `my/ensure-packages', retrying failures.
-Runs multiple passes (refreshing archives before each retry) so transient
-\"No Data\" download errors self-heal. Native compilation is OFF for the run
-(fast; and its async workers won't starve the downloads of file handles on
-Windows). Signature checks stay off on Windows. Idempotent -- skips installed."
-  (interactive)
-  (require 'package)
-  (let ((package-quickstart nil)
-        (package-native-compile nil)
-        (native-comp-jit-compilation nil)
-        (native-comp-deferred-compilation nil))
-    (unless package--initialized (package-initialize))
-    (unless package-archive-contents (package-refresh-contents))
-   (let ((todo (seq-remove #'package-installed-p my/ensure-packages))
-        (attempt 0))
-    (when todo
-      (display-buffer (messages-buffer))
-      (message "==== First-time setup: installing %d package(s). ONE-TIME, a few \
-minutes. Watch this log; DO NOT close Emacs until you see 'all present'. ===="
-               (length todo))
-      (redisplay t))
-    (while (and todo (< attempt my/install-max-attempts))
-      (setq attempt (1+ attempt))
-      (when (> attempt 1) 
-        (message "my/install-packages: retry %d for %d package(s): %S"
-                 attempt (length todo) todo)
-        (ignore-errors (package-refresh-contents)))
-      (dolist (pkg todo)
-        (condition-case _ (package-install pkg) (error nil)))
-      (setq todo (seq-remove #'package-installed-p todo)))
-    (when (fboundp 'package-quickstart-refresh)
-      (ignore-errors (package-quickstart-refresh)))
-    (if todo
-        (message "my/install-packages: STILL missing after %d attempts: %S -- \
-run `M-x my/install-packages' again (network was flaky)." attempt todo)
-      (message "my/install-packages: all present. Restart Emacs.")))))
-
-(defun my/packages-installed-p ()
-  "Non-nil only if EVERY package in `my/ensure-packages' is present on disk.
-Unbiased completeness check (no single sentinel): scans `package-user-dir' for
-a `NAME-<version>' directory per package. `NAME-[0-9]' avoids matching a longer
-sibling (e.g. `nerd-icons' must not be satisfied by `nerd-icons-dired')."
-  (let ((dirs (ignore-errors (directory-files package-user-dir))))
-    (and dirs
-         (seq-every-p
-          (lambda (p)
-            (let ((re (concat "\\`" (regexp-quote (symbol-name p)) "-[0-9]")))
-              (seq-find (lambda (d) (string-match-p re d)) dirs)))
-          my/ensure-packages))))
-(if (and (file-exists-p package-quickstart-file)
-         (my/packages-installed-p))
-    (progn
-      (load package-quickstart-file nil 'nomessage)
-      (setq use-package-ensure-function #'ignore))
-  (require 'package)
-  (let ((package-quickstart nil))   ; silence false "unnecessary init" warning
-    (package-initialize))
-  (my/install-packages))
-
-;; Populate the archive list lazily -- only the first time something installs.
-(defun my/ensure-package-archives (&rest _)
-  (unless package-archive-contents
-    (condition-case nil
-        (progn (package-read-all-archive-contents)
-               (unless package-archive-contents (package-refresh-contents)))
-      (error (package-refresh-contents)))))
-(advice-add 'package-install :before #'my/ensure-package-archives)
-
-;; Add a NEW package later: declare its `use-package' AND run `M-x package-install
-;; <name>'. That loads package.el, installs it, and (because `package-quickstart'
-;; is on) regenerates the bundle -- so startup stays fast. This command does both
-;; for everything currently declared-but-missing, in one shot.
-(defun my/sync-packages ()
-  "Install any declared-but-missing packages and refresh the fast bundle."
-  (interactive)
-  (require 'package)
-  (unless package--initialized (package-initialize))
-  (package-refresh-contents)
-  (let ((use-package-ensure-function #'use-package-ensure-elpa))
-    (load user-init-file))
-  (package-quickstart-refresh)
-  (message "Packages synced + quickstart refreshed. Restart for a clean session."))
 
 ;;; ===========================================================================
 ;;; 6. lisp/ modules — only large feature collections live here
@@ -448,7 +394,7 @@ sibling (e.g. `nerd-icons' must not be satisfied by `nerd-icons-dired')."
   (setq undo-fu-session-directory (my/var "undo-fu-session/" t)
         undo-fu-session-incompatible-files '("/COMMIT_EDITMSG\\'" "/git-rebase-todo\\'" "\\.gpg\\'")
         undo-fu-session-compression 'gz)
-  :hook (emacs-startup . undo-fu-session-global-mode))
+  :hook (elpaca-after-init . undo-fu-session-global-mode))
 
 (use-package expreg
   :ensure nil
@@ -566,7 +512,7 @@ sibling (e.g. `nerd-icons' must not be satisfied by `nerd-icons-dired')."
          ("C-M-`" . popper-toggle-type)
          ("C-~"   . popper-cycle-backwards))
   :init
-  (add-hook 'emacs-startup-hook #'popper-mode)
+  (add-hook 'elpaca-after-init-hook #'popper-mode)
   (setq popper-reference-buffers
         '("^\\*Messages\\*"
           ("[Oo]utput\\*$" . hide)
@@ -598,7 +544,8 @@ sibling (e.g. `nerd-icons' must not be satisfied by `nerd-icons-dired')."
                 '("^\\*eshell.*\\*$" eshell-mode
                   "^\\*shell.*\\*$"  shell-mode
                   "^\\*term.*\\*$"   term-mode "^\\*vterm.*\\*$" vterm-mode
-                  "^\\*dape.*\\*$"   dape-info-mode dape-repl-mode)))
+                  "^\\*dape.*\\*$"   dape-info-mode dape-repl-mode
+                  "^\\*elpaca-log\\*$" elpaca-log-mode elpaca-ui-mode)))
   ;; Shorten + tag popup names in the echo list. The echo shows
   ;; e.g. "HLP, [1:MSG], [2:OUT]" instead of long "*Help*"/"*Messages*" names.
   (defun my/popper-shorten (name)
@@ -727,9 +674,10 @@ sibling (e.g. `nerd-icons' must not be satisfied by `nerd-icons-dired')."
     (orderless-style-dispatchers '(my/orderless-fast-dispatch orderless-affix-dispatch))
     (orderless-matching-styles '(orderless-literal orderless-regexp))))
 (defun my/enable-orderless ()
-  (remove-hook 'minibuffer-setup-hook #'my/enable-orderless)
-  (require 'orderless)
-  (setq completion-styles '(orderless-fast basic)))
+  (when (and (require 'orderless nil t)
+             (fboundp 'orderless-fast))
+    (remove-hook 'minibuffer-setup-hook #'my/enable-orderless)
+    (setq completion-styles '(orderless-fast basic))))
 (add-hook 'minibuffer-setup-hook #'my/enable-orderless)
 
 ;; Inline ghost-text completion preview (Emacs 30). Enabled per-buffer in
@@ -763,12 +711,14 @@ sibling (e.g. `nerd-icons' must not be satisfied by `nerd-icons-dired')."
 
 (defun my/enable-completion-icons ()
   "Load + enable marginalia and minibuffer icons once, then unhook self."
-  (remove-hook 'minibuffer-setup-hook #'my/enable-completion-icons)
-  (marginalia-mode 1)
-  (nerd-icons-completion-mode 1)
-  (nerd-icons-completion-marginalia-setup))
+  (when (fboundp 'marginalia-mode)
+    (remove-hook 'minibuffer-setup-hook #'my/enable-completion-icons)
+    (marginalia-mode 1)
+    (when (fboundp 'nerd-icons-completion-mode)
+      (nerd-icons-completion-mode 1)
+      (nerd-icons-completion-marginalia-setup))))
 (add-hook 'minibuffer-setup-hook #'my/enable-completion-icons)
-(add-hook 'emacs-startup-hook
+(add-hook 'elpaca-after-init-hook
           (lambda () (run-with-idle-timer 0.1 nil #'my/enable-completion-icons)))
 
 ;; Embark: act on the thing at point / the current completion candidate (like a
@@ -1032,25 +982,6 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 ;; tab-bar restyles itself whenever `my/toggle-theme' switches themes.
 (add-hook 'enable-theme-functions #'my/style-tab-bar)
 
-(use-package doom-themes
-  :defer t
-  :config
-  (setq doom-themes-enable-bold t doom-themes-enable-italic t
-        ;; doom-rouge polish: flush modeline, brighter comments/tabs.
-        doom-rouge-padded-modeline nil
-        doom-rouge-brighter-comments t
-        doom-rouge-brighter-tabs t)
-  (doom-themes-org-config))
-;; doom-themes' quickstart autoload fails to register its theme dir (relies on
-;; `load-file-name', nil under the bundle), so `load-theme 'doom-rouge' can't
-;; find the file. Register the package dir (where the *-theme.el files live).
-(dolist (d (file-expand-wildcards (expand-file-name "doom-themes-*" package-user-dir)))
-  (when (file-directory-p d)
-    (add-to-list 'custom-theme-load-path (file-name-as-directory d))
-    (let ((sub (expand-file-name "themes" d)))   ; some versions use a subdir
-      (when (file-directory-p sub)
-        (add-to-list 'custom-theme-load-path (file-name-as-directory sub))))))
-
 (defun my/doom-theme-settings (theme &rest _)
   "Widen window dividers for `doom-rouge', thin them for other themes."
   (if (eq theme 'doom-rouge)
@@ -1062,7 +993,21 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
     (window-divider-mode 1)))
 (add-hook 'enable-theme-functions #'my/doom-theme-settings)
 
-(load-theme 'doom-rouge t)
+(use-package doom-themes
+  :ensure t
+  :demand t
+  :config
+  (setq doom-themes-enable-bold t doom-themes-enable-italic t
+        ;; doom-rouge polish: flush modeline, brighter comments/tabs.
+        doom-rouge-padded-modeline nil
+        doom-rouge-brighter-comments t
+        doom-rouge-brighter-tabs t)
+  (doom-themes-org-config)
+  (let ((base (expand-file-name "doom-themes/" elpaca-builds-directory)))
+    (dolist (d (list base (expand-file-name "themes/" base)))
+      (when (file-directory-p d)
+        (add-to-list 'custom-theme-load-path (file-name-as-directory d)))))
+  (load-theme 'doom-rouge t))
 
 ;;; ===========================================================================
 ;;; 13. Icons (nerd-icons) — glyphs served by the installed Nerd Font
@@ -1091,6 +1036,10 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 
 ;; You only use Git -- stop built-in VC probing every file with all backends.
 (setq vc-handled-backends '(Git))
+
+(use-package transient
+  :ensure (:host github :repo "magit/transient")
+  :defer t)
 
 (use-package magit                       ; loads on first C-x g
   :init (setq magit-define-global-key-bindings nil)
@@ -1128,7 +1077,7 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
          ("C-c g v" . diff-hl-show-hunk)
          ("C-c g s" . diff-hl-stage-current-hunk)
          ("C-c g r" . diff-hl-revert-hunk))
-  :init (add-hook 'emacs-startup-hook #'global-diff-hl-mode)
+  :init (add-hook 'elpaca-after-init-hook #'global-diff-hl-mode)
   :config
   (diff-hl-flydiff-mode 1)               ; live updates as you type
   (define-fringe-bitmap 'my/diff-hl-bar [224] nil nil '(center repeated))
@@ -1312,7 +1261,8 @@ otherwise delete the character ahead."
 ;;; 17. Customize writes go to their own file, not here
 ;;; ===========================================================================
 (setq custom-file (my/var "custom.el"))
-(when (file-exists-p custom-file)
-  (load custom-file nil 'nomessage))
+(add-hook 'elpaca-after-init-hook
+          (lambda () (when (file-exists-p custom-file)
+                       (load custom-file nil 'nomessage))))
 
 ;;; init.el ends here

@@ -438,7 +438,6 @@ later (project-x). Acts only on the current frame's project/tab."
 (global-set-key (kbd "M-g p")        #'my/next-error)
 (global-set-key (kbd "C-v")          #'my/scroll-up-half)
 (global-set-key (kbd "M-v")          #'my/scroll-down-half)
-(global-set-key (kbd "C-c t r")      #'my/hide-cursor-mode)   ; reader/pager mode
 (global-set-key (kbd "<C-f9>")       #'my/smart-compile)
 (global-set-key (kbd "<C-S-f9>")     #'recompile)
 (global-set-key (kbd "C-S-p")        #'execute-extended-command)
@@ -458,8 +457,6 @@ later (project-x). Acts only on the current frame's project/tab."
 (global-set-key (kbd "C-c J")        #'my/join-line)
 (global-set-key (kbd "C-c d")        #'duplicate-dwim)
 (global-set-key (kbd "M-Q")          #'my/unfill-paragraph)
-(global-set-key (kbd "C-c t t")      #'my/toggle-transparency)
-(global-set-key (kbd "C-c t T")      #'my/toggle-theme)
 (global-set-key (kbd "C-c i d")      #'my/insert-date)
 (global-set-key (kbd "C-c i t")      #'my/insert-time)
 (global-set-key (kbd "C-c a")        #'mark-whole-buffer)
