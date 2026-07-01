@@ -462,7 +462,7 @@ later (project-x). Acts only on the current frame's project/tab."
 (global-set-key (kbd "C-c t T")      #'my/toggle-theme)
 (global-set-key (kbd "C-c i d")      #'my/insert-date)
 (global-set-key (kbd "C-c i t")      #'my/insert-time)
-(global-set-key (kbd "C-c a")        #'mark-page)
+(global-set-key (kbd "C-c a")        #'mark-whole-buffer)
 (global-set-key (kbd "C-o")          my/window-prefix-map)
 (global-set-key (kbd "C-q")          my/kill-prefix-map)
 

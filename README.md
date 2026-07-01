@@ -104,7 +104,7 @@ A lean, fast, built-in-first Emacs 30 setup. No distribution, no framework — `
 |-----|--------|
 | `C-c t t` / `C-c t T` | Toggle transparency / theme (doom-rouge → modus → operandi → gruber) |
 | `C-c t r` / `C-c t l` | Reader mode / hide mode-line |
-| `C-c a` | Mark page |
+| `C-c a` | Mark whole buffer |
 | `C-c o` / `C-<f5>` | Open init / reload config |
 | `C-c r` / `<f6>` | Recent files / new scratch file by language |
 | `C-c R` / `C-c D` / `C-c y` | Rename file / delete file / copy path |

@@ -1,4 +1,8 @@
-;;; gptel-quick.el --- Fast look-up using gptel     -*- lexical-binding: t; -*-
+;;; gptel-quick.el --- Fast look-up using gptel     -*- lexical-binding: t; no-byte-compile: t; -*-
+;; no-byte-compile: this vendored file `(require 'gptel)', which is uninstalled
+;; while the LLM layer is dormant (no Copilot yet) -- compiling it would error.
+;; It's only loaded via the (currently disabled) my-llm module. Remove this flag
+;; when you enable gptel; it'll then compile/load normally.
 
 ;; Copyright (C) 2024  Karthik Chikmagalur
 

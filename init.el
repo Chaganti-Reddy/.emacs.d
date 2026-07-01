@@ -133,7 +133,7 @@ With DIR-P, PATH itself is the directory."
       package-quickstart t
       package-quickstart-file (my/emacs-path "var/package-quickstart.el")
       package-native-compile t
-      package-install-upgrade-built-in t)
+      package-install-upgrade-built-in t)   ; lets us install Org 9.8 over built-in
 
 ;; Windows GPG frequently lacks the ELPA signing keys, causing "Failed to
 ;; verify signature / no public key" on install. Package downloads still go
@@ -149,12 +149,85 @@ With DIR-P, PATH itself is the directory."
       use-package-expand-minimally t
       use-package-compute-statistics t) ; M-x use-package-report
 
-(if (file-exists-p package-quickstart-file)
+;; Every ELPA package the config needs. Built-ins (eglot, calc, org handled
+;; separately) and vendored packages in lisp/ (expreg, project-x, gptel-quick,
+;; llm-tool-collection) and vertico's bundled extensions are NOT listed.
+;; ADD NEW PACKAGES HERE too (belt-and-suspenders with each `use-package').
+(defvar my/ensure-packages
+  '(vertico orderless marginalia embark avy goto-chg multiple-cursors
+    hl-todo popper nerd-icons nerd-icons-completion nerd-icons-dired
+    magit diff-hl git-timemachine wgrep cape yasnippet yasnippet-capf
+    apheleia dape doom-themes vundo undo-fu-session org-modern org-appear
+    org-fragtog cdlatex engrave-faces auctex markdown-mode csv-mode
+    pdf-tools casual exec-path-from-shell
+    ;; LLM (gptel gptel-agent mcp)
+    )
+  "ELPA packages installed up front on a fresh machine.")
+
+(defvar my/install-max-attempts 5
+  "How many passes `my/install-packages' makes over still-missing packages.
+Downloads on flaky/corporate networks intermittently fail with \"No Data\";
+retrying the failed ones almost always succeeds.")
+
+(defun my/install-packages ()
+  "Install every missing package in `my/ensure-packages', retrying failures.
+Runs multiple passes (refreshing archives before each retry) so transient
+\"No Data\" download errors self-heal. Native compilation is OFF for the run
+(fast; and its async workers won't starve the downloads of file handles on
+Windows). Signature checks stay off on Windows. Idempotent -- skips installed."
+  (interactive)
+  (require 'package)
+  (let ((package-quickstart nil)
+        (package-native-compile nil)
+        (native-comp-jit-compilation nil)
+        (native-comp-deferred-compilation nil))
+    (unless package--initialized (package-initialize))
+    (unless package-archive-contents (package-refresh-contents))
+   (let ((todo (seq-remove #'package-installed-p my/ensure-packages))
+        (attempt 0))
+    (when todo
+      (display-buffer (messages-buffer))
+      (message "==== First-time setup: installing %d package(s). ONE-TIME, a few \
+minutes. Watch this log; DO NOT close Emacs until you see 'all present'. ===="
+               (length todo))
+      (redisplay t))
+    (while (and todo (< attempt my/install-max-attempts))
+      (setq attempt (1+ attempt))
+      (when (> attempt 1) 
+        (message "my/install-packages: retry %d for %d package(s): %S"
+                 attempt (length todo) todo)
+        (ignore-errors (package-refresh-contents)))
+      (dolist (pkg todo)
+        (condition-case _ (package-install pkg) (error nil)))
+      (setq todo (seq-remove #'package-installed-p todo)))
+    (when (fboundp 'package-quickstart-refresh)
+      (ignore-errors (package-quickstart-refresh)))
+    (if todo
+        (message "my/install-packages: STILL missing after %d attempts: %S -- \
+run `M-x my/install-packages' again (network was flaky)." attempt todo)
+      (message "my/install-packages: all present. Restart Emacs.")))))
+
+(defun my/packages-installed-p ()
+  "Non-nil only if EVERY package in `my/ensure-packages' is present on disk.
+Unbiased completeness check (no single sentinel): scans `package-user-dir' for
+a `NAME-<version>' directory per package. `NAME-[0-9]' avoids matching a longer
+sibling (e.g. `nerd-icons' must not be satisfied by `nerd-icons-dired')."
+  (let ((dirs (ignore-errors (directory-files package-user-dir))))
+    (and dirs
+         (seq-every-p
+          (lambda (p)
+            (let ((re (concat "\\`" (regexp-quote (symbol-name p)) "-[0-9]")))
+              (seq-find (lambda (d) (string-match-p re d)) dirs)))
+          my/ensure-packages))))
+(if (and (file-exists-p package-quickstart-file)
+         (my/packages-installed-p))
     (progn
       (load package-quickstart-file nil 'nomessage)
       (setq use-package-ensure-function #'ignore))
   (require 'package)
-  (package-initialize))
+  (let ((package-quickstart nil))   ; silence false "unnecessary init" warning
+    (package-initialize))
+  (my/install-packages))
 
 ;; Populate the archive list lazily -- only the first time something installs.
 (defun my/ensure-package-archives (&rest _)
@@ -206,7 +279,9 @@ With DIR-P, PATH itself is the directory."
 (my/load 'setup-windows)          ; display-buffer placement rules
 (my/load 'my-coding)              ; tree-sitter + eglot + diagnostics
 (my/load 'my-writing)             ; org (research/latex) + markdown
-;; (my/load 'my-llm)                 ; gptel LLM chat/rewrite
+;; (my/load 'my-llm)              ; gptel LLM -- DEAD CODE until Copilot license.
+;;   lisp/my-llm.el is kept as-is; uncomment this + re-add gptel/gptel-agent/mcp
+;;   to `my/ensure-packages' when you have Copilot, then M-x my/install-packages.
 
 ;; Run a server so `emacsclient' (git EDITOR, "open in Emacs") reuses this
 ;; session. Start it once Emacs is idle -- keeps it off the startup path.
@@ -597,7 +672,7 @@ With DIR-P, PATH itself is the directory."
   :bind (:map vertico-map
               ("C-c C-o" . embark-export)   ; send candidates to a buffer (e.g. dired)
               ("M-*"     . embark-act-all)) ; act on ALL candidates at once
-  :init (vertico-mode))
+  :config (vertico-mode))
 ;; Ido-like path editing in the minibuffer: RET descends, DEL ascends a dir.
 ;; (Extensions ship inside the vertico package -- :ensure nil, just require.)
 (use-package vertico-directory
@@ -611,7 +686,7 @@ With DIR-P, PATH itself is the directory."
 (use-package vertico-mouse
   :ensure nil
   :after vertico
-  :init (vertico-mouse-mode))
+  :config (vertico-mouse-mode))
 ;; vertico-repeat: resume the LAST minibuffer session (candidates + input). Save
 ;; each session to history; `C-x .' replays it.
 (use-package vertico-repeat

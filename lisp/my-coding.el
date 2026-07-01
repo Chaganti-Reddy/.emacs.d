@@ -215,12 +215,12 @@
 (setq cape-dabbrev-check-other-buffers nil)
 (setq cape-dict-file (my/var "dict/english-words.txt")
       ispell-alternate-dictionary (my/var "dict/english-words.txt"))
-(setq ispell-program-name
-      (or (executable-find "hunspell") (executable-find "aspell")
-          (executable-find "ispell") ispell-program-name))
-(when (and (stringp ispell-program-name)
-           (string-match-p "hunspell" ispell-program-name))
-  (setenv "DICTIONARY" "en_US"))
+(let ((speller (or (executable-find "hunspell") (executable-find "aspell")
+                   (executable-find "ispell"))))
+  (when speller
+    (setq ispell-program-name speller)
+    (when (string-match-p "hunspell" speller)
+      (setenv "DICTIONARY" "en_US"))))
 
 ;; Fetch the word list (dwyl/english-words) into var/ on demand -- cross-OS via
 ;; `url-copy-file', no shell. auto-fetched once if absent.

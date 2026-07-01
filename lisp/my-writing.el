@@ -1,12 +1,23 @@
 ;;; my-writing.el --- Org (research/LaTeX/calc) + Markdown -*- lexical-binding: t; -*-
 
 ;;; ---------------------------------------------------------------------------
-;;; Org Latest
+;;; Org 9.8 (from GNU ELPA -- upgrades the built-in)
 ;;; ---------------------------------------------------------------------------
-;; :ensure can't upgrade a built-in, so install Org 9.8 explicitly once.
+;; :ensure can't upgrade a built-in, so install Org 9.8 explicitly once. The
+;; ELPA org dir is put on `load-path' ahead of built-in Org in early-init, so
+;; the newer version loads first.
 (when (and (featurep 'package)
            (not (package-installed-p 'org '(9 8))))
-  (ignore-errors (package-install 'org)))
+  (let ((package-native-compile nil)
+        (native-comp-jit-compilation nil))
+    (ignore-errors (package-install 'org))))
+(when-let* ((dir (car (file-expand-wildcards
+                       (expand-file-name "org-[0-9]*" package-user-dir)))))
+  (add-to-list 'load-path dir)
+  (add-to-list 'native-comp-jit-compilation-deny-list
+               (concat "\\`" (regexp-quote (file-name-as-directory dir))))
+  (dolist (f (directory-files-recursively dir "\\.elc\\'"))
+    (ignore-errors (delete-file f))))
 
 (use-package org
   :ensure nil
@@ -222,43 +233,66 @@
   (define-key LaTeX-mode-map (kbd "C-c C-x") preview-map))
 
 ;; --- LaTeX live auto-preview (the `org-fragtog' analogue for .tex) ---------
-;; AUCTeX already auto-REVEALS a preview's source when point enters it and
-;; re-hides it on leave (`preview-auto-reveal', default on), but it never
-;; REGENERATES previews after edits. This minor mode adds that half: a
-;; debounced idle timer re-previews the section around point once typing
-;; stops, so editing a formula and moving away re-renders it -- no manual
-;; C-c C-x C-s.
+;; AUCTeX auto-REVEALS a preview's source when point enters it and re-hides it
+;; on leave (`preview-auto-reveal', default on), but never REGENERATES after an
+;; edit. This mode adds that -- the smart, targeted way:
+;;   * preview ONLY math constructs (inline $...$, \(\), \[\], display envs),
+;;     never prose, never the whole section;
+;;   * preview ONLY the one you actually edited, and only once you LEAVE it
+;;     (so the formula never collapses under you mid-edit);
+;;   * via `preview-at-point', so AUCTeX finds the construct's exact bounds --
+;;     no region mis-alignment, no swallowed text.
+;; `texmathp' tells us when point is in math and (via `texmathp-why') where the
+;; construct began; we preview that spot on the transition math -> not-math.
 (defvar-local my/latex-preview-timer nil)
-(defun my/latex-auto-preview--schedule (&rest _)
-  "Debounce: (re)arm the idle preview timer after an edit.
-Bound to `after-change-functions'."
-  (when (timerp my/latex-preview-timer) (cancel-timer my/latex-preview-timer))
-  (setq my/latex-preview-timer
-        (run-with-idle-timer 1.0 nil #'my/latex-auto-preview--run
-                             (current-buffer))))
+(defvar-local my/latex-preview--math-start nil
+  "Buffer position where the math construct point is in began, else nil.")
+(defvar-local my/latex-preview--dirty nil
+  "Non-nil once the current math construct has been edited.")
 
-(defun my/latex-auto-preview--run (buf)
-  "Re-preview the current section once editing stops -- but only when point is
-OUTSIDE math, so the formula you're mid-editing never collapses under you.
-Uses `preview-section' (whole environments), NOT an ad-hoc region: region
-scoping mis-aligned boundaries (leading spaces, partial envs) and swallowed
-surrounding text like `\\end{document}'. Section-level always renders correctly;
-it only fires after an edit, when you've left math, so it isn't constant."
+(defun my/latex-auto-preview--after-change (&rest _)
+  "Mark the math construct at point as edited (so leaving it re-previews)."
+  (when (and (fboundp 'texmathp) (texmathp))
+    (setq my/latex-preview--dirty t)))
+
+(defun my/latex-auto-preview--post-command ()
+  "Track the math construct at point; preview it after an edited one is left."
+  (when (bound-and-true-p my/latex-auto-preview-mode)
+    (if (and (fboundp 'texmathp) (texmathp))
+        ;; Inside math: remember where this construct starts.
+        (setq my/latex-preview--math-start
+              (and (consp texmathp-why) (cdr texmathp-why)))
+      ;; Outside math: if we just left a construct we edited, preview just it.
+      (when (and my/latex-preview--math-start my/latex-preview--dirty)
+        (let ((pos my/latex-preview--math-start))
+          (setq my/latex-preview--math-start nil
+                my/latex-preview--dirty nil)
+          (when (timerp my/latex-preview-timer) (cancel-timer my/latex-preview-timer))
+          (setq my/latex-preview-timer
+                (run-with-idle-timer 0.3 nil
+                                     #'my/latex-auto-preview--at
+                                     (current-buffer) pos)))))))
+
+(defun my/latex-auto-preview--at (buf pos)
+  "Preview the single LaTeX construct around POS in BUF."
   (when (buffer-live-p buf)
     (with-current-buffer buf
-      (when (and (bound-and-true-p my/latex-auto-preview-mode)
-                 (not (and (fboundp 'texmathp) (texmathp))))
-        (ignore-errors (preview-section))))))
+      (when (bound-and-true-p my/latex-auto-preview-mode)
+        (save-excursion
+          (goto-char (min pos (point-max)))
+          (ignore-errors (preview-at-point)))))))
 
 (define-minor-mode my/latex-auto-preview-mode
-  "Re-render the LaTeX preview around point shortly after edits stop.
-Pairs with AUCTeX's `preview-auto-reveal' (source shown while point is inside
-a preview, image once you leave) for a live, `org-fragtog'-like feel."
+  "Live-render the LaTeX math construct you just edited, on leaving it.
+Targets one construct at a time via `preview-at-point' and pairs with AUCTeX's
+`preview-auto-reveal' for an `org-fragtog'-like feel."
   :lighter " LivePrv"
   (if my/latex-auto-preview-mode
       (progn
-        (add-hook 'after-change-functions #'my/latex-auto-preview--schedule nil t)
-        ;; Render whatever math is already in the file shortly after opening.
+        (add-hook 'after-change-functions #'my/latex-auto-preview--after-change nil t)
+        (add-hook 'post-command-hook #'my/latex-auto-preview--post-command nil t)
+        ;; Render math already in the file shortly after opening (whole buffer
+        ;; once -- this is the only bulk pass; edits after are per-construct).
         (let ((buf (current-buffer)))
           (run-with-idle-timer
            0.8 nil
@@ -267,7 +301,8 @@ a preview, image once you leave) for a live, `org-fragtog'-like feel."
                (with-current-buffer buf
                  (when (bound-and-true-p my/latex-auto-preview-mode)
                    (ignore-errors (preview-buffer)))))))))
-    (remove-hook 'after-change-functions #'my/latex-auto-preview--schedule t)
+    (remove-hook 'after-change-functions #'my/latex-auto-preview--after-change t)
+    (remove-hook 'post-command-hook #'my/latex-auto-preview--post-command t)
     (when (timerp my/latex-preview-timer) (cancel-timer my/latex-preview-timer))))
 
 (add-hook 'LaTeX-mode-hook #'my/latex-auto-preview-mode)

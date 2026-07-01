@@ -25,6 +25,17 @@ elsewhere `alpha-background' keeps text opaque.")
 
 ;; We initialize packages ourselves in init.el.
 (setq package-enable-at-startup nil)
+(setq package-user-dir (expand-file-name "var/elpa/" user-emacs-directory)
+      package-gnupghome-dir (expand-file-name "var/elpa/gnupg/" user-emacs-directory))
+
+;; Org 9.8 is installed from ELPA to upgrade the built-in (9.7.11). Put its
+;; directory on `load-path' BEFORE Emacs's bundled Org, here in early-init --
+;; the earliest point -- so the first `(require 'org)' / any Org autoload gets
+;; 9.8, not the built-in. Without this, built-in Org loads first and you get the
+;; "Org version mismatch" warning. Glob so it survives version bumps.
+(let ((org-dir (car (file-expand-wildcards
+                     (expand-file-name "var/elpa/org-[0-9]*" user-emacs-directory)))))
+  (when org-dir (add-to-list 'load-path org-dir)))
 
 ;;; --- First frame: chrome off, font/size/maximize/colors baked in ----------
 ;; Setting these in `default-frame-alist' means the frame is created this way
@@ -76,6 +87,8 @@ elsewhere `alpha-background' keeps text opaque.")
 (when (fboundp 'startup-redirect-eln-cache)
   (startup-redirect-eln-cache "var/eln-cache/"))
 (setq native-comp-async-report-warnings-errors 'silent)
+(when IS-WINDOWS
+  (setq native-comp-async-jobs-number 1))
 
 (set-language-environment "UTF-8")
 (prefer-coding-system 'utf-8)

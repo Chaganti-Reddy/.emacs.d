@@ -1,4 +1,8 @@
-;;; my-llm.el --- LLM chat / rewrite via gptel (keyless Copilot) -*- lexical-binding: t; -*-
+;;; my-llm.el --- LLM chat / rewrite via gptel (keyless Copilot) -*- lexical-binding: t; no-byte-compile: t; -*-
+;; NOTE: `no-byte-compile: t' is deliberate. While this module is DORMANT (not
+;; loaded -- see the commented `(my/load 'my-llm)' in init.el), byte-compiling
+;; it would macro-expand its `(use-package ... :ensure t)' forms and INSTALL
+;; gptel/gptel-agent/mcp.
 
 ;; gptel = the Emacs LLM client. This setup is KEYLESS: it authenticates through
 ;; your GitHub Copilot subscription (OAuth device login, `M-x gptel-gh-login'
