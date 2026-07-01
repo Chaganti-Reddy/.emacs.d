@@ -217,21 +217,25 @@ With DIR-P, PATH itself is the directory."
 
 (defun my/preload-all-packages ()
   "Eagerly load every configured package (for a daemon's clients)."
-  (let ((t0 (current-time)))
-    (dolist (lib '("vertico" "orderless" "marginalia" "embark" "avy" "goto-chg"
-                   "multiple-cursors" "hl-todo" "popper" "nerd-icons"
-                   "nerd-icons-completion" "nerd-icons-dired" "transient"
-                   "magit" "magit-section" "git-timemachine" "diff-hl" "wgrep"
-                   "cape" "yasnippet" "yasnippet-capf" "apheleia" "dape"
-                   "doom-themes" "vundo" "undo-fu-session" "casual" "expreg"
-                   "project-x" "org" "ox" "ol" "ob-core" "org-capture"
-                   "org-agenda" "org-modern" "org-modern-indent" "org-appear"
-                   "cdlatex" "engrave-faces" "latex" "reftex" "markdown-mode"
-                   "csv-mode" "denote" "denote-journal" "pdf-tools"
-                   "eglot" "flymake" "dired" "ibuffer" "project"))
-      (when (locate-library lib) (ignore-errors (load-library lib))))
-    (message "[Daemon: preloaded packages in %.1fs]"
-             (float-time (time-subtract (current-time) t0)))))
+  (run-at-time
+   1 nil
+   (lambda ()
+     (let ((t0 (current-time)))
+       (dolist (lib '("vertico" "orderless" "marginalia" "embark" "avy" "goto-chg"
+                      "multiple-cursors" "hl-todo" "popper" "nerd-icons"
+                      "nerd-icons-completion" "nerd-icons-dired" "transient"
+                      "magit" "magit-section" "git-timemachine" "diff-hl" "wgrep"
+                      "cape" "yasnippet" "yasnippet-capf" "apheleia" "dape"
+                      "doom-themes" "vundo" "undo-fu-session" "casual" "expreg"
+                      "project-x" "org" "ox" "ol" "ob-core" "org-capture"
+                      "org-agenda" "org-modern" "org-modern-indent" "org-appear"
+                      "cdlatex" "engrave-faces" "latex" "reftex" "markdown-mode"
+                      "csv-mode" "denote" "denote-journal" "pdf-tools"
+                      "eglot" "flymake" "dired" "ibuffer" "project"))
+         (when (locate-library lib) (ignore-errors (load-library lib))))
+       (with-temp-buffer (when (fboundp 'org-mode) (org-mode)))
+       (message "[Daemon: preloaded packages in %.1fs]"
+                (float-time (time-subtract (current-time) t0)))))))
 (when (daemonp)
   (add-hook 'elpaca-after-init-hook #'my/preload-all-packages))
 
@@ -1058,13 +1062,16 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 ;; Windows: process spawning is magit's bottleneck -- point it straight at
 ;; git.exe, and expose Git's bundled Unix tools (diff/grep) for diff-hl/ediff.
 (when IS-WINDOWS
-  (let ((git-usr "C:/Program Files/Git/usr/bin")
-        (git-exe "C:/Program Files/Git/bin/git.exe"))
-    (when (file-directory-p git-usr)
-      (add-to-list 'exec-path git-usr)
-      (setenv "PATH" (concat git-usr ";" (getenv "PATH"))))
-    (when (file-exists-p git-exe)
-      (setq magit-git-executable git-exe))))
+  (when-let* ((git-exe (executable-find "git")))
+    (setq magit-git-executable git-exe))
+  (unless (executable-find "diff")
+    (when-let* ((usr (seq-find #'file-directory-p
+                               (list "C:/Program Files/Git/usr/bin"
+                                     "C:/Program Files (x86)/Git/usr/bin"
+                                     (expand-file-name "~/scoop/apps/git/current/usr/bin")
+                                     (expand-file-name "~/AppData/Local/Programs/Git/usr/bin")))))
+      (add-to-list 'exec-path usr)
+      (setenv "PATH" (concat usr path-separator (getenv "PATH"))))))
 
 ;; You only use Git -- stop built-in VC probing every file with all backends.
 (setq vc-handled-backends '(Git))

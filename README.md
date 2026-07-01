@@ -141,6 +141,43 @@ A lean, fast, built-in-first Emacs 30 setup. No distribution, no framework — `
 2. Restart — elpaca installs any new declaration on the next start.
 3. Update later with `M-x elpaca-update-all`. Config-only changes need no install.
 
+## Running as a daemon (recommended for instant frames)
+
+The config detects a daemon (`daemonp`) and, once elpaca has activated everything,
+**eagerly preloads every package** — so the heavy work happens once at daemon boot
+and every `emacsclient` frame afterward opens instantly. Interactive (non-daemon)
+sessions skip this and stay lean. There is **no per-session `server-start`** — the
+daemon *is* the server.
+
+**Connect to it (any OS):** the `-a ""` trick starts a daemon on the first call if
+none is running, then connects — so you never manage it manually:
+
+```sh
+emacsclient -c  -a ""            # new GUI frame  (Windows: emacsclientw.exe -c -n -a "")
+emacsclient -t  -a ""            # new terminal frame
+```
+
+Set Git's editor to it: `git config --global core.editor "emacsclient"`.
+
+**Update packages from a terminal** (talks to the running daemon):
+
+```sh
+emacsclient -e '(elpaca-update-all)'
+```
+
+### Start the daemon at login
+
+- **Linux (systemd, ships with Emacs):**
+  ```sh
+  systemctl --user enable --now emacs
+  ```
+- **macOS:** `brew services start emacs` — or a `~/Library/LaunchAgents/emacs.plist`
+  running `emacs --fg-daemon` with `RunAtLoad`/`KeepAlive`.
+- **Windows:** Task Scheduler → Basic Task → trigger *When I log on* → program
+  `runemacs.exe`, arguments `--daemon`. Desktop shortcut:
+  `emacsclientw.exe -c -n -a ""` (starts a daemon if none, else connects).
+  (`runemacs.exe` = no console window; `emacsclientw.exe` = windowed client.)
+
 ## Notes
 
 - Packages are managed by **elpaca** — git clones + builds under `var/elpaca/`, activated after init (so package-touching startup code hangs off `elpaca-after-init-hook`).
