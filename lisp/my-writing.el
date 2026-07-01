@@ -1,26 +1,42 @@
 ;;; my-writing.el --- Org (research/LaTeX/calc) + Markdown -*- lexical-binding: t; -*-
 
 ;;; ---------------------------------------------------------------------------
-;;; Org 9.8 (from GNU ELPA -- upgrades the built-in)
+;;; Org (tecosaur dev branch, via elpaca)
 ;;; ---------------------------------------------------------------------------
-;; :ensure can't upgrade a built-in, so install Org 9.8 explicitly once. The
-;; ELPA org dir is put on `load-path' ahead of built-in Org in early-init, so
-;; the newer version loads first.
-(when (and (featurep 'package)
-           (not (package-installed-p 'org '(9 8))))
-  (let ((package-native-compile nil)
-        (native-comp-jit-compilation nil))
-    (ignore-errors (package-install 'org))))
-(when-let* ((dir (car (file-expand-wildcards
-                       (expand-file-name "org-[0-9]*" package-user-dir)))))
-  (add-to-list 'load-path dir)
-  (add-to-list 'native-comp-jit-compilation-deny-list
-               (concat "\\`" (regexp-quote (file-name-as-directory dir))))
-  (dolist (f (directory-files-recursively dir "\\.elc\\'"))
-    (ignore-errors (delete-file f))))
+(defun my/org-enable-live-latex-preview ()
+  "Enable tecosaur Org's live LaTeX preview minor mode in this buffer.
+Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
+`org-latex-preview-mode'); no-op on stock Org that lacks both."
+  (cond ((fboundp 'org-latex-preview-mode)      (org-latex-preview-mode 1))
+        ((fboundp 'org-latex-preview-auto-mode) (org-latex-preview-auto-mode 1))))
 
 (use-package org
-  :ensure nil
+  :ensure (org
+           :remotes ("tecosaur"
+                     :repo "https://git.tecosaur.net/tec/org-mode.git"
+                     :branch "dev")
+           :files (:defaults ("etc/styles/" "etc/styles/*" "doc/*.texi"))
+           :build t
+           :pre-build
+           (progn
+             (with-temp-file "org-version.el"
+               (require 'lisp-mnt)
+               (let ((version
+                      (with-temp-buffer
+                        (insert-file-contents "lisp/org.el")
+                        (lm-header "version")))
+                     (git-version
+                      (string-trim
+                       (with-temp-buffer
+                         (call-process "git" nil t nil "rev-parse" "--short" "HEAD")
+                         (buffer-string)))))
+                 (insert
+                  (format "(defun org-release () \"The release version of Org.\" %S)\n" version)
+                  (format "(defun org-git-version () \"The truncate git commit hash of Org mode.\" %S)\n" git-version)
+                  "(provide 'org-version)\n")))
+             (require 'elpaca-menu-org)
+             (elpaca-menu-org--build))
+           :pin nil)
   :defer t
   :init
   (setq org-directory (if IS-WINDOWS "D:/Org" "~/Org")
@@ -30,6 +46,7 @@
         org-modules nil)
   :hook ((org-mode . visual-line-mode)
          (org-mode . org-cdlatex-mode)      ; fast math input (e.g. `ab' -> a_b)
+         (org-mode . my/org-enable-live-latex-preview)
          (org-mode . (lambda () (setq-local tab-always-indent t))))
   :custom
   (org-startup-indented t)
@@ -43,7 +60,7 @@
   (org-src-content-indentation 0)
   (org-confirm-babel-evaluate nil)
   (org-return-follows-link t)
-  (org-startup-with-latex-preview nil)
+  (org-startup-with-latex-preview t)
   (org-ellipsis " ▾")
   (org-fontify-quote-and-verse-blocks t)
   (org-fontify-whole-heading-line t)
@@ -57,20 +74,23 @@
       (1 font-lock-keyword-face) (2 font-lock-constant-face))))
   (advice-add 'org-try-cdlatex-tab :around
               (lambda (orig &rest _) (ignore-errors (funcall orig))))
-  (setq org-format-latex-options
-        (plist-put
-         (plist-put
-          (plist-put org-format-latex-options :scale 1.0)
-          :foreground 'default)
-         :background 'default))
-  (setq org-preview-latex-default-process
-        (if IS-WINDOWS
-            (cond ((executable-find "dvipng")  'dvipng)
-                  ((executable-find "dvisvgm") 'dvisvgm)
-                  (t org-preview-latex-default-process))
-          (cond ((executable-find "dvisvgm") 'dvisvgm)
-                ((executable-find "dvipng")  'dvipng)
-                (t org-preview-latex-default-process))))
+  (when (boundp 'org-latex-preview-numbered)
+    (setq org-latex-preview-numbered t))
+  (when (boundp 'org-latex-preview-mode-display-live)
+    (setq org-latex-preview-mode-display-live t))
+  (when (boundp 'org-latex-preview-mode-update-delay)
+    (setq org-latex-preview-mode-update-delay 0.25))
+  (when (boundp 'org-latex-preview-process-active-indicator)
+    (setq org-latex-preview-process-active-indicator 'face))
+  (when (boundp 'org-latex-preview-process-precompile)
+    (setq org-latex-preview-process-precompile t))
+  (when (boundp 'org-latex-preview-cache)
+    (setq org-latex-preview-cache 'persist))
+  (when (boundp 'org-latex-preview-appearance-options)
+    (setq org-latex-preview-appearance-options
+          (plist-put (plist-put org-latex-preview-appearance-options
+                                :page-width 0.8)
+                     :foreground 'auto)))
   ;; Babel langs (calc evaluates `#+begin_src calc'; embedded calc is C-x * e).
   (setq org-babel-load-languages
         '((emacs-lisp . t) (python . t) (C . t) (shell . t) (calc . t)))
@@ -87,10 +107,22 @@
   :custom
   (org-modern-star 'replace)
   (org-modern-hide-stars nil)
-  (org-modern-table nil)
+  (org-modern-table t)
+  (org-modern-timestamp t)
+  (org-modern-tag t)
+  (org-modern-priority t)
+  (org-modern-todo t)
+  (org-modern-checkbox t)
+  (org-modern-list '((?+ . "◦") (?- . "–") (?* . "•")))
   (org-modern-keyword "‣ ")
+  (org-modern-block-name t)
   (org-modern-horizontal-rule t)
-  (org-modern-todo t))
+  (org-modern-progress t))
+
+(use-package org-modern-indent
+  :ensure (org-modern-indent :host github :repo "jdtsmith/org-modern-indent")
+  :after org-modern
+  :hook (org-mode . org-modern-indent-mode))
 
 (defun my/scale-org-headings (&rest _)
   (when (facep 'org-level-1)
@@ -117,10 +149,6 @@
         cdlatex-math-modify-alist
         '((?k "\\mathfrak") (?b "\\mathbf") (?B "\\mathbb") (?t "\\text"))))
 
-;; Auto-toggle a fragment's LaTeX preview as point enters/leaves it -> live feel.
-(use-package org-fragtog
-  :after org
-  :hook (org-mode . org-fragtog-mode))
 
 ;; org-appear: reveal hidden emphasis/link/sub-super markers ONLY on the element
 ;; at point (so editing *bold*/[[links]]/_x_ isn't blind). Pairs with
@@ -133,24 +161,10 @@
   (org-appear-autolinks t)
   (org-appear-autosubmarkers t))
 
-;; Render existing fragments shortly AFTER opening (on idle, not on the open
-;; path). Without this, `org-startup-with-latex-preview nil' means a freshly
-;; opened file shows no previews until you move the cursor through each fragment.
-(defun my/org-preview-buffer-on-idle ()
-  "Preview all LaTeX fragments in this Org buffer once Emacs is idle."
-  (when (derived-mode-p 'org-mode)
-    (let ((buf (current-buffer)))
-      (run-with-idle-timer
-       0.4 nil
-       (lambda ()
-         (when (buffer-live-p buf)
-           (with-current-buffer buf
-             (ignore-errors (org-latex-preview '(16))))))))))  ; 16 = whole buffer
-(add-hook 'org-mode-hook #'my/org-preview-buffer-on-idle)
 
-(add-hook 'emacs-startup-hook
-          (lambda ()
-            (run-with-idle-timer 1.5 nil (lambda () (require 'org nil t)))))
+;; Do NOT pre-`require' org on a timer -- under elpaca that could load Emacs's
+;; BUILT-IN Org before elpaca activates the tecosaur build (reviving the version
+;; mismatch). elpaca/use-package loads org (on activation or first .org file).
 
 ;; Auto-tangle on save when the file has `#+auto_tangle: t' (built-in babel,
 ;; no extra package). Bind `before-save-hook' locally in org buffers.
@@ -164,12 +178,82 @@
 (add-hook 'org-mode-hook
           (lambda () (add-hook 'before-save-hook #'my/org-auto-tangle nil t)))
 
-;; org-capture: fast timestamped note into an inbox file (C-c c). Lightweight --
-;; no agenda/PKM machinery.
+;; org-capture: fast timestamped note into an inbox file (C-c c).
 (setq org-capture-templates
       '(("n" "Note" entry (file "inbox.org")
-         "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :empty-lines 1)))
+         "* %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :empty-lines 1)
+        ("t" "Todo" entry (file "inbox.org")
+         "* TODO %?\n:PROPERTIES:\n:CREATED: %U\n:END:\n" :empty-lines 1)))
 (global-set-key (kbd "C-c c") #'org-capture)
+
+;;; ---------------------------------------------------------------------------
+;;; Org Agenda
+;;; ---------------------------------------------------------------------------
+(use-package org-agenda
+  :ensure nil
+  :defer t
+  :bind ("C-c A" . org-agenda)
+  :hook (org-agenda-mode . hl-line-mode)
+  :config
+  (setq org-agenda-files (when (file-directory-p org-directory) (list org-directory))
+        org-agenda-window-setup 'current-window
+        org-agenda-restore-windows-after-quit t
+        org-agenda-start-on-weekday nil
+        org-agenda-span 'week
+        org-agenda-skip-scheduled-if-done t
+        org-agenda-skip-deadline-if-done t
+        org-agenda-block-separator ?─
+        org-agenda-tags-column 'auto
+        org-agenda-todo-keyword-format "%-1s"
+        org-agenda-breadcrumbs-separator " ▸ "
+        org-agenda-scheduled-leaders '("" "Sched.%2dx: ")
+        org-agenda-deadline-leaders '("Deadline: " "In %d d: " "%d d ago: ")
+        org-agenda-current-time-string "◀── now ──────────────────────────────"
+        org-agenda-time-grid
+        '((daily today require-timed)
+          (700 900 1100 1300 1500 1700 1900 2100)
+          " ┄┄┄┄┄ " "┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄")
+        org-agenda-show-current-time-in-grid t))
+
+;;; ---------------------------------------------------------------------------
+;;; Denote -- lightweight, plain-text, linked notes (NO database).
+;;; ---------------------------------------------------------------------------
+(use-package denote
+  :defer t
+  :bind (("C-c n n" . denote)                    ; new note
+         ("C-c n c" . denote-region)             ; region -> new note
+         ("C-c n N" . denote-type)               ; new note, choose file type
+         ("C-c n d" . denote-date)               ; new note for a date
+         ("C-c n s" . denote-subdirectory)       ; new note in a subdir
+         ("C-c n z" . denote-signature)          ; new note with a signature
+         ("C-c n o" . denote-open-or-create)     ; jump to / create a note
+         ("C-c n l" . denote-link)               ; insert a link to a note
+         ("C-c n L" . denote-add-links)          ; insert links matching a regexp
+         ("C-c n b" . denote-backlinks)          ; buffer of notes linking here
+         ("C-c n r" . denote-rename-file)
+         ("C-c n R" . denote-rename-file-using-front-matter))
+  :hook (dired-mode . denote-dired-mode)         ; fontify denote names in dired
+  :init
+  (setq denote-directory (expand-file-name "notes/" org-directory))
+  :config
+  (setq denote-known-keywords '("emacs" "work" "research" "ideas" "journal")
+        denote-infer-keywords t
+        denote-sort-keywords t
+        denote-file-type 'org
+        denote-prompts '(title keywords)
+        denote-date-prompt-use-org-read-date t
+        denote-backlinks-show-context t
+        denote-dired-directories (list denote-directory))
+  (denote-rename-buffer-mode 1))
+
+;; Journaling on top of denote.
+(use-package denote-journal
+  :defer t
+  :bind ("C-c n j" . denote-journal-new-or-existing-entry)
+  :init
+  (setq denote-journal-directory
+        (expand-file-name "journal/" (expand-file-name "notes/" org-directory))
+        denote-journal-keyword "journal"))
 
 ;; engrave-faces: export Org src blocks to PDF in your Emacs THEME colors (no
 ;; Python/minted/-shell-escape needed -- Windows-friendly). Used by ox-latex.
@@ -180,6 +264,9 @@
 ;;; ---------------------------------------------------------------------------
 ;;; Markdown
 ;;; ---------------------------------------------------------------------------
+(use-package csv-mode
+  :mode "\\.csv\\'")
+
 (use-package markdown-mode
   :mode (("README\\.md\\'" . gfm-mode)
          ("\\.md\\'"        . gfm-mode))
@@ -369,11 +456,25 @@ Uses the region if active, else the $...$ fragment at point, else the line."
         calc-trail-window-hook (lambda () (display-buffer (current-buffer)))))
 ;; Inline algebraic evaluation in any buffer: C-x * e  (calc-embedded, built-in).
 
-;; casual: a discoverable transient menu for Calc (and more) -- press `C-o' in
-;; the Calc buffer to see every operation. Great while learning Calc.
-(use-package casual
-  :defer t
-  :bind (:map calc-mode-map ("C-o" . casual-calc-tmenu)))
+(use-package casual :defer t)
+(with-eval-after-load 'calc
+  (define-key calc-mode-map (kbd "C-o") #'casual-calc-tmenu))
+(with-eval-after-load 'dired
+  (define-key dired-mode-map (kbd "C-o") #'casual-dired-tmenu))
+(with-eval-after-load 'info
+  (define-key Info-mode-map (kbd "C-o") #'casual-info-tmenu))
+(with-eval-after-load 'isearch
+  (define-key isearch-mode-map (kbd "C-o") #'casual-isearch-tmenu))
+(with-eval-after-load 'ibuffer
+  (define-key ibuffer-mode-map (kbd "C-o") #'casual-ibuffer-tmenu))
+(with-eval-after-load 'bookmark
+  (define-key bookmark-bmenu-mode-map (kbd "C-o") #'casual-bookmarks-tmenu))
+(with-eval-after-load 're-builder
+  (define-key reb-mode-map (kbd "C-o") #'casual-re-builder-tmenu))
+(with-eval-after-load 'org-agenda
+  (define-key org-agenda-mode-map (kbd "C-o") #'casual-agenda-tmenu))
+(global-set-key (kbd "C-c O") #'casual-editkit-main-tmenu) 
+(global-set-key (kbd "M-g a") #'casual-avy-tmenu)
 
 (provide 'my-writing)
 ;;; my-writing.el ends here
