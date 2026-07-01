@@ -91,9 +91,14 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
             mwheel-scroll scroll-other-window scroll-other-window-down))
     (plist-put org-latex-preview-appearance-options :scale 1.0)
     (plist-put org-latex-preview-appearance-options :zoom
-               (+ (/ (face-attribute 'default :height) 100.0) 0.15))
+               (+ (/ my/font-size 10.0) 0.15))
     (plist-put org-latex-preview-appearance-options :page-width 0.8)
     (plist-put org-latex-preview-appearance-options :foreground 'auto)
+    (advice-add 'org-latex-preview--tex-styled :filter-args
+                (lambda (args)
+                  (list (nth 0 args) (nth 1 args)
+                        (plist-put (copy-sequence (nth 2 args))
+                                   :continue-color nil))))
     (defun my/org-latex-preview-image-at-point (&optional _arg)
       "Copy the preview image file for the fragment at point to the kill-ring."
       (interactive "P")

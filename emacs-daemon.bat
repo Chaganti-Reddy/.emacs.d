@@ -2,9 +2,10 @@
 setlocal
 REM ===========================================================================
 REM (Re)start the Emacs daemon. Run once per login -- if a daemon is already
-REM running it is stopped and a fresh one is started. Works with any Emacs
-REM install (PATH, scoop, Program Files, choco). After this, open frames from a
-REM Start-Menu / taskbar shortcut running:  emacsclientw.exe -c -n -a ""
+REM running it is stopped (gracefully, then force-killed) and a fresh one is
+REM started. Works with any Emacs install (PATH, scoop, Program Files, choco).
+REM After this, open frames from a Start-Menu / taskbar shortcut running:
+REM     emacsclientw.exe -c -n -a ""
 REM ===========================================================================
 
 REM --- Locate runemacs.exe --------------------------------------------------
@@ -27,17 +28,36 @@ if not defined RUNEMACS (
   exit /b 1
 )
 
-REM --- Locate emacsclient.exe --------------
+REM --- Locate emacsclient.exe -----------------------------------------------
 set "EMACSCLIENT="
 for %%I in ("%RUNEMACS%") do if exist "%%~dpIemacsclient.exe" set "EMACSCLIENT=%%~dpIemacsclient.exe"
 if not defined EMACSCLIENT for /f "delims=" %%J in ('where emacsclient.exe 2^>nul') do if not defined EMACSCLIENT set "EMACSCLIENT=%%J"
 
-REM --- Stop any running daemon, then start fresh ----------------------------
-if defined EMACSCLIENT (
-  echo Stopping any running Emacs daemon...
-  "%EMACSCLIENT%" -e "(kill-emacs)" >nul 2>&1
-)
+REM --- Stop any running daemon (graceful -> wait -> force) -------------------
+REM A lingering old daemon is the classic footgun: emacsclient reattaches to
+REM the STALE daemon (old config) unless we wait for it to actually die first.
+if not defined EMACSCLIENT goto forcekill
+echo Stopping any running Emacs daemon...
+REM Bind confirm-kill-processes so a running subprocess can't block the exit.
+"%EMACSCLIENT%" -e "(let ((confirm-kill-processes nil)) (kill-emacs))" >nul 2>&1
 
+set /a KILLTRIES=0
+:killwait
+"%EMACSCLIENT%" -e "t" >nul 2>&1
+if errorlevel 1 goto killed
+set /a KILLTRIES+=1
+if %KILLTRIES% geq 8 goto forcekill
+<nul set /p "=."
+ping -n 2 127.0.0.1 >nul
+goto killwait
+
+:forcekill
+REM Graceful stop didn't take (or no emacsclient): force-kill ONLY the daemon
+REM emacs.exe (matched by its --daemon command line), never standalone frames.
+powershell -NoProfile -Command "Get-CimInstance Win32_Process -Filter ""Name='emacs.exe'"" | Where-Object { $_.CommandLine -match '--daemon' } | ForEach-Object { Stop-Process -Id $_.ProcessId -Force }" >nul 2>&1
+ping -n 2 127.0.0.1 >nul
+
+:killed
 echo Starting Emacs daemon: "%RUNEMACS%"
 start "" "%RUNEMACS%" --daemon
 
