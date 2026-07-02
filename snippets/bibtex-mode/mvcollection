@@ -1,7 +1,6 @@
 # -*- mode: snippet -*-
 # name: mvcollection
 # key: mvcollection
-# contributor: Spenser Truex
 # --
 @mvcollection{ ${title},
   editor    = {${editor}},

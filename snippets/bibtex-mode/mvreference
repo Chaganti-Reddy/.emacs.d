@@ -1,7 +1,6 @@
 # -*- mode: snippet -*-
 # name: mvereference
 # key: mvreference
-# contributor: Spenser Truex
 # --
 @mvreference{ ${title},
 editor    = {${editor}},

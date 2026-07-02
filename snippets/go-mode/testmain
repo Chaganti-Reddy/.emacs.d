@@ -1,7 +1,6 @@
 # -*- mode: snippet -*-
 # name: testmain
 # key: testmain
-# contributor : @atotto
 # --
 func TestMain(m *testing.M) {
 	setup()

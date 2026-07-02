@@ -1,7 +1,6 @@
 # -*- mode: snippet -*-
 # name: online
 # key: online
-# contributor: Spenser Truex
 # --
 @online{ ${title},
   author  = {${author}},

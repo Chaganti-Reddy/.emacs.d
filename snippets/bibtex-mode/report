@@ -1,7 +1,6 @@
 # -*- mode: snippet -*-
 # name: report
 # key: report
-# contributor: Spenser Truex
 # --
 @report{ ${title},
   author       = {${author}},

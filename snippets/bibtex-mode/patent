@@ -1,7 +1,6 @@
 # -*- mode: snippet -*-
 # name: patent
 # key: patent
-# contributor: Spenser Truex
 # --
 @patent{ ${title},
   title  = {${title}},

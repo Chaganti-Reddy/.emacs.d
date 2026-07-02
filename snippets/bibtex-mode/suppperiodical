@@ -1,7 +1,6 @@
 # -*- mode: snippet -*-
 # name: suppperiodical
 # key: suppperiodical
-# contributor: Spenser Truex
 # --
 @suppperiodical{ ${title},
 author  = {${author}},

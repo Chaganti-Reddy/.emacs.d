@@ -1,7 +1,6 @@
 # -*- mode: snippet -*-
 # name: thesis
 # key: thesis
-# contributor: Spenser Truex
 # --
 @thesis{ ${title},
 author  = {${author}},

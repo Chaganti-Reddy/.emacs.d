@@ -1,7 +1,6 @@
 # -*- mode: snippet -*-
 # name: periodical
 # key: periodical
-# contributor: Spenser Truex
 # --
 @periodical{ ${title}
 editor     = {${editor}},

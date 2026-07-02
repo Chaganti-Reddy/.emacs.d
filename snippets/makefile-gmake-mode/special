@@ -1,6 +1,5 @@
 # -*- mode: snippet; require-final-newline: nil -*-
 # name: special targets
-# contributor: gbalats
 # key: .
 # --
 .${1:PHONY$(upcase yas-text)}: $0
