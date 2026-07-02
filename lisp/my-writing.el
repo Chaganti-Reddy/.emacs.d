@@ -10,7 +10,15 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
   (cond ((fboundp 'org-latex-preview-mode)      (org-latex-preview-mode 1))
         ((fboundp 'org-latex-preview-auto-mode) (org-latex-preview-auto-mode 1))))
 
-(setq org-directory (if IS-WINDOWS "D:/Org" "~/Org"))
+(defun my/org-enable-cdlatex ()
+  "Enable `org-cdlatex-mode' without letting its failure abort `org-mode-hook'.
+`org-cdlatex-mode' hard-requires texmathp/AUCTeX; if that is ever missing it
+signals, which would skip every later hook (live preview, etc.). Swallow it."
+  (when (fboundp 'org-cdlatex-mode)
+    (ignore-errors (org-cdlatex-mode 1))))
+
+(setq org-directory
+      (if (and IS-WINDOWS (file-directory-p "D:/")) "D:/Org" "~/Org"))
 
 (use-package async :defer t)
 
@@ -48,7 +56,7 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
         org-preview-latex-image-directory (my/var "org-latex-preview/" t)
         org-modules nil)
   :hook ((org-mode . visual-line-mode)
-         (org-mode . org-cdlatex-mode)      ; fast math input (e.g. `ab' -> a_b)
+         (org-mode . my/org-enable-cdlatex) ; fast math input (e.g. `ab' -> a_b)
          (org-mode . my/org-enable-live-latex-preview)
          (org-mode . (lambda () (setq-local tab-always-indent t))))
   :custom
@@ -56,7 +64,7 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
   (org-hide-emphasis-markers t)
   (org-pretty-entities t)                   ; \alpha renders as the glyph
   (org-pretty-entities-include-sub-superscripts t)
-  (org-image-align 'center)                 ; center inline images + LaTeX previews
+  (org-image-align 'center)
   (org-support-shift-select t)
   (org-src-fontify-natively t)
   (org-src-tab-acts-natively t)
@@ -94,11 +102,12 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
                (+ (/ my/font-size 10.0) 0.15))
     (plist-put org-latex-preview-appearance-options :page-width 0.8)
     (plist-put org-latex-preview-appearance-options :foreground 'auto)
-    (advice-add 'org-latex-preview--tex-styled :filter-args
-                (lambda (args)
-                  (list (nth 0 args) (nth 1 args)
-                        (plist-put (copy-sequence (nth 2 args))
-                                   :continue-color nil))))
+    (when (fboundp 'org-latex-preview--tex-styled)
+      (advice-add 'org-latex-preview--tex-styled :filter-args
+                  (lambda (args)
+                    (list (nth 0 args) (nth 1 args)
+                          (plist-put (copy-sequence (nth 2 args))
+                                     :continue-color nil)))))
     (defun my/org-latex-preview-image-at-point (&optional _arg)
       "Copy the preview image file for the fragment at point to the kill-ring."
       (interactive "P")
@@ -130,14 +139,10 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
     (define-key org-mode-map (kbd "M-g M")       #'my/org-latex-prev-env)
     (define-key org-mode-map (kbd "C-c C-x SPC") #'org-latex-preview-clear-cache)
     ;; --- Live preview for freshly-typed $...$ / $$...$$ --------------------
-    ;; tecosaur's insert-tracker (`...--detect-fragments-in-change') only scans
-    ;; for \(..\), \[..\] and \begin/\end on the fly -- dollar math is skipped
-    ;; (ambiguous with currency), so a newly typed $x$ only previews on reopen.
-    ;; Feed the $ positions it skips into Org's OWN tracking function so dollar
-    ;; math tracks live exactly like \(..\).
     (defun my/org-latex-preview--track-dollar (beg end _)
       "Track newly inserted $...$ / $$...$$ fragments for live preview."
-      (when org-latex-preview-mode-track-inserts
+      (when (and org-latex-preview-mode-track-inserts
+                 (fboundp 'org-latex-preview-mode--maybe-track-element-here))
         (let ((initial-point (point)) frags)
           (save-excursion
             (goto-char beg)
@@ -148,8 +153,9 @@ Handles the dev-branch rename (`org-latex-preview-auto-mode' ->
           (when (setq frags (delq nil frags))
             (org-latex-preview--place-from-elements
              org-latex-preview-process-default frags)))))
-    (advice-add 'org-latex-preview-mode--detect-fragments-in-change :after
-                #'my/org-latex-preview--track-dollar)
+    (when (fboundp 'org-latex-preview-mode--detect-fragments-in-change)
+      (advice-add 'org-latex-preview-mode--detect-fragments-in-change :after
+                  #'my/org-latex-preview--track-dollar))
     ;; --- Background preamble precompilation ---------------------
     (defun my/org-latex-preview-precompile-async (org-buf)
       "Precompile the Org LaTeX-preview preamble for ORG-BUF in the background."
@@ -203,7 +209,6 @@ Signature also fits `org-latex-preview-clear-cache' advice (BEG END)."
     (advice-add 'org-latex-preview-clear-cache :after
                 #'my/org-latex-preview-precompile-idle)
     (add-hook 'org-mode-hook #'my/org-latex-preview-precompile-idle))
-  ;; Babel langs (calc evaluates `#+begin_src calc'; embedded calc is C-x * e).
   (setq org-babel-load-languages
         '((emacs-lisp . t) (python . t) (C . t) (shell . t) (calc . t)))
   (run-with-idle-timer
@@ -246,8 +251,7 @@ Signature also fits `org-latex-preview-clear-cache' advice (BEG END)."
 (with-eval-after-load 'org-faces (my/scale-org-headings))
 (add-hook 'enable-theme-functions #'my/scale-org-headings)
 
-;; cdlatex: fast math input (TAB templates, `;' math-symbol prefix). Powers
-;; `org-cdlatex-mode' and LaTeX-mode.
+;; cdlatex: fast math input (TAB templates, `;' math-symbol prefix).
 (use-package cdlatex
   :defer t
   :hook (LaTeX-mode . cdlatex-mode)
@@ -273,13 +277,7 @@ Signature also fits `org-latex-preview-clear-cache' advice (BEG END)."
   (org-appear-autolinks t)
   (org-appear-autosubmarkers t))
 
-
-;; Do NOT pre-`require' org on a timer -- under elpaca that could load Emacs's
-;; BUILT-IN Org before elpaca activates the tecosaur build (reviving the version
-;; mismatch). elpaca/use-package loads org (on activation or first .org file).
-
-;; Auto-tangle on save when the file has `#+auto_tangle: t' (built-in babel,
-;; no extra package). Bind `before-save-hook' locally in org buffers.
+;; Auto-tangle on save when the file has `#+auto_tangle: t'. Bind `before-save-hook' locally in org buffers.
 (defun my/org-auto-tangle ()
   "Tangle the current Org file on save if it declares `#+auto_tangle: t'."
   (when (and (derived-mode-p 'org-mode)
@@ -458,10 +456,8 @@ Signature also fits `org-latex-preview-clear-cache' advice (BEG END)."
   "Track the math construct at point; preview it after an edited one is left."
   (when (bound-and-true-p my/latex-auto-preview-mode)
     (if (and (fboundp 'texmathp) (texmathp))
-        ;; Inside math: remember where this construct starts.
         (setq my/latex-preview--math-start
               (and (consp texmathp-why) (cdr texmathp-why)))
-      ;; Outside math: if we just left a construct we edited, preview just it.
       (when (and my/latex-preview--math-start my/latex-preview--dirty)
         (let ((pos my/latex-preview--math-start))
           (setq my/latex-preview--math-start nil
@@ -490,8 +486,6 @@ Targets one construct at a time via `preview-at-point' and pairs with AUCTeX's
       (progn
         (add-hook 'after-change-functions #'my/latex-auto-preview--after-change nil t)
         (add-hook 'post-command-hook #'my/latex-auto-preview--post-command nil t)
-        ;; Render math already in the file shortly after opening (whole buffer
-        ;; once -- this is the only bulk pass; edits after are per-construct).
         (let ((buf (current-buffer)))
           (run-with-idle-timer
            0.8 nil
@@ -549,7 +543,6 @@ Uses the region if active, else the $...$ fragment at point, else the line."
                         'calc-language (if (derived-mode-p 'latex-mode 'LaTeX-mode 'org-mode)
                                            'latex 'normal)
                         'calc-prefer-frac t 'calc-angle-mode 'rad))))
-    ;; calc-eval returns (POS "message") on a parse error, not a string.
     (unless (stringp result)
       (user-error "Calc: %s" (if (consp result) (cadr result) "cannot evaluate")))
     (delete-region (car bounds) (cdr bounds))
@@ -559,10 +552,6 @@ Uses the region if active, else the $...$ fragment at point, else the line."
   :bind (("C-x c" . calc)                       ; calculator (also C-x * c)
          ("C-S-e" . latex-math-from-calc))      ; evaluate math in-place
   :config
-  ;; By default Calc builds its stack + trail windows itself (via `split-window'),
-  ;; bypassing `display-buffer-alist'. Setting these two hooks makes it route each
-  ;; buffer through `display-buffer' instead, so our alist rules apply -- stack and
-  ;; trail then dock together on the right, stacked. (See calc.el `calc-window-hook'.)
   (setq calc-make-windows-dedicated t
         calc-window-hook       (lambda () (display-buffer (current-buffer)))
         calc-trail-window-hook (lambda () (display-buffer (current-buffer)))))

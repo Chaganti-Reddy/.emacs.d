@@ -44,7 +44,6 @@
       (move-to-column column t)))))
 (defun my/move-line-up ()   (interactive) (my/move-text-internal -1))
 (defun my/move-line-down () (interactive) (my/move-text-internal 1))
-;; After M-<up>/M-<down>, tap <up>/<down> to keep dragging (repeat-mode).
 (defvar-keymap my/move-line-repeat-map
   :repeat t
   "<up>"   #'my/move-line-up
@@ -82,7 +81,7 @@
   "Join a wrapped paragraph into one line (opposite of M-q)."
   (interactive) (let ((fill-column most-positive-fixnum)) (fill-paragraph nil)))
 
-;; --- Transparency toggle (uses early-init constants) ------------------------
+;; --- Transparency toggle ------------------------
 (defun my/toggle-transparency ()
   "Toggle frame transparency between opaque and `my/frame-alpha'."
   (interactive)
@@ -92,9 +91,7 @@
 
 ;; --- Theme toggle: modus-vivendi (default) <-> gruber-darker ---------------
 (defconst my/themes '(doom-rouge modus-vivendi modus-operandi gruber-darker)
-  "Themes cycled by `my/toggle-theme'; the first one is the default (doom-rouge).
-modus-* are built-in (palette overrides in early-init); `doom-rouge' needs the
-`doom-themes' package (its divider tweak is in `my/doom-theme-settings').")
+  "Themes cycled by `my/toggle-theme'.")
 (defun my/toggle-theme ()
   "Cycle to the next theme in `my/themes', disabling the current one."
   (interactive)
@@ -118,6 +115,30 @@ modus-* are built-in (palette overrides in early-init); `doom-rouge' needs the
     (make-directory dir t)
     (find-file (expand-file-name name dir))))
 
+;; --- Throwaway *buffer* in a chosen major mode (no file on disk) -----------
+;; Companion to `my/new-temp-file' (which makes temp files): this makes an
+;; unsaved buffer for jotting/prototyping in a mode picked with one keystroke.
+(defcustom my/tmp-buffer-mode-alist
+  '((?o . org-mode) (?t . text-mode) (?m . markdown-mode)
+    (?l . lisp-interaction-mode) (?p . python-mode) (?e . emacs-lisp-mode))
+  "Hotkey -> major mode for `my/tmp-buffer'."
+  :type '(alist :key-type character :value-type symbol))
+(defun my/tmp-buffer (mode)
+  "Open a fresh throwaway buffer in a MODE chosen by one keystroke.
+Press the key for a mode (see `my/tmp-buffer-mode-alist'), or C-h to list them."
+  (interactive "c")
+  (if (eq mode ?\C-h)
+      (with-output-to-temp-buffer "*Help*"
+        (princ "Temporary buffers (C-c b <key>):\n\nKey\tMode\n")
+        (dolist (km my/tmp-buffer-mode-alist)
+          (princ (format " %c\t%s\n" (car km) (cdr km)))))
+    (if-let* ((m (cdr (assq mode my/tmp-buffer-mode-alist))))
+        (let ((buf (generate-new-buffer "*tmp*")))
+          (with-current-buffer buf (funcall m))
+          (pop-to-buffer buf))
+      (user-error "No temp-buffer mode on %c -- C-c b C-h to list" mode))))
+(global-set-key (kbd "C-c b") #'my/tmp-buffer)
+
 ;; --- Smart polyglot compile/run --------------------------------------------
 (defun my/smart-compile ()
   "Compile or run the current file/project, choosing a sensible command."
@@ -136,7 +157,8 @@ modus-* are built-in (palette overrides in early-init); `doom-rouge' needs the
                ((or (file-exists-p "Makefile") (file-exists-p "makefile")) "make -k")
                ((locate-dominating-file default-directory "Cargo.toml") "cargo run")
                ((locate-dominating-file default-directory "go.mod") "go run .")
-               ((derived-mode-p 'python-mode 'python-ts-mode) (format "python \"%s\"" name))
+               ((derived-mode-p 'python-mode 'python-ts-mode)
+                (format "%s \"%s\"" (if (executable-find "python3") "python3" "python") name))
                ((derived-mode-p 'c-mode 'c-ts-mode)   (funcall cc "gcc" ""))
                ((derived-mode-p 'c++-mode 'c++-ts-mode) (funcall cc "g++" " -std=c++20"))
                ((derived-mode-p 'js-mode 'js-ts-mode 'typescript-ts-mode)
@@ -151,8 +173,6 @@ modus-* are built-in (palette overrides in early-init); `doom-rouge' needs the
       (compile cmd))))
 
 ;; --- Open the NEXT buffer in a right/below split and focus it ---------------
-;; Press the prefix, then trigger ANY open command -- dired RET, vertico
-;; find-file RET, embark, switch-buffer, xref... it lands in a fresh split.
 (defun my/open-next-in-split (side desc)
   "Make the NEXT displayed buffer open in a SIDE (right/below) split, focused."
   (display-buffer-override-next-command
@@ -178,8 +198,7 @@ modus-* are built-in (palette overrides in early-init); `doom-rouge' needs the
 
 ;; `C-q' kill/close leader. 
 (defvar-keymap my/kill-prefix-map
-  :doc "Kill/close commands (on C-q)."
-  "q" #'delete-window
+  :doc "Kill/close commands (on C-q).
   "k" #'my/kill-this-buffer
   "K" #'my/kill-buffer-and-window
   "t" #'tab-bar-close-tab
@@ -187,7 +206,7 @@ modus-* are built-in (palette overrides in early-init); `doom-rouge' needs the
   "l" #'kill-whole-line
   "i" #'quoted-insert)
 
-;; --- Half-page scroll (less disorienting than full C-v/M-v) -----------------
+;; --- Half-page scroll -----------------
 (defun my/scroll-up-half ()
   "Scroll up half a window."
   (interactive)
@@ -324,8 +343,8 @@ start, and at column 0 just removes the newline.  Respects `subword-mode'."
           (bol (line-beginning-position)))
       (save-excursion
         (skip-chars-backward " \t" bol)
-        (when (and (> (point) bol)            ; still on this line: eat a word
-                   (= (point) start))          ; (no whitespace was skipped)
+        (when (and (> (point) bol)
+                   (= (point) start))
           (if (and (bound-and-true-p subword-mode) (fboundp 'subword-backward))
               (subword-backward arg)
             (backward-word arg)))
@@ -348,7 +367,6 @@ start, and at column 0 just removes the newline.  Respects `subword-mode'."
         (beg (if (use-region-p) (region-beginning) (line-beginning-position)))
         (end (if (use-region-p) (region-end) (line-end-position))))
     (indent-rigidly beg end my/shift-width)))
-;; After `C-c <' or `C-c >', just tap < / > to keep shifting (repeat-mode).
 (defvar-keymap my/shift-repeat-map
   :repeat t
   "<" #'my/shift-region-left
@@ -364,7 +382,7 @@ start, and at column 0 just removes the newline.  Respects `subword-mode'."
       (project-find-regexp my/todo-regexp)
     (message "Not in a project.")))
 
-;; --- Project: magit status in the project root (for the switch menu) --------
+;; --- Project: magit status in the project root --------
 (defun my/project-magit-status ()
   "Run `magit-status' in the current project's root."
   (interactive)
@@ -378,8 +396,6 @@ later (project-x). Acts only on the current frame's project/tab."
   (interactive)
   (if (project-current nil)
       (progn
-        ;; Persist the layout BEFORE killing -- the 10s auto-save debounce won't
-        ;; have fired, so save explicitly or the state would be lost.
         (when (fboundp 'project-x-window-state-save)
           (ignore-errors (project-x-window-state-save)))
         (project-kill-buffers t)
@@ -393,7 +409,7 @@ later (project-x). Acts only on the current frame's project/tab."
 (defun my/insert-date () (interactive) (insert (format-time-string "%Y-%m-%d")))
 (defun my/insert-time () (interactive) (insert (format-time-string "%H:%M")))
 
-;; --- Doctor: what external tools are installed (fresh-machine checklist) -----
+;; --- Doctor: what external tools are installed -----
 (defun my/doctor ()
   "Report which external programs/grammars/fonts this config relies on."
   (interactive)
@@ -427,7 +443,7 @@ later (project-x). Acts only on the current frame's project/tab."
 ;; --- On-save: make #! scripts executable ------------------------------------
 (add-hook 'after-save-hook #'executable-make-buffer-file-executable-if-script-p)
 
-;; --- Keys (free chords + C-c leader, nothing core is shadowed) --------------
+;; --- Keybinds --------------
 (global-set-key (kbd "<C-return>")   #'my/open-line-below)
 (global-set-key (kbd "<C-S-return>") #'my/open-line-above)
 (global-set-key (kbd "<M-up>")       #'my/move-line-up)

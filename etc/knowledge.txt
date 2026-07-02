@@ -1,0 +1,107 @@
+The Holographic Principle & AdS/CFT
+
+One line: the physics inside a volume of space can be fully described by information living on its lower-dimensional boundary -- gravity in the interior is "dual" to an ordinary quantum theory on the edge.
+
+## Where it came from
+Black holes forced the idea. A black hole's entropy is not proportional to its volume (as for a gas) but to the AREA of its event horizon: S_BH = k_B c^3 A / (4 G hbar) = A / (4 l_p^2) in Planck units. Since entropy counts the microstates -- the information -- needed to specify the system, this says the maximum information in any region is bounded by its surface area, not its volume (the Bekenstein bound). 't Hooft (1993) and Susskind (1994) took this literally: a 3D region is like a hologram, its full description encoded on a 2D surface with about one bit per 4 Planck areas.
+
+## The concrete realization: AdS/CFT
+In 1997 Maldacena found an exact example. A theory of quantum gravity (string theory) in a (d+1)-dimensional negatively-curved "anti-de Sitter" (AdS) spacetime is EXACTLY equivalent to an ordinary conformal field theory (CFT) -- no gravity -- living on its d-dimensional boundary. Two descriptions, same physics: the "bulk" and the "boundary." Hard gravity questions become tractable quantum-field questions, and vice versa.
+
+## Geometry from entanglement
+The Ryu-Takayanagi formula (2006) made the link sharp: the entanglement entropy of a region A of the boundary equals the area of the minimal surface in the bulk that hangs from A's edge: S_A = Area(gamma_A) / (4 G). Entanglement on the boundary literally sews together the geometry of the interior. Van Raamsdonk pushed this to a slogan: cut the entanglement, and spacetime falls apart. ER=EPR (Maldacena-Susskind, 2013) conjectures that entangled particles are connected by tiny wormholes.
+
+## Spacetime as an error-correcting code
+Almheiri, Dong, and Harlow (2014) showed the bulk-to-boundary map behaves like a quantum error-correcting code: interior information is stored redundantly across the boundary, so it survives even if part of the boundary is erased -- the same math that protects qubits in a quantum computer. This is the deepest current hint for how smooth spacetime could emerge from raw quantum information.
+
+## Why it matters / open questions
+It is our best-understood theory of quantum gravity, a computational tool (heavy-ion physics, strange metals), and a candidate answer to "what is spacetime made of?" Open: our universe is de Sitter (positive curvature), not AdS -- no complete holographic dual is known. Can the bulk be reconstructed from boundary data in realistic settings? Does this resolve what falls into a black hole?
+
+## Resources
+- Maldacena, "The Large N Limit of Superconformal Field Theories and Supergravity" (1997): https://arxiv.org/abs/hep-th/9711200
+- Ryu & Takayanagi, "Holographic Derivation of Entanglement Entropy" (2006): https://arxiv.org/abs/hep-th/0603001
+- Almheiri, Dong, Harlow, "Bulk Locality and Quantum Error Correction in AdS/CFT" (2014): https://arxiv.org/abs/1411.7041
+- Susskind, "The World as a Hologram" (1994): https://arxiv.org/abs/hep-th/9409089
+- Wikipedia overview: https://en.wikipedia.org/wiki/Holographic_principle
+====
+Attention and the Transformer
+
+One line: a single operation -- letting every token look at every other token and decide what to pay attention to -- replaced recurrence and became the engine of every modern large language model.
+
+## The problem it solved
+Before 2017, sequence models (RNNs, LSTMs) processed tokens one after another. That is inherently serial (slow to train) and struggles to connect distant words. The Transformer (Vaswani et al., 2017) threw out recurrence entirely and processed the whole sequence in parallel using attention.
+
+## Self-attention, precisely
+Each token is projected into three vectors: a Query (what am I looking for), a Key (what do I offer), and a Value (what I actually carry). A token compares its query against every key by dot product, scales, softmaxes into weights, and takes the weighted sum of values:
+    Attention(Q, K, V) = softmax( Q K^T / sqrt(d_k) ) V
+The sqrt(d_k) keeps dot products from growing large and saturating the softmax. "Multi-head" attention runs several of these in parallel subspaces, so the model attends to different kinds of relationships at once (syntax, coreference, topic).
+
+## The rest of the block
+Because attention alone is order-blind, positional information is added to the token embeddings (sinusoidal or learned). Each layer is: multi-head attention + residual connection + layer-norm, then a position-wise feed-forward network + residual + layer-norm. Stack N of these. That is essentially the whole architecture behind GPT, Claude, and friends.
+
+## Why it changed everything
+Full parallelism made training on internet-scale data practical, and attention gives direct O(1)-path access between any two positions. Empirically, performance improves smoothly and predictably as you scale parameters, data, and compute (the "scaling laws"), which is why models kept getting bigger.
+
+## Open questions
+Attention is O(n^2) in sequence length -- long contexts are expensive (efficient/linear-attention variants are active research). We still poorly understand what circuits form inside these models (mechanistic interpretability), how they reason, and why in-context learning emerges.
+
+## Resources
+- Vaswani et al., "Attention Is All You Need" (2017): https://arxiv.org/abs/1706.03762
+- Alammar, "The Illustrated Transformer" (visual walkthrough): https://jalammar.github.io/illustrated-transformer/
+- Kaplan et al., "Scaling Laws for Neural Language Models" (2020): https://arxiv.org/abs/2001.08361
+- Karpathy, "Let's build GPT from scratch" (video + code): https://www.youtube.com/watch?v=kCc8FmEb1nY
+- Anthropic, Transformer Circuits thread (interpretability): https://transformer-circuits.pub/
+====
+Black-Hole Thermodynamics & Hawking Radiation
+
+One line: black holes are not truly black -- they are hot objects with a temperature and entropy, and that discovery collided quantum mechanics with gravity in a paradox we are still untangling.
+
+## The four laws
+In the early 1970s Bardeen, Carter, and Hawking noticed black-hole mechanics mirrors thermodynamics: the horizon area never decreases (like entropy, 2nd law), surface gravity is constant over the horizon (like temperature, 0th law), and so on. Bekenstein argued this was not an analogy -- the area really IS entropy -- or else dropping matter into a hole would violate the 2nd law of thermodynamics.
+
+## Hawking's shock (1974-75)
+Applying quantum field theory near the horizon, Hawking found the black hole radiates a thermal spectrum at temperature
+    T_H = hbar c^3 / (8 pi G M k_B)
+Smaller holes are HOTTER. This fixed the entropy coefficient exactly: S = k_B A / (4 l_p^2). A solar-mass hole is colder than deep space (~60 nK); a hole radiates ever faster as it shrinks and finally evaporates, with lifetime scaling as t ~ M^3.
+
+## The information paradox
+Hawking radiation looks purely thermal -- it seems to carry no information about what fell in. If the hole fully evaporates, the information about the initial state appears destroyed, violating quantum mechanics' rule that evolution is reversible (unitary). This is the black-hole information paradox, unresolved for ~40 years.
+
+## The Page curve and islands
+Unitarity demands that the entanglement entropy of the radiation rise, then fall back to zero as the hole evaporates -- the "Page curve." Since 2019, using the gravitational entropy formula (quantum extremal surfaces), physicists derived exactly this curve, finding that late-time radiation secretly includes "islands" -- regions inside the black hole. Information does come out; how, in ordinary quantum-mechanical terms, is still being worked out.
+
+## Why it matters / open
+It is the sharpest known clash of QM and general relativity, the main testing ground for quantum gravity, and the reason we believe gravity is deeply about information. Open: the microscopic mechanism of information escape, the fate of the singularity, and whether a real (astrophysical, de Sitter) universe behaves like the solvable models.
+
+## Resources
+- Hawking, "Particle Creation by Black Holes" (1975): https://link.springer.com/article/10.1007/BF02345020
+- Bekenstein, "Black Holes and Entropy" (1973): https://journals.aps.org/prd/abstract/10.1103/PhysRevD.7.2333
+- Almheiri et al., "The entropy of Hawking radiation" (review, 2020): https://arxiv.org/abs/2006.06872
+- Wikipedia, Black hole information paradox: https://en.wikipedia.org/wiki/Black_hole_information_paradox
+====
+Shannon's Information Theory
+
+One line: in 1948 one paper defined what "information" is, put a hard number on it, and proved you can communicate essentially error-free right up to a precise limit -- founding the digital age.
+
+## Measuring surprise
+Shannon defined the information (entropy) of a source with symbol probabilities p_i as
+    H = - sum_i p_i log2(p_i)   bits per symbol.
+Rare events carry more information; a fair coin is 1 bit, a certain outcome is 0 bits. H is the average surprise per symbol and the theoretical floor for lossless compression: no code can beat H bits/symbol on average (the source coding theorem). This is why zip/gzip cannot compress already-random data.
+
+## The channel and its capacity
+A noisy channel has a capacity C -- the maximum rate of reliable communication. Shannon's noisy-channel coding theorem is startling: as long as you transmit BELOW C, you can make the error probability as small as you like using clever coding; above C, reliable communication is impossible. For a bandwidth-B channel with signal-to-noise ratio S/N:
+    C = B log2(1 + S/N)   bits per second.
+Mutual information I(X;Y) = H(X) - H(X|Y) measures how much receiving Y tells you about X, and capacity is its maximum over input distributions.
+
+## Why it matters
+Every modem, hard drive, phone, deep-space probe, and QR code rests on this. Error-correcting codes (Hamming, Reed-Solomon, LDPC, turbo, polar) are the engineering that approaches the Shannon limit. The same entropy shows up in statistical mechanics, machine learning (cross-entropy loss, KL divergence), and the holographic bounds on black holes.
+
+## Open / modern threads
+Approaching capacity with practical codes took ~50 years (turbo/LDPC codes, 1990s; polar codes, 2008, now in 5G). Extensions: network information theory, quantum Shannon theory (how much quantum information a quantum channel carries), and the information-theoretic view of learning and generalization.
+
+## Resources
+- Shannon, "A Mathematical Theory of Communication" (1948): https://people.math.harvard.edu/~ctm/home/text/others/shannon/entropy/entropy.pdf
+- Cover & Thomas, "Elements of Information Theory" (standard textbook): https://onlinelibrary.wiley.com/doi/book/10.1002/047174882X
+- Stone, "Information Theory: A Tutorial Introduction": https://arxiv.org/abs/1802.05968
+- Wikipedia, Information theory: https://en.wikipedia.org/wiki/Information_theory
+====

@@ -1,8 +1,6 @@
 ;;; early-init.el --- Pre-GUI, pre-package setup -*- lexical-binding: t; -*-
-;; Runs before the frame is drawn and before package.el. Job: boot fast and
-;; make the first frame already correct (no flicker, no reflow).
 
-;;; --- OS predicates (used across the whole config) --------------------------
+;;; --- OS predicates --------------------------
 (defconst IS-WINDOWS (eq system-type 'windows-nt))
 (defconst IS-MAC     (eq system-type 'darwin))
 (defconst IS-LINUX   (eq system-type 'gnu/linux))
@@ -19,7 +17,7 @@
   "Windows w32 lacks per-pixel bg alpha, so use whole-frame `alpha' there;
 elsewhere `alpha-background' keeps text opaque.")
 
-;;; --- Defer GC during startup (init.el restores a runtime value) ------------
+;;; --- Defer GC during startup ------------
 (setq gc-cons-threshold most-positive-fixnum
       gc-cons-percentage 0.6)
 
@@ -27,10 +25,7 @@ elsewhere `alpha-background' keeps text opaque.")
       package-quickstart nil
       load-prefer-newer t)
 
-;;; --- First frame: chrome off, font/size/maximize/colors baked in ----------
-;; Setting these in `default-frame-alist' means the frame is created this way
-;; once, with no post-creation resize or repaint. Font here costs nothing; if
-;; the family is missing Emacs silently uses its default.
+;;; --- First frame ----------
 (setq default-frame-alist
       `((menu-bar-lines . 0)
         (tool-bar-lines . 0)
@@ -42,9 +37,6 @@ elsewhere `alpha-background' keeps text opaque.")
 (setq tool-bar-mode nil menu-bar-mode nil
       frame-inhibit-implied-resize t)
 
-;; Maximize. On Windows, `(fullscreen . maximized)' in `default-frame-alist'
-;; makes the INITIAL frame repaint (white/garbage) WHILE it maximizes mid-load
-;; -- the classic startup glitch (bug#64846).
 (if (not IS-WINDOWS)
     (add-to-list 'default-frame-alist '(fullscreen . maximized))
   ;; Initial non-daemon frame: clean WM maximize after load (dodges bug#64846).
@@ -60,21 +52,15 @@ elsewhere `alpha-background' keeps text opaque.")
       inhibit-startup-message t
       inhibit-startup-buffer-menu t
       inhibit-startup-echo-area-message (user-login-name)
-      initial-scratch-message
-      (concat
-       ";;   Emacs ready.  Scratch buffer — type freely.\n"
-       ";;\n"
-       ";;   Jump  C-;      Window  M-o       Popups  C-`\n"
-       ";;   Find  C-x C-f  Recent  C-x C-r   Buffer  C-x b   Project  C-x p\n"
-       ";;   Code  M-RET actions · C-c e r rename · C-c f format · M-n/M-p errors\n"
-       ";;   Math  C-S-e eval-in-place · C-x * e live embedded Calc\n"
-       ";;   Help  C-h k <key>   C-h f <fn>      Full reference:  README.md\n"
-       ";;\n")
-      initial-major-mode 'fundamental-mode   ; lighter *scratch*, faster boot
+      initial-scratch-message (purecopy "\
+;; This buffer is for rough work and skethcy ideas that should not be saved.
+;; To create a file, visit it with \\[find-file] and enter text in its buffer.
+
+")
+      initial-major-mode 'fundamental-mode
       inhibit-x-resources t)
 
 ;;; --- Native compilation: cache under var/, silence warnings ----------------
-;; Must run here, before any native compilation, per startup.el docstring.
 (when (fboundp 'startup-redirect-eln-cache)
   (startup-redirect-eln-cache "var/eln-cache/"))
 (setq native-comp-async-report-warnings-errors 'silent)
@@ -85,7 +71,7 @@ elsewhere `alpha-background' keeps text opaque.")
 (prefer-coding-system 'utf-8)
 (setq default-input-method nil)
 
-;;; --- Theme palette settings (theme itself loaded in init) ------------------
+;;; --- Theme palette settings ------------------
 (setq modus-themes-italic-constructs t
       modus-themes-bold-constructs t
       modus-themes-mixed-fonts t

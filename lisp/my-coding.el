@@ -4,7 +4,6 @@
 ;;; Tree-sitter
 ;;; ---------------------------------------------------------------------------
 (setq treesit-font-lock-level 3)
-;; Keep compiled grammars under var/ (not the default ~/.emacs.d/tree-sitter).
 (defconst my/treesit-dir (my/var "tree-sitter/" t))
 (add-to-list 'treesit-extra-load-path my/treesit-dir)
 
@@ -65,7 +64,6 @@
       (ignore-errors (treesit-install-language-grammar lang))))
   (message "Tree-sitter grammars built. Reopen files to use *-ts-mode."))
 
-;; Use *-ts-mode only when the grammar is actually available (no errors if not).
 (defun my/setup-treesit ()
   "Remap base modes + add auto-mode entries for languages with ready grammars."
   (when (require 'treesit nil t)
@@ -92,12 +90,12 @@
 ;;; Eglot (built-in LSP client)
 ;;; ---------------------------------------------------------------------------
 (use-package eglot
-  :ensure nil                          ; ships with Emacs
+  :ensure nil
   :init
-  (setq eglot-autoshutdown t           ; kill server when last buffer closes
-        eglot-events-buffer-size 0      ; don't log LSP traffic (memory)
-        eglot-report-progress nil       ; no progress spam in echo area
-        eglot-sync-connect nil          ; connect async; don't block
+  (setq eglot-autoshutdown t
+        eglot-events-buffer-size 0 
+        eglot-report-progress nil 
+        eglot-sync-connect nil 
         eglot-extend-to-xref t)
   :hook ((c-ts-mode c++-ts-mode python-ts-mode rust-ts-mode java-ts-mode
           go-ts-mode js-ts-mode typescript-ts-mode tsx-ts-mode
@@ -126,7 +124,6 @@
 ;;; ---------------------------------------------------------------------------
 (setq eldoc-echo-area-use-multiline-p nil
       eldoc-echo-area-display-truncation-message nil
-      ;; Show both the symbol's doc/signature AND any flymake diagnostic at point.
       eldoc-documentation-strategy #'eldoc-documentation-compose-eagerly
       eldoc-echo-area-prefer-doc-buffer t
       flymake-indicator-type 'margins
@@ -159,24 +156,23 @@
     "T" #'hl-todo-previous))
 
 ;;; ---------------------------------------------------------------------------
-;;; Indentation per language (sane defaults; silence python's guess warning)
+;;; Indentation per language
 ;;; ---------------------------------------------------------------------------
 (setq python-indent-guess-indent-offset-verbose nil
       python-indent-offset 4)
 (setq-default c-ts-mode-indent-offset 4
               c-basic-offset 4
               js-indent-level 2
-              typescript-ts-mode-indent-offset 2       ; covers tsx-ts-mode too
+              typescript-ts-mode-indent-offset 2 
               json-ts-mode-indent-offset 2
               rust-ts-mode-indent-offset 4
               java-ts-mode-indent-offset 4
               go-ts-mode-indent-offset 4
               css-indent-offset 2)
-;; Go is tab-indented by convention (gofmt) -- use real tabs there only.
 (add-hook 'go-ts-mode-hook (lambda () (setq indent-tabs-mode t)))
 
 ;;; ---------------------------------------------------------------------------
-;;; Snippets (yasnippet) — provides `yasnippet-capf' used below
+;;; Snippets (yasnippet)
 ;;; ---------------------------------------------------------------------------
 (use-package yasnippet
   :ensure t
@@ -207,7 +203,7 @@
   :after (yasnippet cape))
 
 ;;; ---------------------------------------------------------------------------
-;;; Cape + completion-at-point chains (one base chain, one LSP override)
+;;; Cape + completion-at-point chains
 ;;; ---------------------------------------------------------------------------
 (use-package cape :ensure t :defer t)
 ;; Restrict dabbrev to the current buffer -- scanning ALL buffers is the classic
@@ -246,6 +242,7 @@
 (add-hook 'prog-mode-hook #'my/code-capfs)
 
 (defun my/text-capfs ()
+  (add-hook 'completion-at-point-functions #'yasnippet-capf 89 t)
   (add-hook 'completion-at-point-functions #'cape-dict    90 t)
   (add-hook 'completion-at-point-functions #'cape-dabbrev 91 t)
   (add-hook 'completion-at-point-functions #'cape-file    92 t)
@@ -265,8 +262,6 @@
 ;;; ---------------------------------------------------------------------------
 ;;; Apheleia — async format-on-save
 ;;; ---------------------------------------------------------------------------
-;; Buffer-local (per code buffer) instead of global -> apheleia loads on the
-;; first code file, not at startup.
 (use-package apheleia
   :hook (prog-mode . apheleia-mode)
   :bind ("C-c f" . apheleia-format-buffer)
@@ -275,13 +270,19 @@
     (setf (alist-get 'ruff apheleia-formatters)
           '("ruff" "format" "--stdin-filename" filepath "-")))
   (setf (alist-get 'python-mode apheleia-mode-alist) 'ruff
-        (alist-get 'python-ts-mode apheleia-mode-alist) 'ruff))
+        (alist-get 'python-ts-mode apheleia-mode-alist) 'ruff)
+  (unless (assq 'dprint apheleia-formatters)
+    (setf (alist-get 'dprint apheleia-formatters)
+          '("dprint" "fmt" "--stdin" filepath)))
+  (when-let* ((md (cond ((executable-find "prettier") 'prettier)
+                        ((executable-find "dprint")   'dprint))))
+    (dolist (m '(markdown-mode markdown-ts-mode gfm-mode))
+      (setf (alist-get m apheleia-mode-alist) md)
+      (add-hook (intern (format "%s-hook" m)) #'apheleia-mode))))
 
 ;;; ---------------------------------------------------------------------------
 ;;; Dape — Debug Adapter Protocol client
 ;;; ---------------------------------------------------------------------------
-;; Needs a per-language debug adapter installed (codelldb for C/C++/Rust,
-;; debugpy for Python, js-debug for node, ...). Keys avoid our compile f-keys.
 (defconst my/dape-breakpoints-file (my/var "dape-breakpoints")
   "Where breakpoints persist (kept out of the config root).")
 (use-package dape

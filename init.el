@@ -1,5 +1,4 @@
 ;;; init.el --- Main configuration -*- lexical-binding: t; -*-
-;; Loaded after early-init.el.
 
 ;;; ===========================================================================
 ;;; 1. Portable paths
@@ -45,7 +44,7 @@ With DIR-P, PATH itself is the directory."
       transient-values-file   (my/var "transient/values.el"))
 
 ;;; ===========================================================================
-;;; 3. Garbage collection: runtime values (early-init deferred it for boot)
+;;; 3. Garbage collection: runtime values
 ;;; ===========================================================================
 (defconst my/gc-runtime-threshold  (* 64 1024 1024) "Runtime GC threshold (bytes).")
 (defconst my/gc-runtime-percentage 0.1)
@@ -189,7 +188,7 @@ With DIR-P, PATH itself is the directory."
 
 
 ;;; ===========================================================================
-;;; 6. lisp/ modules — only large feature collections live here
+;;; 6. lisp/ modules
 ;;; ===========================================================================
 (defconst my/lisp-dir (my/emacs-path "lisp/"))
 (make-directory my/lisp-dir t)
@@ -265,11 +264,8 @@ a Windows .bat without quote-escaping headaches."
       kill-ring-max 500
       mouse-drag-and-drop-region t
       mouse-drag-and-drop-region-cross-program t)
-;; Disable middle-click (mouse-2) paste of the primary selection -- avoids
-;; accidental inserts when clicking around.
 (global-set-key (kbd "<mouse-2>")      #'ignore)
 (global-set-key (kbd "<down-mouse-2>") #'ignore)
-;; Disable Control-click popup menus (buffer/face/mode menus) in buffers.
 (dolist (k '([C-down-mouse-1] [C-mouse-1] [C-down-mouse-2] [C-mouse-2]
              [C-down-mouse-3] [C-mouse-3]))
   (global-unset-key k))
@@ -373,10 +369,6 @@ a Windows .bat without quote-escaping headaches."
   (which-key-mode 1)
   (setq which-key-idle-delay 0.5))
 
-;; ESC: cancel sanely. `keyboard-escape-quit' (the default) deletes OTHER windows
-;; when >1 window exists -- that's why ESC was killing popup/embark side windows.
-;; This DWIM version deactivates the region / aborts the minibuffer / else quits,
-;; but NEVER touches the window layout.
 (defun my/keyboard-quit-dwim ()
   "Deactivate region, else abort minibuffer, else `keyboard-quit'. No window changes."
   (interactive)
@@ -385,18 +377,18 @@ a Windows .bat without quote-escaping headaches."
         (t (keyboard-quit))))
 (global-set-key (kbd "<escape>") #'my/keyboard-quit-dwim)
 (define-key minibuffer-local-map (kbd "<escape>") #'abort-recursive-edit)
-(global-set-key (kbd "C-z")   #'undo-only)   ; C-z=suspend is useless in GUI
+(global-set-key (kbd "C-z")   #'undo-only) 
 (global-set-key (kbd "C-S-z") #'undo-redo)
 (global-set-key (kbd "C-/")   #'comment-line)
 
-;; Visual undo tree (like neovim's undotree). Lazy: loads on first `C-x u'.
+;; Visual undo tree (like neovim's undotree).
 (use-package vundo
   :bind ("C-x u" . vundo)
   :config
   (setq vundo-glyph-alist vundo-unicode-symbols
         vundo-compact-display t))
 
-;; Persist undo/redo history across sessions (built-in undo, no undo-fu needed).
+;; Persist undo/redo history across sessions.
 (use-package undo-fu-session
   :init
   (setq undo-fu-session-directory (my/var "undo-fu-session/" t)
@@ -419,10 +411,22 @@ a Windows .bat without quote-escaping headaches."
 
 ;; `q' keeps its default (bury). `C-c q' fully kills the window's buffer when
 ;; you want a transient buffer (help/dired/compilation) gone for good.
-(defun my/quit-window-kill (&optional window)
-  "Like `quit-window' but kill the buffer instead of burying it."
-  (interactive) (quit-window t window))
-(global-set-key (kbd "C-c q") #'my/quit-window-kill)
+(defun my/quit-dwim ()
+  "One key to dismiss a window, doing the right thing by buffer type.
+Throwaway popups (help, compilation, dired, magit, Info, occur, any `*name*'
+special buffer) are killed outright.  A real file buffer -- or *scratch* /
+*Messages* -- is kept: its window is just deleted (or the buffer buried if it
+is the only window)."
+  (interactive)
+  (let ((killp (and (not (buffer-file-name))
+                    (not (member (buffer-name) '("*scratch*" "*Messages*")))
+                    (or (derived-mode-p 'special-mode 'compilation-mode
+                                        'help-mode 'dired-mode 'Info-mode)
+                        (string-prefix-p "*" (buffer-name))))))
+    (cond (killp          (quit-window t))
+          ((one-window-p) (bury-buffer))
+          (t              (delete-window)))))
+(global-set-key (kbd "C-c q") #'my/quit-dwim)
 
 ;;; ===========================================================================
 ;;; 8. Session persistence (history, places, recent files)
@@ -458,7 +462,6 @@ a Windows .bat without quote-escaping headaches."
                    (and (string-prefix-p cache f)
                         (not (string-prefix-p scratch f)))))))
 
-;; Enable after startup so reading history/places files doesn't slow boot.
 (add-hook 'emacs-startup-hook
           (lambda ()
             (savehist-mode 1) (save-place-mode 1)
@@ -473,7 +476,7 @@ a Windows .bat without quote-escaping headaches."
       window-divider-default-right-width 1)
 
 ;; Vim-style window jumps. NOTE: shadows M-h mark-paragraph, M-k kill-sentence,
-;; M-l downcase-word -- accepted trade for fast navigation.
+;; M-l downcase-word.
 (global-set-key (kbd "M-h") #'windmove-left)
 (global-set-key (kbd "M-j") #'windmove-down)
 (global-set-key (kbd "M-k") #'windmove-up)
@@ -491,7 +494,6 @@ a Windows .bat without quote-escaping headaches."
   (interactive) (select-window (split-window-below)))
 (global-set-key (kbd "C-x 3") #'my/split-right-focus)
 (global-set-key (kbd "C-x 2") #'my/split-below-focus)
-;; Quick single-chord window ops (avoid M-digit = digit-argument):
 (global-set-key (kbd "C-|") #'my/split-right-focus)
 (global-set-key (kbd "C-_") #'my/split-below-focus)
 (global-set-key (kbd "M-o")  #'other-window)           ; fast focus; repeat: o o o
@@ -512,8 +514,7 @@ a Windows .bat without quote-escaping headaches."
 (add-hook 'emacs-startup-hook
           (lambda () (winner-mode 1) (window-divider-mode 1) (repeat-mode 1)))
 
-;; popper: toggle/cycle "popup" buffers. `popper-display-control 'user' defers
-;; WHERE they appear to setup-windows.el; popper just hides/recalls/cycles them.
+;; popper: toggle/cycle "popup" buffers.
 (use-package popper
   :bind (("C-`"   . popper-toggle)
          ("M-`"   . popper-cycle)
@@ -540,8 +541,6 @@ a Windows .bat without quote-escaping headaches."
           magit-status-mode magit-process-mode magit-log-mode
           magit-revision-mode magit-diff-mode))
   :config
-  ;; Group popups by project, but fall back to ungrouped (no error) for buffers
-  ;; that aren't in a project -- raw `popper-group-by-project' signals there.
   (defun my/popper-group-by-project ()
     (condition-case nil (popper-group-by-project) (error nil)))
   (setq popper-group-function #'my/popper-group-by-project
@@ -554,8 +553,6 @@ a Windows .bat without quote-escaping headaches."
                   "^\\*term.*\\*$"   term-mode "^\\*vterm.*\\*$" vterm-mode
                   "^\\*dape.*\\*$"   dape-info-mode dape-repl-mode
                   "^\\*elpaca-log\\*$" elpaca-log-mode elpaca-ui-mode)))
-  ;; Shorten + tag popup names in the echo list. The echo shows
-  ;; e.g. "HLP, [1:MSG], [2:OUT]" instead of long "*Help*"/"*Messages*" names.
   (defun my/popper-shorten (name)
     "Transform popup buffer NAME into a short, padded label for the echo line."
     (let ((tag (cond ((string-match-p "Messages"      name) "MSG")
@@ -615,10 +612,9 @@ a Windows .bat without quote-escaping headaches."
 (add-hook 'dired-mode-hook #'dired-omit-mode)
 
 ;;; ===========================================================================
-;;; 11. Completion & minibuffer (built-in)
+;;; 11. Completion & minibuffer
 ;;; ===========================================================================
-;; Vertico: vertical completion UI (replaces built-in fido-vertical -- richer
-;; display + extensions). Pairs with orderless + marginalia + completion-preview.
+;; Vertico: vertical completion UI. Pairs with orderless + marginalia + completion-preview.
 (use-package vertico
   :demand t
   :custom
@@ -628,8 +624,7 @@ a Windows .bat without quote-escaping headaches."
               ("C-c C-o" . embark-export)   ; send candidates to a buffer (e.g. dired)
               ("M-*"     . embark-act-all)) ; act on ALL candidates at once
   :config (vertico-mode))
-;; Ido-like path editing in the minibuffer: RET descends, DEL ascends a dir.
-;; (Extensions ship inside the vertico package -- :ensure nil, just require.)
+
 (use-package vertico-directory
   :ensure nil
   :after vertico
@@ -638,10 +633,12 @@ a Windows .bat without quote-escaping headaches."
               ("DEL"   . vertico-directory-delete-char)
               ("M-DEL" . vertico-directory-delete-word))
   :hook (rfn-eshadow-update-overlay . vertico-directory-tidy))
+
 (use-package vertico-mouse
   :ensure nil
   :after vertico
   :config (vertico-mouse-mode))
+
 ;; vertico-repeat: resume the LAST minibuffer session (candidates + input). Save
 ;; each session to history; `C-x .' replays it.
 (use-package vertico-repeat
@@ -649,6 +646,7 @@ a Windows .bat without quote-escaping headaches."
   :after vertico
   :hook (minibuffer-setup . vertico-repeat-save)
   :bind ("C-x ." . vertico-repeat))
+
 ;; vertico-quick: avy-style labels to jump to any candidate. C-' select, M-' insert.
 (use-package vertico-quick
   :ensure nil
@@ -661,7 +659,7 @@ a Windows .bat without quote-escaping headaches."
       read-buffer-completion-ignore-case t
       read-file-name-completion-ignore-case t
       completions-detailed t
-      completions-sort 'historical                ; recently used candidates first
+      completions-sort 'historical
       completion-auto-help 'visible
       completion-cycle-threshold 3
       enable-recursive-minibuffers t)
@@ -688,9 +686,7 @@ a Windows .bat without quote-escaping headaches."
     (setq completion-styles '(orderless-fast basic))))
 (add-hook 'minibuffer-setup-hook #'my/enable-orderless)
 
-;; Inline ghost-text completion preview (Emacs 30). Enabled per-buffer in
-;; `my/setup-editing-buffer' (terminals/special excluded) and in the
-;; eval-expression (M-:) minibuffer. RIGHT / TAB accept; M-n / M-p cycle.
+;; Inline ghost-text completion preview (Emacs 30).
 (when (require 'completion-preview nil t)
   (setq completion-preview-exact-match-only nil)
   (define-key completion-preview-active-mode-map (kbd "<right>") #'completion-preview-insert)
@@ -764,22 +760,12 @@ a Windows .bat without quote-escaping headaches."
 ;;; ===========================================================================
 ;;; 12. Appearance
 ;;; ===========================================================================
-;; Main font + maximize + colors are set in early-init. Here: glyph fallback,
-;; theme, and cheap UI niceties.
-(defconst my/variable-pitch-candidates
-  '("Merriweather" "Iosevka Aile" "Fira Sans" "Cambria" "Segoe UI" "Cantarell")
-  "Proportional fonts for variable-pitch faces, tried best-first.")
-
 (defun my/apply-fonts (&optional frame)
-  "Weight, proportional face, and emoji/symbol glyph fallback for FRAME.
+  "Weight, fixed-pitch face, and emoji/symbol glyph fallback for FRAME.
 Family + size come from the frame created in early-init."
   (when (display-graphic-p frame)
     (set-face-attribute 'default frame :weight my/font-weight)
     (set-face-attribute 'fixed-pitch frame :family my/font-family :weight my/font-weight)
-    (when-let* ((vp (seq-find (lambda (f) (find-font (font-spec :family f)))
-                              my/variable-pitch-candidates)))
-      (set-face-attribute 'variable-pitch frame :family vp :weight 'regular)
-      (setf (alist-get vp face-font-rescale-alist nil nil #'equal) 0.9))
     (cond
      (IS-WINDOWS
       (set-fontset-font t 'emoji  (font-spec :family "Segoe UI Emoji") frame 'prepend)
@@ -787,14 +773,10 @@ Family + size come from the frame created in early-init."
      (IS-MAC
       (set-fontset-font t 'emoji  (font-spec :family "Apple Color Emoji") frame 'prepend))
      (IS-LINUX
-      ;; Linux rarely auto-maps emoji -- set Noto explicitly when present.
       (when (find-font (font-spec :family "Noto Color Emoji"))
         (set-fontset-font t 'emoji  (font-spec :family "Noto Color Emoji") frame 'prepend))
       (when (find-font (font-spec :family "Noto Sans Symbols2"))
         (set-fontset-font t 'symbol (font-spec :family "Noto Sans Symbols2") frame 'append))))
-    ;; Render the Unicode "mathematical" block (∑ ∫ √ 𝕏 ⟨⟩ ...) in a real math
-    ;; font so org/LaTeX math + `org-pretty-entities' glyphs look right. Picks the
-    ;; best installed; Cambria Math ships with Windows.
     (when-let* ((mf (seq-find (lambda (f) (find-font (font-spec :family f)))
                               '("Latin Modern Math" "STIX Two Math" "XITS Math"
                                 "Cambria Math" "DejaVu Math TeX Gyre"))))
@@ -842,15 +824,59 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 (add-hook 'text-mode-hook #'visual-line-mode)
 (column-number-mode 1)
 
-;; Visualize whitespace: spaces as dots, tabs as glyph, trailing highlighted.
-;; Drop 'spaces/'space-mark from this list if the dots feel noisy.
+;;; --- Knowledge fortune: random note in *scratch* on each frame -------------
+(defvar my/knowledge-file (my/emacs-path "etc/knowledge.txt")
+  "File of knowledge entries, separated by a line of four or more `='.")
+(defun my/knowledge-random ()
+  "Return a random entry from `my/knowledge-file', or nil if unavailable."
+  (when (file-readable-p my/knowledge-file)
+    (let ((entries (split-string
+                    (with-temp-buffer
+                      (insert-file-contents my/knowledge-file)
+                      (buffer-string))
+                    "\n====+\n" t "[ \t\r\n]+")))
+      (when entries (nth (random (length entries)) entries)))))
+(defun my/knowledge--render (buf fact)
+  "Show FACT in BUF, soft-wrapped to the window width (no horizontal scroll).
+Entries are written as long paragraph lines, so `visual-line-mode' reflows them
+to whatever the current frame width is -- wide frame, wide lines; narrow, narrow."
+  (with-current-buffer buf
+    (erase-buffer)
+    (insert fact "\n")
+    (goto-char (point-max))
+    (setq-local truncate-lines nil)
+    (visual-line-mode 1)
+    (set-buffer-modified-p nil)))
+(defconst my/knowledge-empty-message
+  (concat ";; etc/knowledge.txt is a perfect vacuum right now -- not even a\n"
+          ";; virtual particle of wisdom flickered into existence. Add an entry\n"
+          ";; and collapse the void into something worth knowing.")
+  "Shown when there are no knowledge entries to display.")
+(defun my/populate-scratch (&optional _frame)
+  "Put a fresh random knowledge note in *scratch* on each frame.
+*scratch* is treated as EPHEMERAL: whatever you typed is not preserved across
+frames (use `my/tmp-buffer' for a real scratchpad). Left alone only if you have
+deliberately switched it out of `initial-major-mode'."
+  (when-let* ((buf (get-buffer "*scratch*"))
+              (fact (my/knowledge-random)))
+    (with-current-buffer buf
+      (when (eq major-mode initial-major-mode)
+        (my/knowledge--render buf fact)))))
+(defun my/knowledge-show ()
+  "Pop a fresh random knowledge note (into *scratch*), even if modified."
+  (interactive)
+  (let ((buf (get-buffer-create "*scratch*")))
+    (my/knowledge--render buf (or (my/knowledge-random)
+                                  my/knowledge-empty-message))
+    (pop-to-buffer buf)))
+(add-hook 'emacs-startup-hook #'my/populate-scratch)
+(add-hook 'after-make-frame-functions #'my/populate-scratch)
+
 (defconst my/whitespace-style
   '(face tabs tab-mark spaces space-mark trailing missing-newline-at-eof))
 (setq whitespace-style my/whitespace-style
       whitespace-display-mappings '((tab-mark   ?\t [?▷ ?\t] [?\\ ?\t])
                                     (space-mark ?\s [?·]     [?.])))
-;; Strip trailing whitespace on save in code + org/LaTeX buffers. NOT markdown
-;; (two trailing spaces there = a hard line break).
 (dolist (hook '(prog-mode-hook org-mode-hook LaTeX-mode-hook))
   (add-hook hook
             (lambda () (add-hook 'before-save-hook #'delete-trailing-whitespace nil t))))
@@ -869,8 +895,8 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 ;; Cursor & mouse pointer.
 (setq-default cursor-type 'box)
 (blink-cursor-mode -1)
-(setq make-pointer-invisible t        ; hide mouse while typing
-      x-stretch-cursor t)             ; cursor spans wide glyphs like tabs
+(setq make-pointer-invisible t
+      x-stretch-cursor t)
 
 (defconst my/fringe-width 8 "Left fringe width in pixels (git/diagnostic gutter).")
 (fringe-mode (cons my/fringe-width 0))
@@ -885,11 +911,6 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
       show-paren-when-point-inside-paren t
       show-paren-context-when-offscreen 'overlay)
 
-;; Default mode line, fully non-interactive. The standard segments bake their
-;; own keymap / mouse-face / help-echo as TEXT PROPERTIES (and inside
-;; `:propertize' forms) -- so unbinding the global `mode-line' mouse keys or
-;; nil-ing the segment keymap *variables* does nothing. We strip those
-;; properties from the constructs themselves.
 (defun my/ml-strip-plist (plist)
   "Drop mouse/keymap keys from a `:propertize' property list PLIST."
   (let (out)
@@ -909,7 +930,7 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
        '(local-map nil keymap nil mouse-face nil pointer nil help-echo nil) s)
       s))
    ((not (consp obj)) obj)
-   ((eq (car obj) :eval) obj)                       ; never rewrite code
+   ((eq (car obj) :eval) obj)
    ((eq (car obj) :propertize)
     (cons :propertize (cons (my/ml-strip (cadr obj))
                             (my/ml-strip-plist (cddr obj)))))
@@ -930,9 +951,7 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
   (global-set-key e #'ignore))
 (setq mode-line-default-help-echo nil)
 
-;; clean-mode-line: abbreviate noisy minor-mode lighters to nothing
-;; and shorten major-mode names (emacs-lisp -> "Eλ", python -> "Py", ...). Keeps
-;; the default mode-line uncluttered. Trimmed to the modes this config uses.
+;; clean-mode-line: abbreviate noisy minor-mode lighters to nothing and shorten major-mode names.
 (require 'cl-lib)
 (defvar my/mode-line-cleaner-alist
   '((yas-minor-mode . "") (eldoc-mode . "") (abbrev-mode . "")
@@ -1021,8 +1040,6 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
   (set-face-attribute 'tab-bar-tab-inactive nil
                       :inherit 'shadow :box nil :weight 'normal))
 (my/style-tab-bar)
-;; `enable-theme-functions' (Emacs 29+) fires after every `load-theme', so the
-;; tab-bar restyles itself whenever `my/toggle-theme' switches themes.
 (add-hook 'enable-theme-functions #'my/style-tab-bar)
 
 (defun my/doom-theme-settings (theme &rest _)
@@ -1041,7 +1058,6 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
   :demand t
   :config
   (setq doom-themes-enable-bold t doom-themes-enable-italic t
-        ;; doom-rouge polish: flush modeline, brighter comments/tabs.
         doom-rouge-padded-modeline nil
         doom-rouge-brighter-comments t
         doom-rouge-brighter-tabs t)
@@ -1066,8 +1082,6 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 ;;; ===========================================================================
 ;;; 14. Version control (magit + diff-hl + wgrep)
 ;;; ===========================================================================
-;; Windows: process spawning is magit's bottleneck -- point it straight at
-;; git.exe, and expose Git's bundled Unix tools (diff/grep) for diff-hl/ediff.
 (when IS-WINDOWS
   (when-let* ((git-exe (executable-find "git")))
     (setq magit-git-executable git-exe))
@@ -1087,7 +1101,7 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
   :ensure (:host github :repo "magit/transient")
   :defer t)
 
-(use-package magit                       ; loads on first C-x g
+(use-package magit
   :init (setq magit-define-global-key-bindings nil)
   :bind (("C-x g"   . magit-status)
          ("C-x M-g" . magit-dispatch)
@@ -1123,12 +1137,12 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
          ("C-c g r" . diff-hl-revert-hunk))
   :init (add-hook 'elpaca-after-init-hook #'global-diff-hl-mode)
   :config
-  (diff-hl-flydiff-mode 1)               ; live updates as you type
+  (diff-hl-flydiff-mode 1)
   (define-fringe-bitmap 'my/diff-hl-bar [224] nil nil '(center repeated))
   (setq diff-hl-fringe-bmp-function (lambda (_type _pos) 'my/diff-hl-bar)
         diff-hl-draw-borders nil))
 
-(use-package wgrep                        ; edit grep results in place, then save
+(use-package wgrep
   :init (setq wgrep-auto-save-buffer t
               wgrep-change-readonly-file t)
   :bind (:map grep-mode-map ("C-c C-p" . wgrep-change-to-wgrep-mode)))
@@ -1149,8 +1163,7 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 ;;; ===========================================================================
 ;;; 15. Navigation & multi-cursor (avy, multiple-cursors, imenu, project)
 ;;; ===========================================================================
-;; avy: jump anywhere by typing a short label. (M-j is windmove-down here, so
-;; the timer command lives on C-;.)
+;; avy: jump anywhere by typing a short label.
 (use-package avy
   :bind (("C-;"   . avy-goto-char-timer)
          ("C-'"   . avy-goto-line)
@@ -1242,10 +1255,7 @@ otherwise delete the character ahead."
   (setq project-vc-extra-root-markers
         '("package.json" "Cargo.toml" "pyproject.toml" "requirements.txt"
           "setup.py" "go.mod" "pom.xml" ".project"))
-  ;; `C-x p k' = close project: kill its buffers AND close its tab (was just
-  ;; `project-kill-buffers'). See `my/close-project'.
   (define-key project-prefix-map "k" #'my/close-project)
-  ;; Curated, LABELED switch menu -- adds magit/query-replace/eshell.
   (setq project-switch-commands
         '((?f "Find file"      project-find-file)
           (?g "Find regexp"    project-find-regexp)
@@ -1257,9 +1267,6 @@ otherwise delete the character ahead."
           (?q "Query replace"  project-query-replace-regexp)
           (?! "Shell command"  project-shell-command)
           (?k "Close project"  my/close-project))))
-;; nil -> `project-switch-project' shows the DESCRIPTIVE dispatch menu
-;; ("[f] Find file  [g] Find regexp ..."), not the cryptic raw key list that
-;; `t' produces.
 (setq project-switch-use-entire-map nil)
 (global-set-key (kbd "C-c p") #'project-switch-project)
 
@@ -1291,9 +1298,8 @@ otherwise delete the character ahead."
 ;;; ===========================================================================
 ;;; 16. Start in a sensible working directory
 ;;; ===========================================================================
-;; Windows launches from the Start Menu with cwd = install bin/, so new buffers
-;; inherit C:/Program Files/... Land in the work root instead (HOME on Unix).
-(defconst my/start-dir (if IS-WINDOWS "D:/" (expand-file-name "~/"))
+(defconst my/start-dir (if (and IS-WINDOWS (file-directory-p "D:/"))
+                           "D:/" (expand-file-name "~/"))
   "Default working directory for fresh buffers at startup.")
 (when (file-directory-p my/start-dir)
   (setq-default default-directory my/start-dir)

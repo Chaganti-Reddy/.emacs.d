@@ -17,9 +17,6 @@
 ;;                  context · l f add-file · l k abort · l R resume saved chat)
 
 ;;; --- Chat persistence: auto-name + auto-save + resume -----------------------
-;; Saved chats live under var/ (config root stays clean) and reopen with
-;; `gptel-mode' already on, so a conversation survives restarts. Defined before
-;; the use-package form so its :hook/:bind references resolve at compile time.
 (defconst my/gptel-chat-directory (my/var "gptel-chats/" t)
   "Where unnamed gptel chat buffers are saved.")
 
@@ -41,7 +38,7 @@ Writes a prop line so reopening the file turns `gptel-mode' back on."
 
 (defun my/gptel-chat-setup ()
   "Per-chat-buffer setup: enable prompt caching + auto-name on first save."
-  (setq-local gptel-cache t)              ; cache the prompt prefix (cheaper)
+  (setq-local gptel-cache t)
   (add-hook 'before-save-hook #'my/gptel-assign-filename nil t))
 
 (defun my/gptel-resume (chat)
@@ -67,9 +64,6 @@ Writes a prop line so reopening the file turns `gptel-mode' back on."
   (setq gptel-default-mode 'org-mode      ; folding, links, src blocks in chats
         gptel-expert-commands t           ; expose advanced options in the menu
         gptel-track-media t)              ; send image/file context as media
-  ;; curl (ships in Windows 10/11 System32) is more robust for streaming; gptel
-  ;; auto-uses it when on PATH, else falls back to url-retrieve. Force-off only
-  ;; if you have no curl:  (setq gptel-use-curl nil)
 
   ;; ---- Backend: keyless GitHub Copilot (PRIMARY) ---------------------------
   ;; Business/Enterprise plans: add :host "api.business.githubcopilot.com" etc.
@@ -131,7 +125,6 @@ the full solution only when I explicitly ask.")
     (setq gptel-rewrite-default-action nil)))
 
 ;;; --- gptel-quick: instant one-shot explain of word/region/symbol -----------
-;; Vendored in lisp/ (GitHub-only; no :vc so it never nags at startup).
 ;; `C-c l q' anywhere, or `?' on any Embark target (symbol/region/thing).
 (use-package gptel-quick
   :ensure nil
@@ -146,8 +139,7 @@ the full solution only when I explicitly ask.")
         gptel-quick-timeout 12))
 
 ;;; --- llm-tool-collection: ready-made tools (read/edit/search/shell/...) -----
-;; Vendored. Registers its whole curated tool set with gptel; you then toggle
-;; which to expose per-request from the gptel menu (C-c l m -> Tools).
+;; To expose per-request from the gptel menu (C-c l m -> Tools).
 (use-package llm-tool-collection
   :ensure nil
   :after gptel
@@ -157,17 +149,15 @@ the full solution only when I explicitly ask.")
 
 ;;; --- gptel-agent: agentic loop (Read/Write/Edit/Bash/WebSearch...) ----------
 ;; "Claude Code in Emacs": the @gptel-agent preset gives a full tool-using agent,
-;; @gptel-plan a read-only planner. Installed via elpaca (its use-package form).
+;; @gptel-plan a read-only planner.
 (use-package gptel-agent
   :ensure t
   :after gptel
   :config
-  ;; Fetches/registers the agent's tools + presets (network, first load only).
   (when (fboundp 'gptel-agent-update) (ignore-errors (gptel-agent-update))))
 
 ;;; --- MCP: expose Model Context Protocol servers as gptel tools --------------
-;; Installed from MELPA. Needs the external server binaries (npx-based, etc.).
-;; Configure servers below, then:  M-x mcp-hub  (start) + M-x gptel-mcp-connect.
+;; Needs the external server binaries (npx-based, etc.). Configure servers below, then:  M-x mcp-hub  (start) + M-x gptel-mcp-connect.
 (use-package mcp
   :ensure t
   :defer t
