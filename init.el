@@ -827,15 +827,25 @@ Covers fundamental-mode/*scratch*; skips terminals, special, and the minibuffer.
 ;;; --- Knowledge fortune: random note in *scratch* on each frame -------------
 (defvar my/knowledge-file (my/emacs-path "etc/knowledge.txt")
   "File of knowledge entries, separated by a line of four or more `='.")
+(defvar my/knowledge--last nil
+  "The entry shown most recently, so the next pick can avoid repeating it.")
+(random t)
 (defun my/knowledge-random ()
-  "Return a random entry from `my/knowledge-file', or nil if unavailable."
+  "Return a random entry from `my/knowledge-file', never the last one shown.
+Returns nil if the file is unreadable or empty."
   (when (file-readable-p my/knowledge-file)
     (let ((entries (split-string
                     (with-temp-buffer
                       (insert-file-contents my/knowledge-file)
                       (buffer-string))
                     "\n====+\n" t "[ \t\r\n]+")))
-      (when entries (nth (random (length entries)) entries)))))
+      (when entries
+        (let* ((pool (if (and my/knowledge--last (> (length entries) 1))
+                         (remove my/knowledge--last entries)
+                       entries))
+               (pick (nth (random (length pool)) pool)))
+          (setq my/knowledge--last pick)
+          pick)))))
 (defun my/knowledge--render (buf fact)
   "Show FACT in BUF, soft-wrapped to the window width (no horizontal scroll).
 Entries are written as long paragraph lines, so `visual-line-mode' reflows them
